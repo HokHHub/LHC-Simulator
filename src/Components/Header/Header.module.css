@@ -1,0 +1,199 @@
+.header {
+    display: flex;
+    position: relative;
+    background: #171717;
+    z-index: 1000;
+}
+
+.header__wrapper {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.header__logos {
+    display: flex;
+    cursor: pointer;
+    gap: 7px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.header__img {
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+}
+
+.header__title {
+    color: #FFF;
+    text-align: center;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 145%;
+    /* 23.2px */
+    letter-spacing: -0.08px;
+}
+
+.header__links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    color: #FFF;
+    text-align: center;
+    font-family: Inter;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 145%;
+    /* 23.2px */
+    letter-spacing: -0.08px;
+}
+
+a {
+    color: #FFF;
+    text-decoration: none;
+}
+
+/* Чтобы ссылки отдельно можно было стилизовать */
+.header__link {
+  color: #FFF;
+  text-decoration: none;
+}
+
+/* ===== Burger button ===== */
+.burger {
+  display: none; /* включим на <=768px */
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(192, 205, 255, 0.35);
+  background: rgba(31, 31, 31, 0.65);
+  border-radius: 12px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+}
+
+.burger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: #C0CDFF;
+  border-radius: 999px;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+
+/* Анимация "крестик" */
+.burger_open span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+.burger_open span:nth-child(2) {
+  opacity: 0;
+}
+.burger_open span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* ===== Mobile menu overlay + panel ===== */
+.mobileMenu {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 2000;
+}
+
+.mobileMenu_open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobileMenu__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(86vw, 360px);
+  background: #171717;
+  border-left: 1px solid rgba(192, 205, 255, 0.18);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.mobileMenu_open .mobileMenu__panel {
+  transform: translateX(0);
+}
+
+.mobileMenu__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.mobileMenu__title {
+  margin: 0;
+  color: #FFF;
+  font-family: Inter;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.08px;
+}
+
+.mobileMenu__close {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(192, 205, 255, 0.35);
+  background: rgba(31, 31, 31, 0.65);
+  color: #FFF;
+  cursor: pointer;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.mobileMenu__links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobileMenu__link {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(192, 205, 255, 0.25);
+  background: rgba(31, 31, 31, 0.6);
+  color: #FFF;
+  font-family: Inter;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .header__wrapper {
+    align-items: center;
+    padding: 10px 0;
+  }
+
+  .header__links {
+    display: none;
+  }
+
+  .burger {
+    display: flex;
+    flex-direction: column;
+  }
+}

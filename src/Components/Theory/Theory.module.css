@@ -1,0 +1,441 @@
+.theory {
+    max-width: 100%;
+    width: 100%;
+}
+
+.theory__title {
+    margin: 26px 0;
+    color: #FFF;
+    text-align: center;
+    font-family: Rubik;
+    font-size: 40px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 120%;
+    /* 48px */
+    letter-spacing: -0.8px;
+}
+
+.theory__mainText {
+    margin: 0;
+    margin-bottom: 14px;
+    color: #66BFFF;
+    font-family: Rubik;
+    font-size: 30px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 120%;
+    /* 36px */
+    letter-spacing: -0.6px;
+}
+
+.theory__input {
+    border: 2px solid #C0CDDF;
+    max-width: 100%;
+    width: 100%;
+    height: 56px;
+    /* padding: 16px 0; */
+    font-size: 20px;
+    padding-left: 18px;
+    outline: none;
+    overflow: hidden;
+    background-color: #18171B;
+    border-radius: 11px;
+    transition: all 0.5s;
+    font-family: "Inclusive Sans", "Rubick";
+}
+
+.theory__input::placeholder {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.50);
+    font-family: "Inclusive Sans", "Rubick";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 120%;
+    /* 24px */
+    letter-spacing: -0.4px;
+}
+
+.theory__input::-webkit-input-placeholder {
+    font-family: "Inclusive Sans", "Rubick", sans-serif;
+}
+
+.theory__input::-moz-placeholder {
+    font-family: "Inclusive Sans", "Rubick", sans-serif;
+}
+
+.theory__input:-moz-placeholder {
+    font-family: "Inclusive Sans", "Rubick", sans-serif;
+}
+
+.theory__input:-ms-input-placeholder {
+    font-family: "Inclusive Sans", "Rubick", sans-serif;
+}
+
+.theory__input:focus {
+    color: #FFF;
+}
+
+.theory__buttons {
+    margin-top: 10px;
+    gap: 18px;
+    display: flex;
+}
+
+.theory__button {
+    display: flex;
+    cursor: pointer;
+    padding: 5px 26px 5px 27px;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    border: 1px solid #C0CDFF;
+    background: #1F1F1F;
+    color: #B2DFFF;
+    text-align: center;
+    font-family: Rubik;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 120%;
+    /* 21.6px */
+    letter-spacing: -0.36px;
+    transition: 0.3s
+}
+
+.theory__button:hover {
+    background: #202168;
+    border: 1px solid #202168;
+}
+
+.theory__cards {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 30px;
+    gap: 28px;
+}
+
+.theory__card {
+    display: flex;
+    cursor: pointer;
+    width: 220px;
+    height: 220px;
+    border-radius: 24px;
+    padding-top: 21px;
+    padding-left: 16px;
+    padding-right: 16px;
+    border: 5px solid #7485C9;
+    background: rgba(31, 31, 31, 0.50);
+    flex-direction: column;
+}
+
+.theory__card_textBlock {
+    display: flex;
+    justify-content: space-between;
+}
+
+.theory__card_text {
+    margin: 0;
+    color: #FFF;
+    font-family: Lexend;
+    text-wrap-mode: nowrap;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 120%;
+    /* 24px */
+    letter-spacing: -0.4px;
+}
+
+.theory__card_imgGroup {
+    position: relative;
+}
+
+.test {
+    position: absolute;
+    top: 5px;
+    right: -100%;
+    transform: translateX(-50%);
+    width: 100%;
+    text-align: center;
+    margin: 0;
+    pointer-events: none;
+}
+
+.theory__card_imgText {
+    margin: 0;
+    /* position: absolute; */
+    /* top: 0; */
+    /* right: 50%; */
+    transform: translateX(-50%);
+    color: #FFF;
+    text-align: center;
+    font-family: Lexend;
+    font-size: 50px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 120%;
+    /* 60px */
+    letter-spacing: -1px;
+}
+
+.theory__card_title {
+    margin-top: auto;
+    margin-bottom: 8px;
+    color: #FFF;
+    text-align: center;
+    font-family: Lexend;
+    font-size: 30px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 120%;
+    /* 36px */
+    letter-spacing: -0.6px;
+}
+
+.button {
+  background-color: #1976d2;
+  cursor: pointer;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  border: none;
+  font-size: 22px;
+  text-decoration: none;
+  font-weight: 100;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.button:hover {
+  background-color: #1565c0;
+}
+
+/* ====== БАЗОВЫЕ ФИКСЫ ДЛЯ АДАПТИВА (не ломают десктоп) ====== */
+.theory {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Чтобы флекс/грид элементы не раздували контейнер */
+.theory__cards,
+.theory__buttons {
+  min-width: 0;
+}
+
+/* Карточки лучше считать через box-sizing */
+.theory__card,
+.theory__input,
+.theory__button {
+  box-sizing: border-box;
+}
+
+.theory__card_imgGroup {
+  position: relative;
+  width: 90px;   /* под твой svg */
+  height: 90px;  /* под твой svg */
+  display: grid;
+  place-items: center;
+}
+
+.theory__card_imgGroup svg {
+  display: block;
+  width: 90px;
+  height: 90px;
+}
+
+.test {
+  position: absolute;
+  inset: 0;                 /* вместо top/right/translate */
+  display: grid;
+  place-items: center;      /* идеальный центр */
+  margin: 0;
+  pointer-events: none;
+  transform: none;
+  margin-bottom: 11px;
+}
+
+.theory__card_imgText {
+  margin: 0;
+  line-height: 1;           /* важно: убирает “прыжки” по высоте */
+  transform: translateY(-1px); /* микро-подстройка (можешь 0 или -2px) */
+}
+
+
+/* ====== <= 1024px (планшеты/малые ноуты) ====== */
+@media (max-width: 1024px) {
+  .theory__title {
+    font-size: 34px;
+    margin: 22px 0;
+  }
+
+  .theory__mainText {
+    font-size: 26px;
+  }
+
+  .theory__cards {
+    gap: 20px;
+  }
+
+  .theory__card {
+    width: 200px;
+    height: 200px;
+    border-width: 4px;
+    border-radius: 20px;
+  }
+
+  .theory__card_title {
+    font-size: 26px;
+  }
+
+  .theory__card_text {
+    font-size: 18px;
+  }
+
+  .theory__card_imgText {
+    font-size: 44px;
+  }
+}
+
+/* ====== <= 768px (планшеты/крупные телефоны) ====== */
+@media (max-width: 768px) {
+  .theory__title {
+    font-size: 30px;
+    margin: 18px 0;
+    letter-spacing: -0.5px;
+  }
+
+  .theory__mainText {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+
+  .theory__input {
+    height: 52px;
+    font-size: 18px;
+    padding-left: 14px;
+    border-radius: 10px;
+  }
+
+  .theory__input::placeholder {
+    font-size: 18px;
+  }
+
+  /* Кнопки: перенос + нормальные тапы */
+  .theory__buttons {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .theory__button {
+    flex: 1 1 160px;        /* две в ряд, если влезает */
+    padding: 10px 14px;
+    font-size: 16px;
+  }
+
+  /* Карточки: 2 в ряд */
+  .theory__cards {
+    gap: 14px;
+  }
+
+  .theory__card {
+    width: calc(50% - 7px);
+    height: auto;           /* важно: чтобы текст не резался */
+    min-height: 180px;
+    padding-top: 16px;
+    border-width: 4px;
+    border-radius: 18px;
+  }
+
+  .theory__card_title {
+    font-size: 22px;
+  }
+
+  .theory__card_text {
+    font-size: 16px;
+  }
+
+  .theory__card_imgText {
+    font-size: 38px;
+  }
+
+  /* Твой абсолютный .test на мобильных часто улетает.
+     Делаем безопаснее. */
+  .test {
+    right: 0;
+    transform: none;
+    width: auto;
+    text-align: right;
+  }
+}
+
+/* ====== <= 480px (телефоны) ====== */
+@media (max-width: 480px) {
+  .theory__title {
+    font-size: 24px;
+    margin: 14px 0;
+    letter-spacing: -0.3px;
+  }
+
+  .theory__mainText {
+    font-size: 18px;
+  }
+
+  .theory__input {
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .theory__input::placeholder {
+    font-size: 16px;
+  }
+
+  /* Кнопки: по одной в ряд для удобства */
+  .theory__button {
+    flex: 1 1 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  /* Карточки: по одной в ряд (выглядит дороже и читабельнее) */
+  .theory__card {
+    width: 100%;
+    min-height: 170px;
+    border-width: 3px;
+    border-radius: 16px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .theory__card_title {
+    font-size: 20px;
+  }
+
+  .theory__card_text {
+    font-size: 15px;
+  }
+
+  .theory__card_imgText {
+    font-size: 34px;
+  }
+}
+
+/* ====== <= 360px (очень маленькие телефоны) ====== */
+@media (max-width: 360px) {
+  .theory__title {
+    font-size: 22px;
+  }
+
+  .theory__mainText {
+    font-size: 16px;
+  }
+
+  .theory__card_title {
+    font-size: 18px;
+  }
+
+  .theory__card_imgText {
+    font-size: 30px;
+  }
+}
