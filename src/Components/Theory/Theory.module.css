@@ -125,7 +125,7 @@
     padding-top: 21px;
     padding-left: 16px;
     padding-right: 16px;
-    border: 5px solid #7485C9;
+    border: 5px solid var(--accent-color);
     background: rgba(31, 31, 31, 0.50);
     flex-direction: column;
 }

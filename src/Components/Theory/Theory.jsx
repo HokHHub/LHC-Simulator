@@ -1,25 +1,85 @@
-import Container2 from '../Container2/Container2'
-import s from './Theory.module.css'
-import Modal from '../Modal/Modal'
-import { useState } from 'react';
+import Container2 from "../Container2/Container2";
+import s from "./Theory.module.css";
+import Modal from "../Modal/Modal";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-export default function Theory(props) {
+import particlesData from "../../data/all_particles.json";
+import ParticleCard from "../ParticleCard/ParticleCard";
+import { formatNumber } from "../../utils/formatNumber";
+const PAGE_SIZE = 24;
+
+export default function Theory() {
     const [open, setOpen] = useState(false);
-    const proton = {
-        title: "Proton",
-        iconText: "p",
-        description:
-            "Протон — первичный «кирпичик» видимой Вселенной. Это стабильная положительно заряженная частица, основа атомных ядер. Именно количество протонов в ядре определяет химический элемент",
-        stats: [
-            { label: "Семья", value: "Адрон" },
-            { label: "Масса", value: "0,938 GeV" },
-            { label: "Стабильность", value: "Стабилен" },
-            { label: "Взаимодействие", value: "Сильное" },
-            { label: "Спин", value: "1/2" },
-            { label: "Заряд", value: "1" },
-            { label: "S, C, B, L", value: "0, 0, 1, 0" },
-            { label: "Состав", value: "uud" },
-        ],
+    const [selected, setSelected] = useState(null);
+
+    const [query, setQuery] = useState("");
+    const [typeFilter, setTypeFilter] = useState("all");
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+    const sentinelRef = useRef(null);
+
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+
+        return particlesData.filter((p) => {
+            const matchesType = typeFilter === "all" ? true : String(p.type).toLowerCase() === typeFilter;
+
+            if (!matchesType) return false;
+            if (!q) return true;
+
+            const haystack = [
+                p.name,
+                p.type,
+                p.mass,
+                p.charge,
+                p.spin,
+            ]
+                .join(" ")
+                .toLowerCase();
+
+            return haystack.includes(q);
+        });
+    }, [query, typeFilter]);
+
+    useEffect(() => {
+        setVisibleCount(PAGE_SIZE);
+    }, [query, typeFilter]);
+
+    useEffect(() => {
+        const el = sentinelRef.current;
+        if (!el) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const first = entries[0];
+                if (first?.isIntersecting) {
+                    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filtered.length));
+                }
+            },
+            { root: null, rootMargin: "400px", threshold: 0 }
+        );
+
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [filtered.length]);
+
+    const visibleItems = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+
+    const handleCardClick = (particle) => {
+        const modalData = {
+            title: particle.name,
+            iconText: particle.name[0],
+            color: particle.color,
+            stats: [
+                { label: "Тип", value: particle.type },
+                { label: "Масса", value: `${formatNumber(particle.mass)} GeV` },
+                { label: "Заряд", value: formatNumber(particle.charge) },
+                { label: "Спин", value: `${particle.spin} ħ` },
+            ],
+        };
+
+        setSelected(modalData);
+        setOpen(true);
     };
 
     return (
@@ -27,186 +87,71 @@ export default function Theory(props) {
             <main>
                 <Container2>
                     <h2 className={s.theory__title}>Теория элементарных частиц</h2>
+
                     <div className={s.theory}>
                         <p className={s.theory__mainText}>Список частиц</p>
-                        <input className={s.theory__input} placeholder="Поиск частиц по названию или свойствам..." />
+
+                        <input
+                            className={s.theory__input}
+                            placeholder="Поиск частиц по названию или свойствам..."
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                        />
+
                         <div className={s.theory__buttons}>
-                            <button className={s.theory__button}>Адроны</button>
-                            <button className={s.theory__button}>Кварки</button>
-                            <button className={s.theory__button}>Лептоны</button>
-                            <button className={s.theory__button}>Бозоны</button>
+                            <button
+                                className={s.theory__button}
+                                onClick={() => setTypeFilter("hadron")}
+                            >
+                                Адроны
+                            </button>
+
+                            <button
+                                className={s.theory__button}
+                                onClick={() => setTypeFilter("quark")}
+                            >
+                                Кварки
+                            </button>
+
+                            <button
+                                className={s.theory__button}
+                                onClick={() => setTypeFilter("lepton")}
+                            >
+                                Лептоны
+                            </button>
+
+                            <button
+                                className={s.theory__button}
+                                onClick={() => setTypeFilter("boson")}
+                            >
+                                Бозоны
+                            </button>
+
+                            <button
+                                className={s.theory__button}
+                                onClick={() => setTypeFilter("all")}
+                            >
+                                Все
+                            </button>
                         </div>
+
                         <div className={s.theory__cards}>
-                            <div onClick={() => setOpen(true)} className={s.theory__card}>
-                                <div className={s.theory__card_textBlock}>
-                                    <div>
-                                        <p className={s.theory__card_text}>0,938 GeV</p>
-                                        <p className={s.theory__card_text}>Q = +1</p>
-                                        <p className={s.theory__card_text}>J = 1/2 ħ</p>
-                                    </div>
-                                    <div className={s.theory__card_imgGroup}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90" fill="none">
-                                            <g filter="url(#filter0_i_1_43)">
-                                                <circle cx="45" cy="45" r="45" fill="#4E3F8F" />
-                                            </g>
-                                            <defs>
-                                                <filter id="filter0_i_1_43" x="0" y="0" width="91" height="97" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                                                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                                                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                                                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
-                                                    <feMorphology radius="1" operator="erode" in="SourceAlpha" result="effect1_innerShadow_1_43" />
-                                                    <feOffset dx="1" dy="7" />
-                                                    <feGaussianBlur stdDeviation="8.5" />
-                                                    <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                                                    <feColorMatrix type="matrix" values="0 0 0 0 0.75 0 0 0 0 0.75 0 0 0 0 0.75 0 0 0 0.24 0" />
-                                                    <feBlend mode="normal" in2="shape" result="effect1_innerShadow_1_43" />
-                                                </filter>
-                                            </defs>
-                                        </svg>
-                                        <div className={s.test}>
-                                            <p className={s.theory__card_imgText}>p</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className={s.theory__card_title}>Proton</p>
-                            </div>
-                            <div onClick={() => setOpen(true)} className={s.theory__card}>
-                                <div className={s.theory__card_textBlock}>
-                                    <div>
-                                        <p className={s.theory__card_text}>0,938 GeV</p>
-                                        <p className={s.theory__card_text}>Q = +1</p>
-                                        <p className={s.theory__card_text}>J = 1/2 ħ</p>
-                                    </div>
-                                    <div className={s.theory__card_imgGroup}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90" fill="none">
-                                            <g filter="url(#filter0_i_1_43)">
-                                                <circle cx="45" cy="45" r="45" fill="#4E3F8F" />
-                                            </g>
-                                            <defs>
-                                                <filter id="filter0_i_1_43" x="0" y="0" width="91" height="97" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                                                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                                                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                                                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
-                                                    <feMorphology radius="1" operator="erode" in="SourceAlpha" result="effect1_innerShadow_1_43" />
-                                                    <feOffset dx="1" dy="7" />
-                                                    <feGaussianBlur stdDeviation="8.5" />
-                                                    <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                                                    <feColorMatrix type="matrix" values="0 0 0 0 0.75 0 0 0 0 0.75 0 0 0 0 0.75 0 0 0 0.24 0" />
-                                                    <feBlend mode="normal" in2="shape" result="effect1_innerShadow_1_43" />
-                                                </filter>
-                                            </defs>
-                                        </svg>
-                                        <div className={s.test}>
-                                            <p className={s.theory__card_imgText}>p</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className={s.theory__card_title}>Proton</p>
-                            </div>
-                            <div onClick={() => setOpen(true)} className={s.theory__card}>
-                                <div className={s.theory__card_textBlock}>
-                                    <div>
-                                        <p className={s.theory__card_text}>0,938 GeV</p>
-                                        <p className={s.theory__card_text}>Q = +1</p>
-                                        <p className={s.theory__card_text}>J = 1/2 ħ</p>
-                                    </div>
-                                    <div className={s.theory__card_imgGroup}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90" fill="none">
-                                            <g filter="url(#filter0_i_1_43)">
-                                                <circle cx="45" cy="45" r="45" fill="#4E3F8F" />
-                                            </g>
-                                            <defs>
-                                                <filter id="filter0_i_1_43" x="0" y="0" width="91" height="97" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                                                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                                                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                                                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
-                                                    <feMorphology radius="1" operator="erode" in="SourceAlpha" result="effect1_innerShadow_1_43" />
-                                                    <feOffset dx="1" dy="7" />
-                                                    <feGaussianBlur stdDeviation="8.5" />
-                                                    <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                                                    <feColorMatrix type="matrix" values="0 0 0 0 0.75 0 0 0 0 0.75 0 0 0 0 0.75 0 0 0 0.24 0" />
-                                                    <feBlend mode="normal" in2="shape" result="effect1_innerShadow_1_43" />
-                                                </filter>
-                                            </defs>
-                                        </svg>
-                                        <div className={s.test}>
-                                            <p className={s.theory__card_imgText}>p</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className={s.theory__card_title}>Proton</p>
-                            </div>
-                            <div onClick={() => setOpen(true)} className={s.theory__card}>
-                                <div className={s.theory__card_textBlock}>
-                                    <div>
-                                        <p className={s.theory__card_text}>0,938 GeV</p>
-                                        <p className={s.theory__card_text}>Q = +1</p>
-                                        <p className={s.theory__card_text}>J = 1/2 ħ</p>
-                                    </div>
-                                    <div className={s.theory__card_imgGroup}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90" fill="none">
-                                            <g filter="url(#filter0_i_1_43)">
-                                                <circle cx="45" cy="45" r="45" fill="#4E3F8F" />
-                                            </g>
-                                            <defs>
-                                                <filter id="filter0_i_1_43" x="0" y="0" width="91" height="97" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                                                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                                                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                                                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
-                                                    <feMorphology radius="1" operator="erode" in="SourceAlpha" result="effect1_innerShadow_1_43" />
-                                                    <feOffset dx="1" dy="7" />
-                                                    <feGaussianBlur stdDeviation="8.5" />
-                                                    <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                                                    <feColorMatrix type="matrix" values="0 0 0 0 0.75 0 0 0 0 0.75 0 0 0 0 0.75 0 0 0 0.24 0" />
-                                                    <feBlend mode="normal" in2="shape" result="effect1_innerShadow_1_43" />
-                                                </filter>
-                                            </defs>
-                                        </svg>
-                                        <div className={s.test}>
-                                            <p className={s.theory__card_imgText}>p</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className={s.theory__card_title}>Proton</p>
-                            </div>
-                            <div onClick={() => setOpen(true)} className={s.theory__card}>
-                                <div className={s.theory__card_textBlock}>
-                                    <div>
-                                        <p className={s.theory__card_text}>0,938 GeV</p>
-                                        <p className={s.theory__card_text}>Q = +1</p>
-                                        <p className={s.theory__card_text}>J = 1/2 ħ</p>
-                                    </div>
-                                    <div className={s.theory__card_imgGroup}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90" fill="none">
-                                            <g filter="url(#filter0_i_1_43)">
-                                                <circle cx="45" cy="45" r="45" fill="#4E3F8F" />
-                                            </g>
-                                            <defs>
-                                                <filter id="filter0_i_1_43" x="0" y="0" width="91" height="97" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                                                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                                                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                                                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
-                                                    <feMorphology radius="1" operator="erode" in="SourceAlpha" result="effect1_innerShadow_1_43" />
-                                                    <feOffset dx="1" dy="7" />
-                                                    <feGaussianBlur stdDeviation="8.5" />
-                                                    <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                                                    <feColorMatrix type="matrix" values="0 0 0 0 0.75 0 0 0 0 0.75 0 0 0 0 0.75 0 0 0 0.24 0" />
-                                                    <feBlend mode="normal" in2="shape" result="effect1_innerShadow_1_43" />
-                                                </filter>
-                                            </defs>
-                                        </svg>
-                                        <div className={s.test}>
-                                            <p className={s.theory__card_imgText}>p</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className={s.theory__card_title}>Proton</p>
-                            </div>
-                            <Modal isOpen={open} onClose={() => setOpen(false)} data={proton} />
+                            {visibleItems.map((p, idx) => (
+                                <ParticleCard
+                                    key={`${p.name}-${idx}`}
+                                    particle={p}
+                                    onClick={() => handleCardClick(p)}
+                                />
+                            ))}
+
+                            <div ref={sentinelRef} style={{ height: 1 }} />
+
+                            <Modal isOpen={open} onClose={() => setOpen(false)} data={selected} />
                         </div>
+
                     </div>
                 </Container2>
             </main>
         </>
-    )
+    );
 }

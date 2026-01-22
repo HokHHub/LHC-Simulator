@@ -28,7 +28,7 @@
 
     border-radius: 50px;
     background: #121212;
-    border: 5px solid #7485C9;
+    border: 5px solid var(--accent-color);
 
     overflow: hidden;
     /* важно, чтобы внутренний скролл не ломал радиусы */
@@ -101,7 +101,7 @@
     display: grid;
     place-items: center;
 
-    background-color: #4E3F8F;
+    background-color: var(--accent-color);
     box-shadow: 1px 7px 19.8px 1px rgba(191, 191, 191, 0.24) inset;
 
     color: #FFF;

@@ -21,7 +21,7 @@ export default function Modal({ isOpen, onClose, data }) {
 
   return (
     <div className={styles.backdrop} onMouseDown={onClose}>
-      <div className={styles.shell} onMouseDown={(e) => e.stopPropagation()}>
+      <div className={styles.shell} onMouseDown={(e) => e.stopPropagation()} style={{"--accent-color": data.color || "#4E3F8F"}}>
         <button type="button" className={styles.close} onClick={onClose} aria-label="Закрыть">
           ✕
         </button>
