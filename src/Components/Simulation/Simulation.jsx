@@ -178,6 +178,44 @@ export default function Simulation() {
             .sort((a, b) => a.label.localeCompare(b.label));
     }, []);
 
+    const idToName = useMemo(() => {
+        const m = new Map();
+        const arr = Array.isArray(particlesData) ? particlesData : [];
+        for (const p of arr) {
+            const id = Number(p?.mcid);
+            if (Number.isFinite(id)) m.set(id, p?.name || String(id));
+        }
+        return m;
+    }, []);
+
+    function formatStage(objOrArr) {
+        if (!objOrArr) return "-";
+
+        const arr = Array.isArray(objOrArr) ? objOrArr : [objOrArr];
+
+        return arr
+            .map((row) => {
+                if (!row || typeof row !== "object") return String(row);
+
+                // Берём все ключи вида id_1, id_2, id_3...
+                const ids = Object.keys(row)
+                    .filter((k) => /^id_\d+$/.test(k))
+                    .sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)))
+                    .map((k) => Number(row[k]))
+                    .filter((n) => Number.isFinite(n));
+
+                if (ids.length === 0) return JSON.stringify(row);
+
+                // Превращаем id в имя
+                const names = ids.map((id) => idToName.get(id) || `PDG ${id}`);
+
+                return names.join(" + ");
+            })
+            .join("\n");
+    }
+
+
+
     const [first, setFirst] = useState("");
     const [second, setSecond] = useState("");
     const [energy, setEnergy] = useState("");
@@ -320,17 +358,8 @@ export default function Simulation() {
             const first_finals = Array.isArray(data) ? data[1] : data?.first_finals;
             const vals = Array.isArray(data) ? data[2] : data?.values;
 
-            setStage1(
-                typeof first_finals === "string"
-                    ? first_finals
-                    : JSON.stringify(first_finals, null, 2)
-            );
-
-            setDecay(
-                typeof finals === "string"
-                    ? finals
-                    : JSON.stringify(finals, null, 2)
-            );
+            setStage1(formatStage(first_finals));
+            setDecay(formatStage(finals));
 
             setValues(vals ?? null);
 
@@ -485,7 +514,7 @@ export default function Simulation() {
                             <div className={s.simulation__console}>
                                 {/* если у тебя есть готовые стили под консоль — ок.
                     если нет, хотя бы текст будет виден */}
-                                <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                                <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", color: "white" }}>
                                     {consoleLines.join("\n")}
                                 </pre>
                             </div>
