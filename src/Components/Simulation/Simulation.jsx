@@ -103,7 +103,8 @@ function SearchableSelect({
             <button
                 id={id}
                 type="button"
-                className={`${s.simulation__parameters_select} ${error ? s.simulation__fieldError : ""}`}
+                className={`${s.simulation__parameters_select} ${error ? s.simulation__fieldError : ""
+                    }`}
                 onClick={() => setOpen((v) => !v)}
                 onKeyDown={onTriggerKeyDown}
                 aria-haspopup="listbox"
@@ -185,6 +186,52 @@ export default function Simulation() {
 
     const [inputLine, setInputLine] = useState("—");
 
+    // 🔥 новые стейты под запрос/ответ
+    const [loading, setLoading] = useState(false);
+    const [apiError, setApiError] = useState("");
+
+    const [stage1, setStage1] = useState("-");
+    const [decay, setDecay] = useState("-");
+    const [values, setValues] = useState(null);
+
+    const [consoleLines, setConsoleLines] = useState([]);
+
+    // Чтобы можно было отменять прошлый запрос, если жмут несколько раз
+    const abortRef = useRef(null);
+
+    function log(line) {
+        // всегда видно в DevTools
+        console.log("[UI LOG]", line);
+
+        // и пытаемся записать в UI
+        try {
+            setConsoleLines((prev) => {
+                const next = [...prev, `[${new Date().toLocaleTimeString()}] ${line}`];
+                return next.slice(-200);
+            });
+        } catch (e) {
+            console.error("log() failed:", e);
+        }
+    }
+
+
+    function getSelectedRawByName(name) {
+        return particleOptions.find((o) => o.value === name)?.raw || null;
+    }
+
+    function getPDGId(raw) {
+        if (!raw || typeof raw !== "object") return null;
+
+        // У ВАС PDG id = mcid
+        const id = raw.mcid;
+
+        if (id === undefined || id === null) return null;
+
+        const n = Number(id);
+        return Number.isFinite(n) ? n : null;
+    }
+
+
     function validate() {
         const next = { first: "", second: "", energy: "" };
 
@@ -192,20 +239,113 @@ export default function Simulation() {
         if (!second) next.second = "Выбери вторую частицу";
 
         const e = Number(String(energy).replace(",", "."));
-        if (!energy.trim()) next.energy = "Введи энергию";
+        if (!String(energy).trim()) next.energy = "Введи энергию";
         else if (!Number.isFinite(e)) next.energy = "Энергия должна быть числом";
         else if (e <= 0) next.energy = "Энергия должна быть > 0";
 
-        setErrors(next);
+        // проверка что PDG id реально есть в json
+        const p1 = getSelectedRawByName(first);
+        const p2 = getSelectedRawByName(second);
+        const id1 = getPDGId(p1);
+        const id2 = getPDGId(p2);
 
+        if (first && id1 == null) next.first = "У этой частицы нет PDG id в JSON";
+        if (second && id2 == null) next.second = "У этой частицы нет PDG id в JSON";
+
+        setErrors(next);
         return !next.first && !next.second && !next.energy;
     }
 
-    function handleStart() {
-        if (!validate()) return;
+    async function handleStart() {
+        console.log("HANDLE START CALLED"); // <-- важно
+        log("HANDLE START CALLED (ui)");
 
-        const e = Number(String(energy).replace(",", "."));
-        setInputLine(`${first} + ${second} (${e} GeV)`);
+        log("Нажата кнопка: Запустить симуляцию");
+
+        if (!validate()) {
+            log("Валидация не прошла ❌");
+            return;
+        }
+
+        const p1 = getSelectedRawByName(first);
+        const p2 = getSelectedRawByName(second);
+
+        const id_1 = getPDGId(p1);
+        const id_2 = getPDGId(p2);
+        const E = Number(String(energy).replace(",", "."));
+
+        setInputLine(`${first} + ${second} (${E} GeV)`);
+
+        setStage1("-");
+        setDecay("-");
+        setValues(null);
+
+        if (abortRef.current) abortRef.current.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        setLoading(true);
+        log(`Старт симуляции: id_1=${id_1}, id_2=${id_2}, Energy=${E}`);
+
+        try {
+            // ВАЖНО: если бек реально ждёт объект, а не массив — см. пункт 3 ниже
+            const payload = { id_1, id_2, Energy: E };
+
+            const res = await fetch("/api/simulation/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+            });
+
+            const text = await res.text().catch(() => "");
+            log(`HTTP статус: ${res.status}`);
+
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}. Ответ: ${text.slice(0, 300)}`);
+            }
+
+            let data;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch {
+                throw new Error(`Сервер вернул НЕ JSON: ${text.slice(0, 300)}`);
+            }
+
+            // бек возвращает: [finals, first_finals, values] или объект
+            const finals = Array.isArray(data) ? data[0] : data?.finals;
+            const first_finals = Array.isArray(data) ? data[1] : data?.first_finals;
+            const vals = Array.isArray(data) ? data[2] : data?.values;
+
+            setStage1(
+                typeof first_finals === "string"
+                    ? first_finals
+                    : JSON.stringify(first_finals, null, 2)
+            );
+
+            setDecay(
+                typeof finals === "string"
+                    ? finals
+                    : JSON.stringify(finals, null, 2)
+            );
+
+            setValues(vals ?? null);
+
+            log("Симуляция завершена успешно ✅");
+        } catch (err) {
+            if (err?.name === "AbortError") {
+                log("Прошлый запрос отменён");
+                return;
+            }
+            const msg = err?.message || "Неизвестная ошибка";
+            setApiError(msg);
+            log(`Ошибка: ${msg}`);
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -230,6 +370,7 @@ export default function Simulation() {
                                         onChange={(v) => {
                                             setFirst(v);
                                             setErrors((e) => ({ ...e, first: "" }));
+                                            setApiError("");
                                         }}
                                         placeholder="Протон p+"
                                         error={errors.first}
@@ -246,6 +387,7 @@ export default function Simulation() {
                                         onChange={(v) => {
                                             setSecond(v);
                                             setErrors((e) => ({ ...e, second: "" }));
+                                            setApiError("");
                                         }}
                                         placeholder="не Протон не p+"
                                         error={errors.second}
@@ -266,6 +408,7 @@ export default function Simulation() {
                                         onChange={(e) => {
                                             setEnergy(e.target.value);
                                             setErrors((er) => ({ ...er, energy: "" }));
+                                            setApiError("");
                                         }}
                                         placeholder="60"
                                     />
@@ -273,6 +416,13 @@ export default function Simulation() {
                                         <div className={s.simulation__errorText}>{errors.energy}</div>
                                     ) : null}
                                 </div>
+
+                                {/* общая ошибка апи */}
+                                {apiError ? (
+                                    <div className={s.simulation__errorText}>
+                                        Ошибка API: {apiError}
+                                    </div>
+                                ) : null}
                             </div>
 
                             <div className={s.simulation__inputs}>
@@ -280,29 +430,64 @@ export default function Simulation() {
                                 <p className={s.simulation__inputs_input}>{inputLine}</p>
                             </div>
 
-                            <button className={s.simulation__startButton} onClick={handleStart}>
-                                Запустить симуляцию
+                            <button
+                                type="button"
+                                className={s.simulation__startButton}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleStart();
+                                }}
+                                disabled={loading}
+                                aria-busy={loading}
+                            >
+                                {loading ? "Считаю..." : "Запустить симуляцию"}
                             </button>
 
                             <div className={s.simulation__results}>
                                 <p className={s.simulation__results_text}>Результат</p>
                                 <hr className={s.simulation__results_hr} />
+
                                 <div className={s.simulation__results_stages}>
                                     <div className={s.simulation__results_stage}>
                                         <p className={s.simulation__results_stageText}>Первая ступень:</p>
-                                        <p className={s.simulation__results_stageRes}>-</p>
+                                        <p className={s.simulation__results_stageRes}>
+                                            {stage1}
+                                        </p>
                                     </div>
+
                                     <div className={s.simulation__results_stage}>
                                         <p className={s.simulation__results_stageText}>Распад:</p>
-                                        <p className={s.simulation__results_stageRes}>-</p>
+                                        <p className={s.simulation__results_stageRes}>
+                                            {decay}
+                                        </p>
                                     </div>
                                 </div>
-                                <button className={s.simulation__results_button}>Частицы</button>
+
+                                {/* кнопка "Частицы" пока просто показывает values в лог */}
+                                <button
+                                    className={s.simulation__results_button}
+                                    type="button"
+                                    onClick={() => {
+                                        if (!values) return log("values пустые (ещё нет результата)");
+                                        log("values:");
+                                        log(typeof values === "string" ? values : JSON.stringify(values));
+                                    }}
+                                >
+                                    Частицы
+                                </button>
                             </div>
                         </div>
+
                         <div className={s.simulation__big}>
                             <div className={s.simulation__bigMain}></div>
+
                             <div className={s.simulation__console}>
+                                {/* если у тебя есть готовые стили под консоль — ок.
+                    если нет, хотя бы текст будет виден */}
+                                <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                                    {consoleLines.join("\n")}
+                                </pre>
                             </div>
                         </div>
                     </div>
