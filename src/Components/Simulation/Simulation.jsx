@@ -289,7 +289,7 @@ export default function Simulation() {
 
         try {
             // ВАЖНО: если бек реально ждёт объект, а не массив — см. пункт 3 ниже
-            const payload = { id_1, id_2, Energy: E };
+            const payload = [{ id_1, id_2, Energy: E }];
 
             const res = await fetch("/api/simulation/", {
                 method: "POST",
