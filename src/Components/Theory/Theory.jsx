@@ -33,6 +33,7 @@ export default function Theory() {
                 p.mass,
                 p.charge,
                 p.spin,
+                p.descr
             ]
                 .join(" ")
                 .toLowerCase();
@@ -68,6 +69,7 @@ export default function Theory() {
     const handleCardClick = (particle) => {
         const modalData = {
             title: particle.name,
+            descr: particle.descr,
             iconText: particle.name[0],
             color: particle.color,
             stats: [

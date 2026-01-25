@@ -1,0 +1,56 @@
+.footer {
+    padding: 37px 7px 47px 7px;
+    font-size: 24px;
+}
+
+.footer__title {
+    color: #FFF;
+    text-align: center;
+    font-family: Rubik;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 120%;
+    /* 28.8px */
+    letter-spacing: 1.2px;
+    margin: 0;
+}
+
+.footer__year {
+    color: rgba(255, 255, 255, 0.50);
+    text-align: center;
+    font-family: Rubik;
+    font-style: normal;
+    font-weight: 300;
+    line-height: 120%;
+    /* 28.8px */
+    letter-spacing: 2.4px;
+    margin-top: 4px;
+    margin-bottom: 22px;
+}
+
+.footer__email {
+    color: rgba(255, 255, 255, 0.45);
+    font-family: Rubik;
+    text-align: center;
+    font-style: normal;
+    font-weight: 300;
+    line-height: 120%;
+    /* 28.8px */
+    letter-spacing: -0.48px;
+}
+
+.footer__email a {
+    color: rgba(255, 255, 255, 0.45);
+    text-decoration-line: underline;
+    text-decoration-style: solid;
+    text-decoration-skip-ink: auto;
+    text-decoration-thickness: auto;
+    text-underline-offset: auto;
+    text-underline-position: from-font;
+}
+
+@media (max-width: 768px) {
+    .footer {
+        font-size: 18px;
+    }
+}

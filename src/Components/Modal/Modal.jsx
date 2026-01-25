@@ -5,7 +5,7 @@ export default function Modal({ isOpen, onClose, data }) {
 
   const {
     title = "Proton",
-    description = "Протон — первичный «кирпичик» видимой Вселенной...",
+    descr = "Протон — первичный «кирпичик» видимой Вселенной...",
     iconText = "p",
     stats = [
       { label: "Семья", value: "Адрон" },
@@ -34,7 +34,7 @@ export default function Modal({ isOpen, onClose, data }) {
 
             <div className={styles.headText}>
               <div className={styles.title}>{title}</div>
-              <div className={styles.desc}>{description}</div>
+              <div className={styles.desc}>{descr}</div>
             </div>
           </div>
 

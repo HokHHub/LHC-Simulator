@@ -405,6 +405,10 @@ h2 {
 }
 
 @media (max-width: 1280px) {
+    .simulation {
+        justify-content: center;
+    }
+
     .simulation__big {
         display: none;
     }
