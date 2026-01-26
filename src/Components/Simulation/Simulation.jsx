@@ -237,7 +237,12 @@ export default function Simulation() {
 
     // Чтобы можно было отменять прошлый запрос, если жмут несколько раз
     const abortRef = useRef(null);
-
+    function handleRestartVideo() {
+        if (videoRef.current && loading) {
+            video.current.currentTime = 0
+            videoRef.current.play()
+        }
+    }
     function log(line) {
         // всегда видно в DevTools
         console.log("[UI LOG]", line);
@@ -325,6 +330,7 @@ export default function Simulation() {
 
         setLoading(true);
         log(`Старт симуляции: id_1=${id_1}, id_2=${id_2}, Energy=${E}`);
+        videoRef.current.style.display = 'block'
         videoRef.current.play()
 
         try {
@@ -376,6 +382,8 @@ export default function Simulation() {
             log(`Ошибка: ${msg}`);
         } finally {
             setLoading(false);
+            videoRef.current.pause();
+            videoRef.current.style.display = "none"
         }
     }
 
@@ -512,7 +520,7 @@ export default function Simulation() {
 
                         <div className={s.simulation__big}>
                             <div className={s.simulation__bigMain}>
-                                <video ref={videoRef} className={s.simulation__video} controls src="/video/loading.mp4"></video>
+                                <video onEnded={handleRestartVideo} ref={videoRef} className={s.simulation__video} controls src="/video/loading.mp4"></video>
                             </div>
 
                             <div className={s.simulation__console}>

@@ -412,6 +412,7 @@ h2 {
 }
 
 .simulation__video {
+    display: none;
     width: 100%;
     height: 100%;
 }
