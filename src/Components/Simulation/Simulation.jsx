@@ -233,6 +233,7 @@ export default function Simulation() {
     const [values, setValues] = useState(null);
 
     const [consoleLines, setConsoleLines] = useState([]);
+    const videoRef = useRef(null)
 
     // Чтобы можно было отменять прошлый запрос, если жмут несколько раз
     const abortRef = useRef(null);
@@ -324,6 +325,7 @@ export default function Simulation() {
 
         setLoading(true);
         log(`Старт симуляции: id_1=${id_1}, id_2=${id_2}, Energy=${E}`);
+        videoRef.current.play()
 
         try {
             // ВАЖНО: если бек реально ждёт объект, а не массив — см. пункт 3 ниже
@@ -509,11 +511,13 @@ export default function Simulation() {
                         </div>
 
                         <div className={s.simulation__big}>
-                            <div className={s.simulation__bigMain}></div>
+                            <div className={s.simulation__bigMain}>
+                                <video ref={videoRef} className={s.simulation__video} controls src="/video/loading.mp4"></video>
+                            </div>
 
                             <div className={s.simulation__console}>
                                 {/* если у тебя есть готовые стили под консоль — ок.
-                    если нет, хотя бы текст будет виден */}
+                            если нет, хотя бы текст будет виден */}
                                 <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", color: "white" }}>
                                     {consoleLines.join("\n")}
                                 </pre>

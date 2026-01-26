@@ -404,6 +404,18 @@ h2 {
     border-top: 3px solid rgba(23, 23, 23, 0.60);
 }
 
+.simulation__bigMain {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.simulation__video {
+    width: 100%;
+    height: 100%;
+}
+
 @media (max-width: 1280px) {
     .simulation {
         justify-content: center;
