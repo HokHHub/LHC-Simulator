@@ -239,7 +239,7 @@ export default function Simulation() {
     const abortRef = useRef(null);
     function handleRestartVideo() {
         if (videoRef.current && loading) {
-            video.current.currentTime = 0
+            videoRef.current.currentTime = 0
             videoRef.current.play()
         }
     }
