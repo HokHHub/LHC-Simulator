@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePageTTS } from "../../utils/usePagesTTS";
 import Container from "../Container/Container";
 import s from "./Header.module.css";
 
@@ -36,6 +37,13 @@ export default function Header() {
     }
   };
 
+  const { supported, isSpeaking, toggleSpeak } = usePageTTS({
+    rootSelector: "main, #root", // озвучит всю страницу (контент), не только header
+    lang: "ru-RU",
+    rate: 1,
+  });
+
+
   return (
     <header className={s.header}>
       <Container>
@@ -45,24 +53,43 @@ export default function Header() {
             <p className={s.header__title}>LHC Simulator</p>
           </div>
 
-          <nav className={s.header__links}>
-            <a href="#" onClick={(e) => { e.preventDefault(); go("/theory"); }} className={s.header__link}>Теория</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); go("/"); }} className={s.header__link}>О проекте</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); go("/simulation"); }} className={s.header__link}>Симуляции</a>
-          </nav>
 
-          <button
-            type="button"
-            className={`${s.burger} ${isMenuOpen ? s.burger_open : ""}`}
-            aria-label="Открыть меню"
-            aria-expanded={isMenuOpen}
-            onClick={() => setIsMenuOpen((v) => !v)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
+          <div className={s.header__wrappernd}>
+            <nav className={s.header__links}>
+              <a href="#" onClick={(e) => { e.preventDefault(); go("/theory"); }} className={s.header__link}>Теория</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); go("/"); }} className={s.header__link}>О проекте</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); go("/simulation"); }} className={s.header__link}>Симуляции</a>
+            </nav>
+            <div className={s.header__actions}>
+              {supported && (
+                <button
+                  type="button"
+                  className={`${s.ttsBtn} ${isSpeaking ? s.ttsBtn_active : ""}`}
+                  onClick={toggleSpeak}
+                  aria-pressed={isSpeaking}
+                  aria-label={isSpeaking ? "Остановить озвучку страницы" : "Озвучить страницу"}
+                  title={isSpeaking ? "Остановить озвучку" : "Озвучить страницу"}
+                >
+                  {isSpeaking ? "🔇" : "🔊"}
+                </button>
+              )}
+
+              <button
+                type="button"
+                className={`${s.burger} ${isMenuOpen ? s.burger_open : ""}`}
+                aria-label="Открыть меню"
+                aria-expanded={isMenuOpen}
+                onClick={() => setIsMenuOpen((v) => !v)}
+              >
+                <span />
+                <span />
+                <span />
+              </button>
+            </div>
+          </div>
         </div>
+
+
       </Container>
 
       <div
