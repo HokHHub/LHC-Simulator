@@ -9,9 +9,9 @@ const formatCharge = (q) => {
 };
 
 export default function ParticleCard({ particle, onClick }) {
-    const { name, mass, charge, spin, color = "#4E3F8F" } = particle;
+    const { symbol, name, mass, charge, spin, color = "#4E3F8F" } = particle;
 
-    const iconText = (name?.[0] || "?").toLowerCase();
+    const iconText = (symbol || "?").toLowerCase();
 
     return (
         <div onClick={onClick} className={s.theory__card} style={{ "--accent-color": color }}>

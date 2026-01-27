@@ -70,7 +70,7 @@ export default function Theory() {
         const modalData = {
             title: particle.name,
             descr: particle.descr,
-            iconText: particle.name[0],
+            iconText: particle.symbol,
             color: particle.color,
             stats: [
                 { label: "Тип", value: particle.type },
