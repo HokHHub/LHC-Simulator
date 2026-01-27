@@ -193,6 +193,10 @@
     flex-shrink: 0;
 }
 
+.iconText {
+    font-family: Rubik;
+}
+
 .icon {
     width: 100%;
     height: 100%;
