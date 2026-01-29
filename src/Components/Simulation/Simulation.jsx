@@ -234,6 +234,27 @@ export default function Simulation() {
 
     const [consoleLines, setConsoleLines] = useState([]);
     const videoRef = useRef(null)
+    const [isDesktop, setIsDesktop] = useState(() => {
+        if (typeof window === "undefined") return true;
+        return window.matchMedia("(min-width: 1281px)").matches;
+    });
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const mq = window.matchMedia("(min-width: 1281px)");
+        const onChange = () => setIsDesktop(mq.matches);
+
+        // Safari compatibility
+        if (mq.addEventListener) mq.addEventListener("change", onChange);
+        else mq.addListener(onChange);
+
+        return () => {
+            if (mq.removeEventListener) mq.removeEventListener("change", onChange);
+            else mq.removeListener(onChange);
+        };
+    }, []);
+
 
     // Чтобы можно было отменять прошлый запрос, если жмут несколько раз
     const abortRef = useRef(null);
@@ -302,10 +323,6 @@ export default function Simulation() {
 
     async function handleStart() {
         console.log("HANDLE START CALLED"); // <-- важно
-        log("HANDLE START CALLED (ui)");
-
-        log("Нажата кнопка: Запустить симуляцию");
-
         if (!validate()) {
             log("Валидация не прошла ❌");
             return;
@@ -330,11 +347,23 @@ export default function Simulation() {
 
         setLoading(true);
         log(`Старт симуляции: id_1=${id_1}, id_2=${id_2}, Energy=${E}`);
-        videoRef.current.style.display = 'block'
-        videoRef.current.play()
+        if (videoRef.current) {
+            if (isDesktop) {
+                videoRef.current.muted = false;
+                videoRef.current.playsInline = true;
+                videoRef.current.style.display = "block";
+                videoRef.current.currentTime = 0;
+                videoRef.current.play().catch(() => { });
+            } else {
+                videoRef.current.pause();
+                videoRef.current.currentTime = 0;
+                videoRef.current.muted = true;
+                videoRef.current.style.display = "none";
+            }
+        }
+
 
         try {
-            // ВАЖНО: если бек реально ждёт объект, а не массив — см. пункт 3 ниже
             const payload = [{ id_1, id_2, Energy: E }];
 
             const res = await fetch("/api/simulation/", {
@@ -348,7 +377,6 @@ export default function Simulation() {
             });
 
             const text = await res.text().catch(() => "");
-            log(`HTTP статус: ${res.status}`);
 
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}. Ответ: ${text.slice(0, 300)}`);
@@ -382,8 +410,12 @@ export default function Simulation() {
             log(`Ошибка: ${msg}`);
         } finally {
             setLoading(false);
-            videoRef.current.pause();
-            videoRef.current.style.display = "none"
+            if (videoRef.current) {
+                videoRef.current.pause();
+                videoRef.current.currentTime = 0;
+                videoRef.current.muted = !isDesktop;
+                videoRef.current.style.display = "none";
+            }
         }
     }
 
@@ -503,7 +535,6 @@ export default function Simulation() {
                                     </div>
                                 </div>
 
-                                {/* кнопка "Частицы" пока просто показывает values в лог */}
                                 <button
                                     className={s.simulation__results_button}
                                     type="button"
@@ -524,8 +555,6 @@ export default function Simulation() {
                             </div>
 
                             <div className={s.simulation__console}>
-                                {/* если у тебя есть готовые стили под консоль — ок.
-                            если нет, хотя бы текст будет виден */}
                                 <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", color: "white" }}>
                                     {consoleLines.join("\n")}
                                 </pre>

@@ -399,10 +399,23 @@ h2 {
 }
 
 .simulation__console {
-    width: 902px;
-    height: 160px;
-    border-top: 3px solid rgba(23, 23, 23, 0.60);
+  width: 902px;
+  height: 160px;
+  border-top: 3px solid rgba(23, 23, 23, 0.60);
+
+  overflow-y: auto;
+  overflow-x: hidden;
 }
+
+.simulation__console pre {
+  margin: 0;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 10px;            
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 
 .simulation__bigMain {
     display: flex;
