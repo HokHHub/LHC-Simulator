@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import s from "./ParticlesModal.module.css";
+
 import ParticleCard from "../ParticleCard/ParticleCard";
+import Modal from "../Modal/Modal";
 
 /**
- * stages: Array<{ key: string, label: string, ids: number[] }>
- * particlesById: Map<number, rawParticle>
+ * props:
+ * - isOpen: boolean
+ * - onClose: () => void
+ * - stages: [{ key, label, ids }]
+ * - particlesById: Map<mcid, rawParticle>
+ * - initialStageKey?: string
+ * - title?: string
  */
 export default function ParticlesModal({
   isOpen,
@@ -14,26 +21,34 @@ export default function ParticlesModal({
   initialStageKey,
   title = "Частицы",
 }) {
-  const [stageKey, setStageKey] = useState(initialStageKey || stages?.[0]?.key || "");
-  const dialogRef = useRef(null);
+  const [stageKey, setStageKey] = useState(
+    initialStageKey || stages?.[0]?.key || ""
+  );
 
-  // sync when reopened
+  const [stageMenuOpen, setStageMenuOpen] = useState(false);
+  const stageWrapRef = useRef(null);
+
+  // детальная модалка
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailData, setDetailData] = useState(null);
+
+  // при открытии — сбрасываем стадию
   useEffect(() => {
     if (!isOpen) return;
     setStageKey(initialStageKey || stages?.[0]?.key || "");
   }, [isOpen, initialStageKey, stages]);
 
-  // ESC to close
+  // ESC закрывает только ЭТУ модалку
   useEffect(() => {
     if (!isOpen) return;
-    const onKeyDown = (e) => {
+    const onKey = (e) => {
       if (e.key === "Escape") onClose?.();
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
-  // lock body scroll while open
+  // lock scroll
   useEffect(() => {
     if (!isOpen) return;
     const prev = document.body.style.overflow;
@@ -43,56 +58,57 @@ export default function ParticlesModal({
     };
   }, [isOpen]);
 
-  const stage = useMemo(() => stages.find((x) => x.key === stageKey) || stages?.[0], [stages, stageKey]);
+  // закрытие селекта стадий кликом вне
+  useEffect(() => {
+    if (!stageMenuOpen) return;
+    const onDown = (e) => {
+      if (!stageWrapRef.current) return;
+      if (!stageWrapRef.current.contains(e.target)) {
+        setStageMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [stageMenuOpen]);
+
+  const stage = useMemo(
+    () => stages.find((s) => s.key === stageKey) || stages?.[0],
+    [stages, stageKey]
+  );
 
   const particles = useMemo(() => {
     const ids = stage?.ids || [];
     return ids
       .map((id) => {
-        const raw = particlesById?.get?.(id) || null;
-        return { id, raw };
+        const raw = particlesById?.get(id) || null;
+        return raw ? { id, raw } : null;
       })
       .filter(Boolean);
   }, [stage, particlesById]);
 
-  const [stageMenuOpen, setStageMenuOpen] = useState(false);
-  const stageWrapRef = useRef(null);
+  function buildDetailData(raw, id) {
+    const title = raw?.name || `PDG ${id}`;
+    const iconText = raw?.symbol || raw?.name?.[0] || "?";
+    const descr = raw?.descr || raw?.description || "";
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const onDown = (e) => {
-      if (!stageWrapRef.current) return;
-      if (!stageWrapRef.current.contains(e.target)) setStageMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [isOpen]);
+    const mass = raw?.mass ?? raw?.mass_GeV ?? raw?.m ?? null;
+    const charge = raw?.charge ?? null;
+    const spin = raw?.spin ?? raw?.J ?? null;
 
-  function formatCharge(q) {
-    const n = Number(q);
-    if (!Number.isFinite(n) || n === 0) return "0";
-    if (n === 1) return "+1";
-    if (n === -1) return "−1";
-    // красивые дроби типа 2/3, -1/3 если это 0.6666
-    const eps = 1e-6;
-    const frac = [
-      { v: 2 / 3, t: "2/3" },
-      { v: 1 / 3, t: "1/3" },
-      { v: 4 / 3, t: "4/3" },
-      { v: 5 / 3, t: "5/3" },
+    const color = raw?.color || "#4E3F8F";
+
+    const stats = [
+      { label: "Тип", value: raw?.type || "—" },
+      { label: "PDG id", value: String(raw?.mcid ?? id ?? "—") },
+      {
+        label: "Масса",
+        value: mass == null ? "—" : `${Number(mass).toFixed(1)} GeV`,
+      },
+      { label: "Спин", value: spin == null ? "—" : String(spin) },
+      { label: "Заряд", value: charge == null ? "—" : String(charge) },
     ];
-    for (const f of frac) {
-      if (Math.abs(Math.abs(n) - f.v) < eps) return (n < 0 ? "−" : "+") + f.t;
-    }
-    return (n > 0 ? "+" : "−") + String(Math.abs(n));
-  }
 
-  function getSymbol(raw) {
-    if (!raw) return "?";
-    // если ты добавлял symbol в json — юзаем его
-    if (raw.symbol) return raw.symbol;
-    // fallback
-    return raw.name?.[0]?.toUpperCase?.() || "?";
+    return { title, descr, iconText, stats, color };
   }
 
   function stop(e) {
@@ -102,89 +118,93 @@ export default function ParticlesModal({
   if (!isOpen) return null;
 
   return (
-    <div className={s.overlay} role="presentation" onMouseDown={onClose}>
-      <div
-        className={s.modal}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        ref={dialogRef}
-        onMouseDown={stop}
-      >
-        <div className={s.header}>
-          <div className={s.stageSelect} ref={stageWrapRef}>
-            <button
-              type="button"
-              className={s.stageBtn}
-              onClick={() => setStageMenuOpen((v) => !v)}
-              aria-haspopup="listbox"
-              aria-expanded={stageMenuOpen}
-            >
-              <span className={s.stageBtnText}>{stage?.label || "Стадия"}</span>
-              <span className={s.stageChevron}>▾</span>
-            </button>
+    <>
+      {/* ОСНОВНАЯ МОДАЛКА */}
+      <div className={s.overlay} onMouseDown={onClose}>
+        <div className={s.modal} onMouseDown={stop}>
+          {/* HEADER */}
+          <div className={s.header}>
+            <div className={s.stageSelect} ref={stageWrapRef}>
+              <button
+                type="button"
+                className={s.stageBtn}
+                onClick={() => setStageMenuOpen((v) => !v)}
+              >
+                <span className={s.stageBtnText}>
+                  {stage?.label || "Стадия"}
+                </span>
+                <span className={s.stageChevron}>▾</span>
+              </button>
 
-            {stageMenuOpen && (
-              <div className={s.stageMenu} role="listbox">
-                {stages.map((st) => (
-                  <button
-                    key={st.key}
-                    type="button"
-                    className={`${s.stageItem} ${st.key === stageKey ? s.stageItemActive : ""}`}
-                    onClick={() => {
-                      setStageKey(st.key);
-                      setStageMenuOpen(false);
-                    }}
-                    role="option"
-                    aria-selected={st.key === stageKey}
-                  >
-                    <span>{st.label}</span>
-                    <span className={s.stageCount}>{st.ids?.length || 0}</span>
-                  </button>
-                ))}
+              {stageMenuOpen && (
+                <div className={s.stageMenu}>
+                  {stages.map((st) => (
+                    <button
+                      key={st.key}
+                      className={`${s.stageItem} ${
+                        st.key === stageKey ? s.stageItemActive : ""
+                      }`}
+                      onClick={() => {
+                        setStageKey(st.key);
+                        setStageMenuOpen(false);
+                      }}
+                    >
+                      <span>{st.label}</span>
+                      <span className={s.stageCount}>
+                        {st.ids?.length || 0}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className={s.title}>{title}</div>
+
+            <button className={s.close} onClick={onClose}>
+              ✕
+            </button>
+          </div>
+
+          {/* CONTENT */}
+          <div className={s.content}>
+            {particles.length === 0 ? (
+              <div className={s.empty}>Нет частиц</div>
+            ) : (
+              <div className={s.grid}>
+                {particles.map(({ id, raw }, idx) => {
+                  const particleForCard = {
+                    symbol: raw.symbol ?? raw.name?.[0] ?? "?",
+                    name: raw.name ?? `PDG ${id}`,
+                    mass: raw.mass ?? raw.mass_GeV ?? null,
+                    charge: raw.charge ?? 0,
+                    spin: raw.spin ?? raw.J ?? "—",
+                    color: raw.color ?? "#4E3F8F",
+                  };
+
+                  return (
+                    <ParticleCard
+                      key={`${id}-${idx}`}
+                      particle={particleForCard}
+                      onClick={() => {
+                        setDetailData(buildDetailData(raw, id));
+                        setDetailOpen(true);
+                      }}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
-
-          <div className={s.title}>{title}</div>
-
-          <button type="button" className={s.close} onClick={onClose} aria-label="Закрыть">
-            ✕
-          </button>
-        </div>
-
-        <div className={s.content}>
-          {particles.length === 0 ? (
-            <div className={s.empty}>Нет частиц для отображения</div>
-          ) : (
-            <div className={s.grid}>
-              {particles.map(({ id, raw }, idx) => {
-                if (!raw) return null;
-
-                const particleForCard = {
-                  symbol: raw.symbol ?? raw.name?.[0] ?? "?",
-                  name: raw.name ?? `PDG ${id}`,
-                  mass: raw.mass ?? raw.mass_GeV ?? null,
-                  charge: raw.charge ?? 0,
-                  spin: raw.spin ?? raw.J ?? "—",
-                  color: raw.color ?? "#4E3F8F",
-                };
-
-                return (
-                  <ParticleCard
-                    key={`${id}-${idx}`}
-                    particle={particleForCard}
-                    onClick={() => {
-                      // опционально: клик по частице
-                      console.log("Particle clicked:", particleForCard);
-                    }}
-                  />
-                );
-              })}
-            </div>
-          )}
         </div>
       </div>
-    </div>
+
+      {/* ДЕТАЛЬНАЯ МОДАЛКА */}
+      <Modal
+        isOpen={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        data={detailData}
+      />
+    </>
   );
 }
