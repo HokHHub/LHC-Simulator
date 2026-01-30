@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import s from "./ParticlesModal.module.css";
+import ParticleCard from "../Theory/ParticleCard";
 
 /**
  * stages: Array<{ key: string, label: string, ids: number[] }>
@@ -158,48 +159,26 @@ export default function ParticlesModal({
           ) : (
             <div className={s.grid}>
               {particles.map(({ id, raw }, idx) => {
-                const name = raw?.name || `PDG ${id}`;
-                const mass = raw?.mass ?? raw?.mass_GeV ?? raw?.m ?? null;
-                const charge = raw?.charge ?? null;
-                const spin = raw?.spin ?? raw?.J ?? null;
+                if (!raw) return null;
+
+                const particleForCard = {
+                  symbol: raw.symbol ?? raw.name?.[0] ?? "?",
+                  name: raw.name ?? `PDG ${id}`,
+                  mass: raw.mass ?? raw.mass_GeV ?? null,
+                  charge: raw.charge ?? 0,
+                  spin: raw.spin ?? raw.J ?? "—",
+                  color: raw.color ?? "#4E3F8F",
+                };
 
                 return (
-                  <div key={`${id}-${idx}`} className={s.card}>
-                    <div className={s.cardTop}>
-                      <div className={s.cardMeta}>
-                        <div className={s.metaLine}>
-                          {mass != null ? (
-                            <>
-                              <span className={s.metaValue}>{Number(mass).toFixed(1)}</span>
-                              <span className={s.metaUnit}> GeV</span>
-                            </>
-                          ) : (
-                            <span className={s.metaMuted}>—</span>
-                          )}
-                        </div>
-
-                        <div className={s.metaLine}>
-                          <span className={s.metaLabel}>Q</span>
-                          <span className={s.metaEq}>=</span>
-                          <span className={s.metaValue}>{charge != null ? formatCharge(charge) : "—"}</span>
-                        </div>
-
-                        <div className={s.metaLine}>
-                          <span className={s.metaLabel}>J</span>
-                          <span className={s.metaEq}>=</span>
-                          <span className={s.metaValue}>{spin != null ? String(spin) : "—"}</span>
-                        </div>
-                      </div>
-
-                      <div className={s.avatarWrap}>
-                        <div className={s.avatar}>
-                          <span className={s.avatarText}>{getSymbol(raw)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={s.cardName}>{name}</div>
-                  </div>
+                  <ParticleCard
+                    key={`${id}-${idx}`}
+                    particle={particleForCard}
+                    onClick={() => {
+                      // опционально: клик по частице
+                      console.log("Particle clicked:", particleForCard);
+                    }}
+                  />
                 );
               })}
             </div>
