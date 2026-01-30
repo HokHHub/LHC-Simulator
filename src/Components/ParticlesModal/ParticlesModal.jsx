@@ -171,7 +171,7 @@ export default function ParticlesModal({
                           {mass != null ? (
                             <>
                               <span className={s.metaValue}>{String(mass)}</span>
-                              <span className={s.metaUnit}> GeV</span>
+                              <span className={(s.metaUnit).toFixed(1)}> GeV</span>
                             </>
                           ) : (
                             <span className={s.metaMuted}>—</span>
