@@ -355,31 +355,70 @@ export default function Simulation() {
     }
 
     function updateOutputsFromValues(vals) {
-        // vals может быть строкой/массивом/объектом — страхуемся
+        // 1) если сервер вернул строку — вырежем нужные строки
+        if (typeof vals === "string") {
+            const get = (re) => {
+                const m = vals.match(re);
+                return m ? m[1].trim() : "";
+            };
+
+            const mass = get(/Mass\s*=\s*([^\n\r]+)/i);
+            const baryon = get(/Baryon\s*Num\s*=\s*([^\n\r]+)/i);
+            const sbc = get(/S\s*,\s*B\s*,\s*C\s*=\s*([^\n\r]+)/i);
+            const charge = get(/Charge\s*=\s*([^\n\r]+)/i);
+
+            setOutputs({
+                mass: mass ? Number(mass).toFixed(1) : "",
+                baryon: baryon || "",
+                sbc: sbc || "",
+                charge: charge || "",
+            });
+
+            setHasOutputs(true);
+            return;
+        }
+
+        // 2) если объект/массив — достанем из него по ключам
         const v = (vals && typeof vals === "object") ? vals : {};
 
-        // ВАЖНО: я не знаю точные названия полей, поэтому поддерживаем несколько вариантов ключей
-        const mass = pickFirst(v, ["Mass", "mass", "M", "m", "mass_GeV", "massGeV"]);
-        const baryon = pickFirst(v, ["Baryon", "baryon", "BaryonNum", "baryon_num", "baryon_number", "B"]);
-        const charge = pickFirst(v, ["Charge", "charge", "Q"]);
-        const S = pickFirst(v, ["S", "strangeness"]);
-        const B = pickFirst(v, ["B", "beauty", "bottomness"]);
-        const C = pickFirst(v, ["C", "charm"]);
+        const pick = (...keys) => {
+            for (const k of keys) {
+                if (v[k] !== undefined && v[k] !== null) return v[k];
+            }
+            return "";
+        };
 
-        // если у тебя прилетает сразу строкой "S, B, C" — тоже поддержим
-        const sbcRaw = pickFirst(v, ["SBC", "sbc", "S,B,C", "s_b_c"]);
+        const massRaw = pick("Mass", "mass", "M", "m", "mass_GeV", "massGeV");
+        const baryonRaw = pick("Baryon Num", "BaryonNum", "baryon_num", "baryon", "Baryon", "B");
+        const chargeRaw = pick("Charge", "charge", "Q");
+        const S = pick("S", "strangeness");
+        const B = pick("B", "beauty", "bottomness"); // если у тебя B=beauty
+        const C = pick("C", "charm");
+
+        // если прилетает уже готовым полем:
+        const sbcRaw = pick("S, B, C", "SBC", "sbc");
+
+        const mass =
+            massRaw !== ""
+                ? Number(massRaw).toFixed(1)
+                : "";
+
+        const baryon = baryonRaw !== "" ? String(baryonRaw) : "";
+
         const sbc =
-            sbcRaw != null
+            sbcRaw !== ""
                 ? String(sbcRaw)
-                : `${S ?? "—"}, ${B ?? "—"}, ${C ?? "—"}`;
+                : [S, B, C].some((x) => x !== "")
+                    ? `${S || "0"}, ${B || "0"}, ${C || "0"}`
+                    : "";
 
-        setOutputs({
-            mass: mass == null ? "—" : formatMaybeNumber(mass, 3),
-            baryon: baryon == null ? "—" : String(baryon),
-            sbc,
-            charge: charge == null ? "—" : String(charge),
-        });
+        const charge =
+            chargeRaw !== "" ? String(chargeRaw) : "";
+
+        setOutputs({ mass, baryon, sbc, charge });
+        setHasOutputs(true);
     }
+
 
 
     const modalStages = useMemo(() => {
@@ -642,23 +681,20 @@ export default function Simulation() {
                             </div>
 
                             <div className={s.simulation__console}>
-                                <p className={s.simulation__consoleTitle}>Outputs:</p>
-                                <pre
-                                    style={{
-                                        margin: "4px",
-                                        whiteSpace: "pre-wrap",
-                                        wordBreak: "break-word",
-                                        color: "rgba(255, 255, 255, 0.60)",
-                                    }}
-                                >
-                                    {hasOutputs
-                                        ? `Mass = ${outputs.mass}
-                                            Baryon Num = ${outputs.baryon}
-                                            S, B, C = ${outputs.sbc}
-                                            Charge = ${outputs.charge}`
-                                        : ""}
-                                </pre>
+                                <div className={s.simulation__console}>
+                                    <p className={s.simulation__consoleTitle}>Outputs:</p>
 
+                                    {hasOutputs ? (
+                                        <div className={s.simulation__consoleOut}>
+                                            <div>Mass = {outputs.mass}</div>
+                                            <div>Baryon Num = {outputs.baryon}</div>
+                                            <div>S, B, C = {outputs.sbc}</div>
+                                            <div>Charge = {outputs.charge}</div>
+                                        </div>
+                                    ) : (
+                                        <div className={s.simulation__consoleOut} />
+                                    )}
+                                </div>
 
                             </div>
                         </div>
