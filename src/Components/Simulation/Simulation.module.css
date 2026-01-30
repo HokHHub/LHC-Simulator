@@ -407,6 +407,12 @@ h2 {
   overflow-x: hidden;
 }
 
+.simulation__console::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
 .simulation__console pre {
   margin: 0;
   height: 100%;
