@@ -355,6 +355,8 @@ export default function Simulation() {
     }
 
     function updateOutputsFromValues(vals) {
+        console.log(vals);
+        
         // 1) если сервер вернул строку — вырежем нужные строки
         if (typeof vals === "string") {
             const get = (re) => {
