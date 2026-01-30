@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import s from "./ParticlesModal.module.css";
-import ParticleCard from "../Theory/ParticleCard";
+import ParticleCard from "../ParticleCard/ParticleCard";
 
 /**
  * stages: Array<{ key: string, label: string, ids: number[] }>
