@@ -399,10 +399,8 @@ h2 {
 }
 
 .simulation__console {
-    width: 902px;
     height: 160px;
-    border-top: 3px solid rgba(23, 23, 23, 0.60);
-
+    border-top: 1px solid rgba(23, 23, 23, 0.60);
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -449,14 +447,17 @@ h2 {
     letter-spacing: -0.32px;
 }
 
-.simulation__consoleOut{
-  padding: 10px;
-  color: rgba(255,255,255,0.75);
-  font-family: Rubik, sans-serif;
-  font-size: 22px;        /* как на скрине */
-  line-height: 1.45;
-  letter-spacing: -0.4px;
-  white-space: pre-wrap;
+.simulation__consoleOut {
+    padding-left: 36px;
+    color: rgba(255, 255, 255, 0.60);
+    font-family: Rubik;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: 120%;
+    /* 19.2px */
+    letter-spacing: -0.32px;
+    white-space: pre-wrap;
 }
 
 

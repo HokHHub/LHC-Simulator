@@ -355,73 +355,33 @@ export default function Simulation() {
     }
 
     function updateOutputsFromValues(vals) {
-        console.log(vals);
-        
-        // 1) если сервер вернул строку — вырежем нужные строки
-        if (typeof vals === "string") {
-            const get = (re) => {
-                const m = vals.match(re);
-                return m ? m[1].trim() : "";
-            };
+        // ожидаем: [{ Mass, BaryonNum, "S,B,C": [S,B,C], Charge }]
+        const row = Array.isArray(vals) ? vals[0] : vals;
 
-            const mass = get(/Mass\s*=\s*([^\n\r]+)/i);
-            const baryon = get(/Baryon\s*Num\s*=\s*([^\n\r]+)/i);
-            const sbc = get(/S\s*,\s*B\s*,\s*C\s*=\s*([^\n\r]+)/i);
-            const charge = get(/Charge\s*=\s*([^\n\r]+)/i);
-
-            setOutputs({
-                mass: mass ? Number(mass).toFixed(1) : "",
-                baryon: baryon || "",
-                sbc: sbc || "",
-                charge: charge || "",
-            });
-
-            setHasOutputs(true);
+        if (!row || typeof row !== "object") {
+            setHasOutputs(false);
+            setOutputs({ mass: "", baryon: "", sbc: "", charge: "" });
             return;
         }
 
-        // 2) если объект/массив — достанем из него по ключам
-        const v = (vals && typeof vals === "object") ? vals : {};
+        const massNum = Number(row.Mass);
+        const mass = Number.isFinite(massNum) ? massNum.toFixed(1) : "";
 
-        const pick = (...keys) => {
-            for (const k of keys) {
-                if (v[k] !== undefined && v[k] !== null) return v[k];
-            }
-            return "";
-        };
+        const baryon = row.BaryonNum ?? "";
+        const charge = row.Charge ?? "";
 
-        const massRaw = pick("Mass", "mass", "M", "m", "mass_GeV", "massGeV");
-        const baryonRaw = pick("Baryon Num", "BaryonNum", "baryon_num", "baryon", "Baryon", "B");
-        const chargeRaw = pick("Charge", "charge", "Q");
-        const S = pick("S", "strangeness");
-        const B = pick("B", "beauty", "bottomness"); // если у тебя B=beauty
-        const C = pick("C", "charm");
+        const sbcArr = row["S,B,C"];
+        const sbc = Array.isArray(sbcArr) ? sbcArr.join(", ") : "";
 
-        // если прилетает уже готовым полем:
-        const sbcRaw = pick("S, B, C", "SBC", "sbc");
+        setOutputs({
+            mass,
+            baryon: String(baryon),
+            sbc,
+            charge: String(charge),
+        });
 
-        const mass =
-            massRaw !== ""
-                ? Number(massRaw).toFixed(1)
-                : "";
-
-        const baryon = baryonRaw !== "" ? String(baryonRaw) : "";
-
-        const sbc =
-            sbcRaw !== ""
-                ? String(sbcRaw)
-                : [S, B, C].some((x) => x !== "")
-                    ? `${S || "0"}, ${B || "0"}, ${C || "0"}`
-                    : "";
-
-        const charge =
-            chargeRaw !== "" ? String(chargeRaw) : "";
-
-        setOutputs({ mass, baryon, sbc, charge });
         setHasOutputs(true);
     }
-
-
 
     const modalStages = useMemo(() => {
         const firstIds = extractIds(rawStages.first);
