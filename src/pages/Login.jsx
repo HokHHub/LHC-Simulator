@@ -143,7 +143,7 @@ const Login = () => {
           <div className="auth-footer">
             <p>
               Нет аккаунта?{' '}
-              <Link to="/register" className="auth-link">
+              <Link to="/signup" className="auth-link">
                 Зарегистрироваться
               </Link>
             </p>
