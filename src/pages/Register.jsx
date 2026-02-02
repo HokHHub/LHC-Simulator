@@ -170,22 +170,22 @@ const Register = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="password_confirm" className="form-label">
+              <label htmlFor="password2" className="form-label">
                 Подтвердите пароль <span className="required">*</span>
               </label>
               <input
                 type="password"
-                id="password_confirm"
-                name="password_confirm"
-                value={formData.password_confirm}
+                id="password2"
+                name="password2"
+                value={formData.password2}
                 onChange={handleChange}
-                className={`form-input ${errors.password_confirm ? 'error' : ''}`}
+                className={`form-input ${errors.password2 ? 'error' : ''}`}
                 placeholder="••••••••"
                 required
                 minLength={6}
               />
-              {errors.password_confirm && (
-                <span className="form-error">{errors.password_confirm}</span>
+              {errors.password2 && (
+                <span className="form-error">{errors.password2}</span>
               )}
             </div>
 
