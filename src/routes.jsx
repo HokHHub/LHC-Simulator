@@ -1,33 +1,41 @@
-import { createBrowserRouter } from 'react-router-dom'
-import Layout from './Layout'
-import About from './Components/About/About'
-import Theory from './Components/Theory/Theory'
-import Simulation from './Components/Simulation/Simulation'
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
+import Layout from "./Layout";
+import About from "./Components/About/About";
+import Theory from "./Components/Theory/Theory";
+import Simulation from "./Components/Simulation/Simulation";
+
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 const router = createBrowserRouter([
+  // публичные страницы авторизации
+  { path: "/login", element: <Login /> },
+  { path: "/register", element: <Register /> },
+
+  // основной layout со вложенными страницами
   {
-    path: '/',
+    path: "/",
     element: <Layout />,
     children: [
-        {
-            index: true,
-            element: <About/>
-        },
-        {
-            path: 'theory',
-            element: <Theory/>
-        },
-        {
-          path: 'simulation',
-          element: <Simulation/>
-        }
-    ]
-  },
-  {
-    path: '*',
-    element: <div style={{ padding: '2rem', color: '#FFF' }}>Ошибка 404: Страница не найдена</div>
-  }
-])
+      { index: true, element: <About /> },
+      { path: "theory", element: <Theory /> },
 
-export default router
+      // защищённый маршрут
+      {
+        path: "simulation",
+        element: (
+          <ProtectedRoute>
+            <Simulation />
+          </ProtectedRoute>
+        ),
+      },
+    ],
+  },
+
+  // редирект на главную (как было во втором примере)
+  { path: "*", element: <Navigate to="/" replace /> },
+]);
+
+export default router;
