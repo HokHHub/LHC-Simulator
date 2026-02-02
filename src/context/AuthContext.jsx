@@ -18,29 +18,26 @@ export const AuthProvider = ({ children }) => {
 
   // Проверяем наличие пользователя при загрузке
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    const accessToken = localStorage.getItem('access_token');
-    
-    if (savedUser && accessToken) {
-      setUser(JSON.parse(savedUser));
-    }
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) setUser(JSON.parse(savedUser));
     setLoading(false);
   }, []);
+
 
   const register = async (userData) => {
     try {
       setError(null);
       const response = await authAPI.register(userData);
-      const { user, tokens } = response.data;
-      
-      localStorage.setItem('access_token', tokens.access);
-      localStorage.setItem('refresh_token', tokens.refresh);
-      localStorage.setItem('user', JSON.stringify(user));
-      
+
+      const { user } = response.data;
+
+      // сохраняем только user
+      localStorage.setItem("user", JSON.stringify(user));
       setUser(user);
+
       return { success: true, data: response.data };
     } catch (err) {
-      const errorMessage = err.response?.data || 'Ошибка регистрации';
+      const errorMessage = err.response?.data?.message || "Ошибка регистрации";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     }
@@ -50,20 +47,21 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       const response = await authAPI.login(credentials);
-      const { user, tokens } = response.data;
-      
-      localStorage.setItem('access_token', tokens.access);
-      localStorage.setItem('refresh_token', tokens.refresh);
-      localStorage.setItem('user', JSON.stringify(user));
-      
+
+      const { user } = response.data;
+
+      // сохраняем только user
+      localStorage.setItem("user", JSON.stringify(user));
       setUser(user);
+
       return { success: true, data: response.data };
     } catch (err) {
-      const errorMessage = err.response?.data?.non_field_errors?.[0] || 'Ошибка входа';
+      const errorMessage = err.response?.data?.message || "Ошибка входа";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     }
   };
+
 
   const logout = async () => {
     try {
