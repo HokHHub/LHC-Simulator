@@ -1,6 +1,7 @@
 import Container from "../Container/Container";
 import s from "./Simulation.module.css";
 import { useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 
 import particlesData from "../../data/all_particles.json";
 import ParticlesModal from "../ParticlesModal/ParticlesModal";
@@ -445,7 +446,7 @@ export default function Simulation() {
             await axios.post('/api/simulation/', payload, {
                 signal: controller.signal,
             });
-            
+
             const text = await res.text().catch(() => "");
 
             if (!res.ok) {
