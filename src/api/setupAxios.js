@@ -4,7 +4,7 @@ import axios from 'axios';
 // Настройка axios глобально
 const setupAxios = () => {
   // Базовые настройки
-  axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
   axios.defaults.withCredentials = true;
   axios.defaults.xsrfCookieName = 'csrftoken';
   axios.defaults.xsrfHeaderName = 'X-CSRFToken';
@@ -35,7 +35,7 @@ const setupAxios = () => {
         
         // Пробуем сделать GET запрос чтобы получить CSRF куки
         try {
-          await axios.get('/api/').catch(() => {});
+          await axios.get('/api/csrf').catch(() => {});
           // Повторяем оригинальный запрос
           return axios(originalRequest);
         } catch (csrfError) {

@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
     const initCSRF = async () => {
       try {
         // Делаем GET запрос чтобы Django установил CSRF куку
-        await fetch('/api/', {
+        await fetch('/api/csrf', {
           credentials: 'include' // важно!
         }).catch(() => {
           // Игнорируем ошибки
