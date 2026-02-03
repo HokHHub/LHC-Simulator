@@ -1,5 +1,6 @@
+// AuthContext.jsx
 import { createContext, useState, useContext, useEffect } from 'react';
-import { authAPI } from '../api/auth';
+import { authAPI, getCSRFFromServer } from '../api/auth';
 
 const AuthContext = createContext(null);
 
@@ -16,91 +17,147 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    } else {
-      // Создаем временного (гостевого) пользователя
-      const guestUser = {
-        id: 'guest_' + Date.now(),
-        username: 'Гость',
-        email: null,
-        isGuest: true,
-        createdAt: new Date().toISOString()
-      };
-      localStorage.setItem("user", JSON.stringify(guestUser));
-      setUser(guestUser);
+  // Инициализация CSRF и пользователя
+  const initializeApp = async () => {
+    try {
+      // Пытаемся получить CSRF токен
+      await getCSRFFromServer();
+      
+      // Загружаем пользователя
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+          
+          // Если пользователь не гость, проверяем его токен
+          if (!parsedUser.isGuest) {
+            try {
+              await authAPI.getProfile();
+            } catch (profileError) {
+              console.log('Токен недействителен, переводим в гости');
+              createGuestUser();
+            }
+          }
+        } catch (e) {
+          console.error('Ошибка парсинга пользователя:', e);
+          createGuestUser();
+        }
+      } else {
+        createGuestUser();
+      }
+    } catch (error) {
+      console.error('Ошибка инициализации:', error);
+      createGuestUser();
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  useEffect(() => {
+    initializeApp();
   }, []);
 
-  // Регистрация (теперь опциональна)
+  const createGuestUser = () => {
+    const guestUser = {
+      id: 'guest_' + Date.now(),
+      username: 'Гость',
+      email: null,
+      isGuest: true,
+      createdAt: new Date().toISOString()
+    };
+    localStorage.setItem("user", JSON.stringify(guestUser));
+    setUser(guestUser);
+  };
+
+  // Регистрация
   const register = async (userData) => {
     try {
       setError(null);
+      
+      // Убедимся, что CSRF токен есть
+      await getCSRFFromServer();
+      
       const response = await authAPI.register(userData);
-      const { user } = response.data;
+      const { user, access, refresh } = response.data;
+
+      // Сохраняем токены
+      if (access && refresh) {
+        localStorage.setItem('access_token', access);
+        localStorage.setItem('refresh_token', refresh);
+      }
 
       localStorage.setItem("user", JSON.stringify(user));
       setUser(user);
 
       return { success: true, data: response.data };
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "Ошибка регистрации";
+      console.error('Ошибка регистрации:', err);
+      const errorMessage = err.response?.data?.detail || 
+                          err.response?.data?.message || 
+                          err.response?.data?.non_field_errors?.[0] || 
+                          err.response?.data?.email?.[0] ||
+                          err.response?.data?.username?.[0] ||
+                          "Ошибка регистрации";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     }
   };
 
-  // Вход (теперь не обязателен)
+  // Вход
   const login = async (credentials) => {
     try {
       setError(null);
+      
+      // Убедимся, что CSRF токен есть
+      await getCSRFFromServer();
+      
       const response = await authAPI.login(credentials);
-      const { user } = response.data;
+      const { user, access, refresh } = response.data;
+
+      // Сохраняем токены
+      if (access && refresh) {
+        localStorage.setItem('access_token', access);
+        localStorage.setItem('refresh_token', refresh);
+      }
 
       localStorage.setItem("user", JSON.stringify(user));
       setUser(user);
 
       return { success: true, data: response.data };
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "Ошибка входа";
+      console.error('Ошибка входа:', err);
+      const errorMessage = err.response?.data?.detail || 
+                          err.response?.data?.message || 
+                          err.response?.data?.non_field_errors?.[0] ||
+                          "Неверный email или пароль";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     }
   };
 
-  // Выход с учетом гостевого режима
+  // Выход
   const logout = async () => {
     try {
-      // Если пользователь был зарегистрирован, отправляем запрос на сервер
       if (user && !user.isGuest) {
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
+          // Убедимся, что CSRF токен есть
+          await getCSRFFromServer();
           await authAPI.logout(refreshToken);
         }
       }
     } catch (err) {
       console.error('Ошибка при выходе:', err);
+      // Продолжаем даже при ошибке
     } finally {
-      // Очищаем токены только для зарегистрированных пользователей
+      // Всегда очищаем локальные данные
       if (user && !user.isGuest) {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
       }
       
-      // Создаем нового гостевого пользователя
-      const guestUser = {
-        id: 'guest_' + Date.now(),
-        username: 'Гость',
-        email: null,
-        isGuest: true,
-        createdAt: new Date().toISOString()
-      };
-      
-      localStorage.setItem("user", JSON.stringify(guestUser));
-      setUser(guestUser);
+      createGuestUser();
     }
   };
 
@@ -110,20 +167,30 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
-  // Конвертация гостя в зарегистрированного пользователя
+  // Конвертация гостя в пользователя
   const convertGuestToUser = async (userData) => {
     try {
-      // Если есть данные гостя, можно отправить их на сервер
-      const guestData = {
+      setError(null);
+      
+      // Убедимся, что CSRF токен есть
+      await getCSRFFromServer();
+      
+      // Добавляем информацию о госте
+      const registrationData = {
         ...userData,
-        guestId: user?.id,
-        guestData: localStorage.getItem('guest_cart') // пример: сохраненная корзина
+        guestId: user?.id
       };
 
-      const response = await authAPI.register(guestData);
-      const { user: newUser } = response.data;
+      const response = await authAPI.register(registrationData);
+      const { user: newUser, access, refresh } = response.data;
 
-      // Переносим данные из гостевого аккаунта
+      // Сохраняем токены
+      if (access && refresh) {
+        localStorage.setItem('access_token', access);
+        localStorage.setItem('refresh_token', refresh);
+      }
+
+      // Переносим данные гостя
       const guestCart = localStorage.getItem('guest_cart');
       if (guestCart) {
         localStorage.setItem('user_cart', guestCart);
@@ -135,11 +202,20 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, data: response.data };
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "Ошибка регистрации";
+      console.error('Ошибка конвертации:', err);
+      const errorMessage = err.response?.data?.detail || 
+                          err.response?.data?.message || 
+                          err.response?.data?.non_field_errors?.[0] ||
+                          err.response?.data?.email?.[0] ||
+                          err.response?.data?.username?.[0] ||
+                          "Ошибка регистрации";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     }
   };
+
+  // Очистка ошибки
+  const clearError = () => setError(null);
 
   const value = {
     user,
@@ -150,9 +226,11 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     convertGuestToUser,
-    isAuthenticated: !!user,
+    clearError,
+    isAuthenticated: !!user && !user.isGuest,
     isGuest: user?.isGuest || false,
     isRegistered: user && !user.isGuest,
+    refreshCSRF: getCSRFFromServer, // Функция для обновления CSRF вручную
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
