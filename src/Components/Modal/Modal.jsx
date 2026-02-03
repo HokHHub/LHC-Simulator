@@ -18,6 +18,8 @@ export default function Modal({ isOpen, onClose, data }) {
       { label: "Состав", value: "uud" },
     ],
   } = data || {};
+  console.log(data);
+  
 
   return (
     <div className={styles.backdrop} onMouseDown={onClose}>

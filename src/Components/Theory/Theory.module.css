@@ -31,7 +31,7 @@
 }
 
 .theory__input {
-  border: 2px solid #C0CDDF;
+  border: 2px solid #19242B;
   max-width: 100%;
   width: 100%;
   height: 56px;
@@ -40,7 +40,7 @@
   padding-left: 18px;
   outline: none;
   overflow: hidden;
-  background-color: #18171B;
+  background: #001214;
   border-radius: 11px;
   transition: all 0.5s;
   font-family: "Inclusive Sans", "Rubick";
@@ -91,8 +91,8 @@
   justify-content: center;
   align-items: center;
   border-radius: 10px;
-  border: 1px solid #C0CDFF;
-  background: #1F1F1F;
+  border: 1px solid #3E5C76;
+  background: #001214;
   color: #B2DFFF;
   text-align: center;
   font-family: Rubik;
@@ -127,7 +127,7 @@
   padding-left: 16px;
   padding-right: 16px;
   border: 5px solid var(--accent-color);
-  background: rgba(31, 31, 31, 0.50);
+  background: #001214;
   flex-direction: column;
 }
 
@@ -339,8 +339,8 @@
   height: 480px;
   flex-shrink: 0;
   border-radius: 19px;
-  border: 4px solid #7485C9;
-  background: #0E0E0E;
+  border: 4px solid #19242B;
+  background: #001214;
 }
 
 .theory__subicon {

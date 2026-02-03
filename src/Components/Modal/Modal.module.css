@@ -40,8 +40,7 @@
     position: absolute;
     inset: 3px;
     border-radius: 50px;
-    background: radial-gradient(120% 140% at 20% 10%, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
-        linear-gradient(180deg, rgba(18, 18, 20, 0.98), rgba(10, 10, 12, 0.98));
+    background: linear-gradient(113deg, #151E24 4.6%, #001214 65.08%);
     z-index: 0;
 }
 
@@ -130,6 +129,7 @@
     /* 115.2px */
     letter-spacing: -1.92px;
     text-align: left;
+    margin-bottom: 10px;
 }
 
 .desc {

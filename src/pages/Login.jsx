@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Auth.css';
+import authLogo from '../../tmp_figma_assets/5eb260ff1caa5240da9e589ef26a09893c07a01e.png';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -36,120 +37,66 @@ const Login = () => {
     } else {
       setErrors({ general: result.error });
     }
+
     setIsLoading(false);
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-background">
-        <div className="particle-field">
-          {[...Array(50)].map((_, i) => (
-            <div
-              key={i}
-              className="particle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`,
-                animationDuration: `${15 + Math.random() * 10}s`,
-              }}
+    <div className="auth-page">
+      <main className="auth-window auth-window--login" role="main" aria-label="Авторизация">
+        <div className="auth-login-logo" aria-hidden="true">
+          <img src={authLogo} alt="" />
+        </div>
+
+        <h1 className="auth-title">Добро пожаловать</h1>
+
+        <form onSubmit={handleSubmit} className="auth-window-form auth-window-form--login" noValidate>
+          {errors.general && <div className="auth-alert-error">{errors.general}</div>}
+
+          <div className="auth-field">
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              className={`auth-input ${errors.username ? 'auth-input-error' : ''}`}
+              placeholder="Имя пользователя"
+              autoComplete="username"
+              required
             />
-          ))}
-        </div>
-      </div>
-
-      <div className="auth-content">
-        <div className="auth-card">
-          <div className="auth-header">
-            <div className="logo-mark">
-              <div className="logo-rings">
-                <div className="ring ring-1"></div>
-                <div className="ring ring-2"></div>
-                <div className="ring ring-3"></div>
-              </div>
-            </div>
-            <h1 className="auth-title">Добро пожаловать</h1>
-            <p className="auth-subtitle">Войдите в свой аккаунт</p>
+            {errors.username && <span className="auth-field-error">{errors.username}</span>}
           </div>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            {errors.general && (
-              <div className="alert-error">
-                {errors.general}
-              </div>
-            )}
-
-            <div className="form-group">
-              <label htmlFor="username" className="form-label">
-                Имя пользователя
-              </label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                className={`form-input ${errors.username ? 'error' : ''}`}
-                placeholder="username"
-                required
-              />
-              {errors.username && (
-                <span className="form-error">{errors.username}</span>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="password" className="form-label">
-                Пароль
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`form-input ${errors.password ? 'error' : ''}`}
-                placeholder="••••••••"
-                required
-              />
-              {errors.password && (
-                <span className="form-error">{errors.password}</span>
-              )}
-            </div>
-
-            <div className="form-options">
-              <label className="checkbox-label">
-                <input type="checkbox" className="checkbox-input" />
-                <span>Запомнить меня</span>
-              </label>
-              <Link to="/forgot-password" className="forgot-link">
-                Забыли пароль?
-              </Link>
-            </div>
-
-            <button
-              type="submit"
-              className="submit-btn"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <span className="loading-spinner"></span>
-              ) : (
-                'Войти'
-              )}
-            </button>
-          </form>
-
-          <div className="auth-footer">
-            <p>
-              Нет аккаунта?{' '}
-              <Link to="/signup" className="auth-link">
-                Зарегистрироваться
-              </Link>
-            </p>
+          <div className="auth-field">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className={`auth-input ${errors.password ? 'auth-input-error' : ''}`}
+              placeholder="Введите пароль"
+              autoComplete="current-password"
+              required
+            />
+            {errors.password && <span className="auth-field-error">{errors.password}</span>}
           </div>
-        </div>
-      </div>
+
+          <span className="auth-divider" aria-hidden="true" />
+
+          <button type="submit" className="auth-submit" disabled={isLoading}>
+            {isLoading ? <span className="auth-spinner" /> : 'Войти'}
+          </button>
+        </form>
+
+        <p className="auth-note">
+          У вас нет аккаунта?{' '}
+          <Link to="/register" className="auth-header-link">
+            Sign in
+          </Link>
+        </p>
+      </main>
     </div>
   );
 };

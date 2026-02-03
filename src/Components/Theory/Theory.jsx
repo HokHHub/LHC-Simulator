@@ -74,10 +74,14 @@ export default function Theory() {
             iconText: particle.symbol,
             color: particle.color,
             stats: [
-                { label: "Тип", value: particle.type },
+                { label: "Семья", value: particle.type },
                 { label: "Масса", value: `${formatNumber(particle.mass)} GeV` },
                 { label: "Заряд", value: formatNumber(particle.charge) },
                 { label: "Спин", value: `${particle.spin} ħ` },
+                { label: "Заряд", value: formatNumber(particle.charge) },
+                { label: "Заряд", value: formatNumber(particle.charge) },
+                { label: "Заряд", value: formatNumber(particle.charge) },
+                { label: "Заряд", value: formatNumber(particle.charge) },
             ],
         };
 
