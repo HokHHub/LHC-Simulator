@@ -443,7 +443,7 @@ export default function Simulation() {
         try {
             const payload = [{ id_1, id_2, Energy: E }];
 
-            await axios.post('/api/simulation/', payload, {
+            await axios.post('/simulation/', payload, {
                 signal: controller.signal,
             });
 
