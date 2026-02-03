@@ -1,6 +1,6 @@
 // AuthContext.jsx
 import { createContext, useState, useContext, useEffect } from 'react';
-import { authAPI } from '../auth';
+import { authAPI } from '../api/auth';
 
 const AuthContext = createContext(null);
 
@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
     const initCSRF = async () => {
       try {
         // Делаем GET запрос чтобы Django установил CSRF куку
-        await fetch('/api/csrf', {
+        await fetch('/csrf', {
           credentials: 'include' // важно!
         }).catch(() => {
           // Игнорируем ошибки

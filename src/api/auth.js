@@ -35,9 +35,9 @@ axios.interceptors.request.use(
 
 // API методы - используем относительные пути
 export const authAPI = {
-  register: (userData) => axios.post('/api/auth/signup/', userData),
-  login: (credentials) => axios.post('/api/auth/login/', credentials),
-  logout: (refreshToken) => axios.post('/api/auth/logout/', { refresh_token: refreshToken }),
-  getProfile: () => axios.get('/api/auth/profile/'),
-  refreshToken: (refreshToken) => axios.post('/api/auth/token/refresh/', { refresh: refreshToken }),
+  register: (userData) => axios.post('/auth/signup/', userData),
+  login: (credentials) => axios.post('/auth/login/', credentials),
+  logout: (refreshToken) => axios.post('/auth/logout/', { refresh_token: refreshToken }),
+  getProfile: () => axios.get('/auth/profile/'),
+  refreshToken: (refreshToken) => axios.post('/auth/token/refresh/', { refresh: refreshToken }),
 };
