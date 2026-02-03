@@ -443,18 +443,23 @@ export default function Simulation() {
         try {
             const payload = [{ id_1, id_2, Energy: E }];
 
-            const res = await axios.post(
-                '/simulation/',
-                payload, // ⬅️ ВАЖНО: payload, НЕ { payload }
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    withCredentials: true,
-                    signal: controller.signal, // axios >= 1.x
-                }
-            );
+            function getCookie(name) {
+                const v = `; ${document.cookie}`;
+                const parts = v.split(`; ${name}=`);
+                return parts.length === 2 ? parts.pop().split(';').shift() : null;
+            }
+            
+            const res = await fetch("/api/simulation/", {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+            });
 
             const text = await res.text().catch(() => "");
 
