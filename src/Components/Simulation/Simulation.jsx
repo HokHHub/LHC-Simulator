@@ -442,16 +442,10 @@ export default function Simulation() {
         try {
             const payload = [{ id_1, id_2, Energy: E }];
 
-            const res = await fetch("/api/simulation/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                },
-                body: JSON.stringify(payload),
+            await axios.post('/api/simulation/', payload, {
                 signal: controller.signal,
             });
-
+            
             const text = await res.text().catch(() => "");
 
             if (!res.ok) {
