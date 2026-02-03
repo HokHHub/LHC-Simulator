@@ -444,7 +444,7 @@ export default function Simulation() {
             const payload = [{ id_1, id_2, Energy: E }];
 
             const res = await axios.post(
-                '/api/simulation/',
+                '/simulation/',
                 payload, // ⬅️ ВАЖНО: payload, НЕ { payload }
                 {
                     headers: {
