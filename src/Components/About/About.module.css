@@ -13,6 +13,7 @@
 .about__colliderImg {
   width: 609px;
   max-width: 100%;
+  margin-right: 60px;
   height: auto;
   object-fit: contain;
   flex-shrink: 0;
@@ -192,6 +193,7 @@
 
   .about__colliderImg {
     width: 420px;
+    margin-right: 20px;
   }
 
   .about__text_span1 {
@@ -231,6 +233,7 @@
   .about__colliderImg {
     width: min(520px, 100%);
     opacity: 0.95;
+    margin-right: 0;
   }
 
   .about__texts {

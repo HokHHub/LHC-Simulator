@@ -1,7 +1,8 @@
 .header {
   display: flex;
   position: relative;
-  background: #171717;
+  border-bottom: 4px solid #11181D;
+  background: #080C0E;
   z-index: 1000;
 }
 

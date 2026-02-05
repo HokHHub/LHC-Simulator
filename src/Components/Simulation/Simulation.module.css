@@ -21,8 +21,8 @@ h2 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    border: 3px solid rgba(23, 23, 23, 0.60);
-    background: linear-gradient(173deg, #050505 28.18%, #070707 97.19%);
+    border: 3px solid var(--Element-Light-BG-Color, #11181D);
+    background: linear-gradient(173deg, #050505 43.63%, #080C0E 97.19%);
 }
 
 .simulation__parameters_title {
@@ -39,7 +39,7 @@ h2 {
 }
 
 .simulation__parameters_text {
-    color: #66BFFF;
+    color: var(--Light-Blue-Color, #008DD8);
     font-family: Rubik;
     font-size: 14px;
     font-style: normal;
@@ -77,8 +77,8 @@ h2 {
     align-items: flex-start;
     gap: 18px;
     border-radius: 8px;
-    border: 1px solid #C0CDFF;
-    background: #18171B;
+    border: 1px solid var(--Outline-Light-Color, #3E5C76);
+    background: var(--Element-BG-Color, #001214);
     color: rgba(255, 255, 255, 0.50);
     font-family: "Inclusive Sans";
     font-size: 12px;
@@ -96,8 +96,8 @@ h2 {
     padding: 7px 123px 8px 18px;
     align-items: center;
     border-radius: 8px;
-    border: 1px solid #C0CDFF;
-    background: rgba(24, 23, 27, 0.50);
+    border: 1px solid var(--Outline-Light-Color, #3E5C76);
+    background: var(--Element-BG-Color, #001214);
     color: rgba(255, 255, 255, 0.50);
     font-family: "Inclusive Sans";
     font-size: 15px;
@@ -121,8 +121,8 @@ h2 {
     align-items: center;
     border-radius: 5px;
     white-space: nowrap;
-    border: 1px solid rgba(63, 90, 201, 0.57);
-    background: rgba(24, 23, 27, 0.38);
+    border: 1px solid var(--Outline-Light-Color, #3E5C76);
+    background: var(--Element-Light-BG-Color, #11181D);
     color: rgba(255, 255, 255, 0.50);
     font-family: "Inclusive Sans";
     font-size: 15px;
@@ -146,7 +146,7 @@ h2 {
     justify-content: center;
     align-items: center;
     border-radius: 5px;
-    background: linear-gradient(356deg, #110F16 3.27%, #494359 96.73%);
+    background: linear-gradient(356deg, #19242B 3.27%, #3E5C76 96.73%);
     box-shadow: 6px 6px 4px 0 rgba(169, 146, 146, 0.03) inset, 3px 4px 7.4px 0 #000;
     color: #FFF;
     text-align: center;
@@ -163,8 +163,8 @@ h2 {
 .simulation__results {
     width: 249px;
     height: 300px;
-    border: 3px solid #111;
-    background: linear-gradient(171deg, #090909 5.24%, #050505 94.68%);
+    border: 3px solid var(--Element-Light-BG-Color, #11181D);
+    background: linear-gradient(152deg, #050505 23.86%, #080C0E 90.46%);
     box-shadow: 6px 11px 5.1px -2px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
@@ -187,7 +187,7 @@ h2 {
 .simulation__results_hr {
     width: 234px;
     height: 3px;
-    background: #101010;
+    background: var(--Element-Light-BG-Color, #11181D);
     border: 0;
     margin-top: 0;
     margin-bottom: 22px;
@@ -240,7 +240,7 @@ h2 {
     justify-content: center;
     align-items: center;
     border-radius: 5px;
-    background: linear-gradient(356deg, rgba(15, 21, 22, 0.50) 3.27%, rgba(67, 86, 89, 0.50) 96.73%);
+    background: linear-gradient(356deg, rgba(25, 36, 43, 0.50) 3.27%, rgba(62, 92, 118, 0.50) 96.73%);
     box-shadow: 6px 6px 4px 0 rgba(169, 146, 146, 0.03) inset, 3px 4px 7.4px 0 #000;
     color: #FFF;
     text-align: center;
@@ -257,7 +257,7 @@ h2 {
 .simulation__parameters_hr {
     width: 300px;
     height: 3px;
-    background: #101010;
+    background: var(--Element-Light-BG-Color, #11181D);
     border: 0;
     margin-top: 3px;
     margin-bottom: 23px;
@@ -392,15 +392,16 @@ h2 {
 .simulation__big {
     display: flex;
     width: 902px;
-    border: 3px solid rgba(23, 23, 23, 0.60);
-    background: linear-gradient(173deg, #050505 28.18%, #070707 97.19%);
+    border: 3px solid var(--Element-Light-BG-Color, #11181D);
+    background: linear-gradient(173deg, #050505 28.6%, #080C0E 97.19%);
     flex-direction: column;
     justify-content: flex-end;
 }
 
 .simulation__console {
-    height: 160px;
-    border-top: 1px solid rgba(23, 23, 23, 0.60);
+    max-height: 160px;
+    height: 100%;
+    border-top: 1px solid var(--Element-Light-BG-Color, #11181D);
     overflow-y: auto;
     overflow-x: hidden;
 }

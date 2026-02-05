@@ -4,6 +4,10 @@ import { authAPI } from '../api/auth';
 
 const AuthContext = createContext(null);
 
+// Проверка, запущено ли на localhost
+const isLocalhost = window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1';
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -18,15 +22,11 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Просто получаем CSRF куку при загрузке
     const initCSRF = async () => {
       try {
-        // Делаем GET запрос чтобы Django установил CSRF куку
         await fetch('/csrf', {
-          credentials: 'include' // важно!
-        }).catch(() => {
-          // Игнорируем ошибки
-        });
+          credentials: 'include'
+        }).catch(() => {});
       } catch (e) {
         console.log('CSRF init:', e.message);
       }
@@ -35,6 +35,22 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       await initCSRF();
       
+      // Если localhost - создаем dev пользователя без авторизации
+      if (isLocalhost) {
+        const devUser = {
+          id: 'dev_user',
+          username: 'Developer',
+          email: 'dev@localhost',
+          isGuest: false,
+          isDev: true, // флаг для отслеживания
+        };
+        localStorage.setItem("user", JSON.stringify(devUser));
+        setUser(devUser);
+        setLoading(false);
+        return;
+      }
+
+      // Обычная логика для продакшена
       const savedUser = localStorage.getItem("user");
       if (savedUser) {
         setUser(JSON.parse(savedUser));
@@ -54,19 +70,22 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-  // Регистрация
   const register = async (userData) => {
+    // На localhost пропускаем регистрацию
+    if (isLocalhost) {
+      return { success: true, data: { user } };
+    }
+
     try {
       setError(null);
       const response = await authAPI.register(userData);
       const { user, access, refresh } = response.data;
-
+      
       if (access) localStorage.setItem('access_token', access);
       if (refresh) localStorage.setItem('refresh_token', refresh);
       
       localStorage.setItem("user", JSON.stringify(user));
       setUser(user);
-
       return { success: true, data: response.data };
     } catch (err) {
       const errorMessage = err.response?.data?.detail || "Ошибка регистрации";
@@ -75,19 +94,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Вход
   const login = async (credentials) => {
+    // На localhost пропускаем логин
+    if (isLocalhost) {
+      return { success: true, data: { user } };
+    }
+
     try {
       setError(null);
       const response = await authAPI.login(credentials);
       const { user, access, refresh } = response.data;
-
+      
       if (access) localStorage.setItem('access_token', access);
       if (refresh) localStorage.setItem('refresh_token', refresh);
       
       localStorage.setItem("user", JSON.stringify(user));
       setUser(user);
-
       return { success: true, data: response.data };
     } catch (err) {
       const errorMessage = err.response?.data?.detail || "Ошибка входа";
@@ -96,8 +118,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Выход
   const logout = async () => {
+    // На localhost просто сбрасываем на dev пользователя
+    if (isLocalhost) {
+      const devUser = {
+        id: 'dev_user',
+        username: 'Developer',
+        email: 'dev@localhost',
+        isGuest: false,
+        isDev: true,
+      };
+      localStorage.setItem("user", JSON.stringify(devUser));
+      setUser(devUser);
+      return;
+    }
+
     try {
       if (user && !user.isGuest) {
         const refreshToken = localStorage.getItem('refresh_token');
@@ -128,8 +163,9 @@ export const AuthProvider = ({ children }) => {
     register,
     login,
     logout,
-    isAuthenticated: !!user && !user.isGuest,
-    isGuest: user?.isGuest || false,
+    isAuthenticated: isLocalhost ? true : (!!user && !user.isGuest),
+    isGuest: isLocalhost ? false : (user?.isGuest || false),
+    isDev: isLocalhost, // добавляем флаг для компонентов
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
