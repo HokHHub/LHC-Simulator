@@ -491,8 +491,4 @@ h2 {
     .simulation {
         justify-content: center;
     }
-
-    .simulation__big {
-        display: none;
-    }
 }
