@@ -463,15 +463,226 @@ h2 {
 
 
 
-/* ====== Three.js canvas вместо видео ====== */
+/* ===== Three.js canvas wrapper ===== */
+.simulation__animWrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 520px;
+    overflow: hidden;
+}
+
 .simulation__animRoot {
     width: 100%;
     height: 100%;
-    min-height: 520px; /* чтобы в big-блоке было куда рисовать */
     display: block;
-    position: relative;
-    overflow: hidden;
 }
+
+/* слой для HTML-подписей */
+.simulation__labelsLayer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* подписи слоёв детектора */
+.simulation__detectorLabel {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    color: #ffffff;
+    font-size: 13px;
+    background: rgba(0, 0, 0, 0.75);
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    white-space: nowrap;
+    opacity: 0.35;
+}
+
+/* ===== UI overlay ===== */
+.simulation__bigMain {
+    position: relative; /* чтобы UI/легенда нормально легли */
+}
+
+.simulation__animUI {
+    position: absolute;
+    inset: 0;
+    pointer-events: none; /* кнопкам вернём pointer-events ниже */
+    z-index: 5;
+}
+
+.simulation__detectorLabelTop {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: #00ff88;
+    padding: 10px 30px;
+    border-radius: 25px;
+    border: 2px solid #667eea;
+    font-family: "Courier New", monospace;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.35);
+    pointer-events: none;
+}
+
+/* detector buttons */
+.simulation__detectorSelection {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    max-width: 420px;
+    pointer-events: auto;
+}
+
+.simulation__detectorBtn {
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #667eea;
+    color: #667eea;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.simulation__detectorBtn:hover {
+    background: rgba(102, 126, 234, 0.3);
+    transform: translateY(-1px);
+}
+
+.simulation__detectorBtnActive {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #764ba2;
+}
+
+/* labels toggle */
+.simulation__labelsToggle {
+    position: absolute;
+    bottom: 18px;
+    left: 18px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #667eea;
+    border-radius: 10px;
+    padding: 12px 18px;
+    color: #667eea;
+    font-size: 13px;
+    user-select: none;
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.simulation__labelsToggle input {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+/* ===== legend ===== */
+.simulation__legend {
+    position: absolute;
+    bottom: 80px;
+    left: 18px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid #667eea;
+    border-radius: 10px;
+    padding: 15px 20px;
+    color: #fff;
+    font-size: 12px;
+    min-width: 220px;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.simulation__legendTitle {
+    margin: 0 0 10px 0;
+    color: #667eea;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.simulation__legendItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0;
+}
+
+.simulation__legendColor {
+    width: 30px;
+    height: 3px;
+    border-radius: 2px;
+    display: inline-block;
+}
+
+.simulation__legendColor[data-c="jets"] {
+    background: #ff8800;
+    box-shadow: 0 0 5px #ff8800;
+}
+.simulation__legendColor[data-c="leptons"] {
+    background: #ff00ff;
+    box-shadow: 0 0 5px #ff00ff;
+}
+.simulation__legendColor[data-c="photons"] {
+    background: #00ff00;
+    box-shadow: 0 0 5px #00ff00;
+}
+.simulation__legendColor[data-c="muons"] {
+    background: #00ffff;
+    box-shadow: 0 0 5px #00ffff;
+}
+.simulation__legendColor[data-c="charged"] {
+    background: #00ff88;
+    box-shadow: 0 0 5px #00ff88;
+}
+.simulation__legendColor[data-c="neutral"] {
+    background: #ff3300;
+    box-shadow: 0 0 5px #ff3300;
+}
+
+.simulation__legendText {
+    color: #ccc;
+    font-size: 11px;
+}
+
+.simulation__legendToggle {
+    position: absolute;
+    bottom: 80px;
+    left: 18px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #667eea;
+    border-radius: 10px;
+    padding: 10px 16px;
+    color: #667eea;
+    font-size: 12px;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+/* placeholder, пока результатов нет */
+.simulation__animPlaceholder {
+    width: 100%;
+    height: 100%;
+    min-height: 520px;
+    background: radial-gradient(ellipse at center, rgba(20, 30, 40, 0.35), rgba(0, 0, 0, 0.9));
+}
+
+
+
 
 @media (max-width: 1280px) {
     .simulation {

@@ -8,30 +8,18 @@ import {
     forwardRef,
     useImperativeHandle,
 } from "react";
-import axios from "axios";
 
 import particlesData from "../../data/all_particles.json";
 import ParticlesModal from "../ParticlesModal/ParticlesModal";
 
 /**
  * ====== LHC Animation (Three.js via CDN, NO npm import) ======
- * Важно: НЕ импортим "three", чтобы Vite/Rollup не ломался.
- * Загружаем https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js
- * и используем window.THREE.
- *
- * API:
- * animationRef.current.runSimulation({
- *   eventType: 'Higgs Boson',
- *   energy: 13.0,        // TeV
- *   momentum: 1200,      // GeV/c
- *   trackCount: 45,
- *   detector: 'ATLAS'    // опционально: ATLAS/CMS/ALICE/LHCb
- * });
+ * CDN: https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js
+ * window.THREE
  */
 const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
     const rootRef = useRef(null);
-
-    const threeReadyRef = useRef(false);
+    const labelsLayerRef = useRef(null);
 
     const sceneRef = useRef(null);
     const cameraRef = useRef(null);
@@ -51,6 +39,9 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
     const cameraDistanceRef = useRef(30);
     const isDraggingRef = useRef(false);
     const prevMouseRef = useRef({ x: 0, y: 0 });
+
+    const showLabelsRef = useRef(false);
+    const labelElementsRef = useRef([]); // [{ element, object }]
 
     const eventDataRef = useRef({
         energy: 13.0,
@@ -75,7 +66,6 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
 
             const exist = document.querySelector('script[data-three-cdn="true"]');
             if (exist) {
-                // уже вставили — ждём появления window.THREE
                 const t = setInterval(() => {
                     if (window.THREE) {
                         clearInterval(t);
@@ -107,6 +97,89 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
                 if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose?.());
                 else child.material.dispose?.();
             }
+        });
+    }
+
+    function clearLabels() {
+        const layer = labelsLayerRef.current;
+        if (!layer) return;
+        layer.innerHTML = "";
+        labelElementsRef.current = [];
+    }
+
+    function createLabels() {
+        const layer = labelsLayerRef.current;
+        if (!layer) return;
+
+        clearLabels();
+
+        detectorGeometryRef.current.forEach((obj) => {
+            if (!obj?.userData?.layerName) return;
+
+            const div = document.createElement("div");
+            div.className = s.simulation__detectorLabel; // CSS module class name
+            div.textContent = obj.userData.layerName;
+
+            layer.appendChild(div);
+
+            labelElementsRef.current.push({
+                element: div,
+                object: obj,
+            });
+        });
+    }
+
+    function updateLabels() {
+        const root = rootRef.current;
+        const layer = labelsLayerRef.current;
+        const camera = cameraRef.current;
+
+        if (!root || !layer || !camera) return;
+
+        if (!showLabelsRef.current) {
+            labelElementsRef.current.forEach(({ element }) => {
+                element.style.display = "none";
+            });
+            return;
+        }
+
+        const rect = root.getBoundingClientRect();
+        const w = rect.width || 1;
+        const h = rect.height || 1;
+
+        labelElementsRef.current.forEach(({ element, object }, index) => {
+            if (!object?.userData) return;
+
+            const radius = object.userData.radius || 8;
+            const heightDet = object.userData.height || 40;
+
+            // как в html: на краю вдоль beam axis (X)
+            const side = index % 2 === 0 ? 1 : -1;
+            const xOffset = (heightDet / 2 + 3) * side;
+            const yOffset = radius * 0.3 + (index % 3) * 1.5;
+
+            const THREE = window.THREE;
+            if (!THREE) return;
+
+            const labelPos = new THREE.Vector3(
+                object.position.x + xOffset,
+                yOffset,
+                object.position.z || 0
+            );
+
+            const screenPos = labelPos.clone().project(camera);
+
+            if (screenPos.z > 1 || screenPos.z < -1) {
+                element.style.display = "none";
+                return;
+            }
+
+            const x = (screenPos.x * 0.5 + 0.5) * w;
+            const y = (screenPos.y * -0.5 + 0.5) * h;
+
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+            element.style.display = "block";
         });
     }
 
@@ -367,6 +440,8 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
             scene.add(cz);
             detectorGeometryRef.current.push(cz);
         }
+
+        createLabels();
     }
 
     function createParticle(THREE, position, color, size) {
@@ -428,8 +503,6 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
             spawnDelay: Math.random() * 10,
             growthProgress: 0,
             initialOpacity: 0.98,
-            age: 0,
-            maxAge: 150,
         };
         tube.scale.set(0, 0, 0);
         return tube;
@@ -441,20 +514,8 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
         if (!scene || !THREE) return;
 
         const collisionPoint = new THREE.Vector3(0, 0, 0);
-
-        // треки: если trackCount задан — используем, иначе дефолт
         const numTracks = eventDataRef.current.trackCount || 50;
 
-        // небольшая вспышка
-        const coreGeo = new THREE.SphereGeometry(0.35, 12, 12);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 });
-        const core = new THREE.Mesh(coreGeo, coreMat);
-        core.position.copy(collisionPoint);
-        core.userData = { flash: true, life: 0 };
-        scene.add(core);
-        tracksRef.current.push(core);
-
-        // треки
         for (let i = 0; i < numTracks; i++) {
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.random() * Math.PI;
@@ -471,15 +532,15 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
             const rand = Math.random();
 
             if (rand < 0.6) {
-                color = Math.random() > 0.5 ? 0xffaa00 : 0xff8800;
+                color = Math.random() > 0.5 ? 0xffaa00 : 0xff8800; // jets/hadrons
                 charge = Math.random() > 0.5 ? 1 : -1;
                 momentum = 2 + Math.random() * 15;
             } else if (rand < 0.85) {
-                color = 0x00ff88;
+                color = 0x00ff88; // charged
                 charge = Math.random() > 0.5 ? 1 : -1;
                 momentum = 5 + Math.random() * 20;
             } else {
-                color = 0xff3300;
+                color = 0xff3300; // neutral
                 charge = 0;
                 momentum = 10 + Math.random() * 20;
             }
@@ -495,22 +556,18 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
         const THREE = window.THREE;
         const scene = sceneRef.current;
         if (!scene || !THREE) return;
-
         if (isAnimatingRef.current) return;
 
-        // detector
         if (config?.detector && config.detector !== currentDetectorRef.current) {
             currentDetectorRef.current = config.detector;
             buildDetector(currentDetectorRef.current);
         }
 
-        // чистим старое
         particlesRef.current.forEach((p) => scene.remove(p));
         tracksRef.current.forEach((t) => scene.remove(t));
         particlesRef.current = [];
         tracksRef.current = [];
 
-        // данные события
         eventDataRef.current = {
             eventType: config?.eventType || "Standard",
             energy: Number(config?.energy ?? 13.0),
@@ -540,9 +597,14 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
             currentDetectorRef.current = det;
             buildDetector(det);
         },
+        setShowLabels: (v) => {
+            showLabelsRef.current = !!v;
+            updateLabels();
+        },
         setPaused: (v) => {
             isPausedRef.current = !!v;
         },
+        getDetector: () => currentDetectorRef.current,
     }));
 
     useEffect(() => {
@@ -553,7 +615,6 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
 
         loadThreeCDN()
             .then((THREE) => {
-                threeReadyRef.current = true;
                 const root = rootRef.current;
                 if (!root) return;
 
@@ -672,17 +733,6 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
                             let allGrown = true;
 
                             tracksRef.current.forEach((obj) => {
-                                if (obj.userData?.flash) {
-                                    obj.userData.life += 1;
-                                    obj.scale.multiplyScalar(1.12);
-                                    obj.material.opacity *= 0.94;
-                                    if (obj.material.opacity < 0.02) {
-                                        scene.remove(obj);
-                                    }
-                                    allGrown = false;
-                                    return;
-                                }
-
                                 if (obj.userData?.spawnDelay > 0) {
                                     obj.userData.spawnDelay -= 1;
                                     allGrown = false;
@@ -699,9 +749,6 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
                                 }
                             });
 
-                            // чистим удалённые
-                            tracksRef.current = tracksRef.current.filter((t) => t.parent);
-
                             if (allGrown && animationFrameRef.current > 50) {
                                 isAnimatingRef.current = false;
                             }
@@ -710,12 +757,13 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
 
                     updateCamera();
                     renderer.render(scene, camera);
+                    updateLabels();
                 };
 
                 tick();
             })
             .catch(() => {
-                // если CDN вдруг не доступен — просто ничего не рендерим
+                // CDN недоступен — просто не рисуем
             });
 
         return () => {
@@ -744,6 +792,8 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
                 detectorGeometryRef.current = [];
             }
 
+            clearLabels();
+
             if (renderer) {
                 renderer.dispose?.();
                 const canvas = renderer.domElement;
@@ -757,7 +807,12 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    return <div className={s.simulation__animRoot} ref={rootRef} />;
+    return (
+        <div className={s.simulation__animWrap}>
+            <div className={s.simulation__animRoot} ref={rootRef} />
+            <div className={s.simulation__labelsLayer} ref={labelsLayerRef} />
+        </div>
+    );
 });
 
 function SearchableSelect({
@@ -902,9 +957,7 @@ function SearchableSelect({
                                     key={opt.value}
                                     data-idx={idx}
                                     className={`${s.simulation__dropdownItem} ${
-                                        idx === activeIndex
-                                            ? s.simulation__dropdownItemActive
-                                            : ""
+                                        idx === activeIndex ? s.simulation__dropdownItemActive : ""
                                     } ${opt.value === value ? s.simulation__dropdownItemSelected : ""}`}
                                     role="option"
                                     aria-selected={opt.value === value}
@@ -1014,7 +1067,6 @@ export default function Simulation() {
     const [decay, setDecay] = useState("-");
     const [values, setValues] = useState(null);
 
-    // для модалки частиц
     const [particlesModalOpen, setParticlesModalOpen] = useState(false);
     const [rawStages, setRawStages] = useState({ first: null, finals: null });
 
@@ -1028,8 +1080,23 @@ export default function Simulation() {
 
     const abortRef = useRef(null);
 
-    // NEW: ref на анимацию (вместо videoRef)
     const animationRef = useRef(null);
+
+    // ✅ NEW: показываем визуалку только после результатов
+    const [showAnimation, setShowAnimation] = useState(false);
+
+    // ✅ NEW: UI детекторов/подписей/легенды
+    const [detector, setDetector] = useState("ATLAS");
+    const [showDetectorLabels, setShowDetectorLabels] = useState(false);
+    const [showLegend, setShowLegend] = useState(true);
+
+    useEffect(() => {
+        animationRef.current?.setDetector(detector);
+    }, [detector]);
+
+    useEffect(() => {
+        animationRef.current?.setShowLabels(showDetectorLabels);
+    }, [showDetectorLabels]);
 
     function log(line) {
         console.log("[UI LOG]", line);
@@ -1071,7 +1138,6 @@ export default function Simulation() {
     }
 
     function updateOutputsFromValues(vals) {
-        // ожидаем: [{ Mass, BaryonNum, "S,B,C": [S,B,C], Charge }]
         const row = Array.isArray(vals) ? vals[0] : vals;
 
         if (!row || typeof row !== "object") {
@@ -1110,11 +1176,7 @@ export default function Simulation() {
     }, [rawStages]);
 
     async function handleStart() {
-        console.log("HANDLE START CALLED");
-        if (!validate()) {
-            log("Валидация не прошла ❌");
-            return;
-        }
+        if (!validate()) return;
 
         const p1 = getSelectedRawByName(first);
         const p2 = getSelectedRawByName(second);
@@ -1128,28 +1190,21 @@ export default function Simulation() {
         setStage1("-");
         setDecay("-");
         setValues(null);
+
         setHasOutputs(false);
         setOutputs({ mass: "", baryon: "", sbc: "", charge: "" });
+
         setRawStages({ first: null, finals: null });
         setApiError("");
+
+        // ✅ важное: до результата симуляции визуалку НЕ показываем
+        setShowAnimation(false);
 
         if (abortRef.current) abortRef.current.abort();
         const controller = new AbortController();
         abortRef.current = controller;
 
         setLoading(true);
-        log(`Старт симуляции: id_1=${id_1}, id_2=${id_2}, Energy=${E}`);
-
-        // ✅ ВМЕСТО ВИДЕО: запускаем анимацию
-        // TODO backend: как только backend начнет отдавать eventType/momentum/trackCount/detector —
-        // подставляй сюда реальные значения из ответа.
-        animationRef.current?.runSimulation({
-            eventType: "Standard",
-            energy: 13.0,         // TeV (пока статикой)
-            momentum: 1200,       // GeV/c (пока статикой)
-            trackCount: 45,       // пока статикой
-            detector: "ATLAS",    // опционально
-        });
 
         try {
             const payload = [{ id_1, id_2, Energy: E }];
@@ -1192,31 +1247,27 @@ export default function Simulation() {
             setStage1(formatStage(first_finals));
             setDecay(formatStage(finals));
             setValues(vals ?? null);
-            updateOutputsFromValues(vals ?? null);
-            setHasOutputs(true);
 
-            // сохраняем сырые стадии для модалки
+            updateOutputsFromValues(vals ?? null);
+
             setRawStages({ first: first_finals ?? null, finals: finals ?? null });
 
-            // TODO backend:
-            // Если backend начнет отдавать данные для визуалки, делай так:
-            // animationRef.current?.runSimulation({
-            //   eventType: vals?.eventType ?? 'Standard',
-            //   energy: vals?.energy ?? 13.0,
-            //   momentum: vals?.momentum ?? 1200,
-            //   trackCount: vals?.trackCount ?? 45,
-            //   detector: vals?.detector ?? 'ATLAS',
-            // });
+            // ✅ теперь результат есть → показываем анимацию
+            setShowAnimation(true);
 
-            log("Симуляция завершена успешно ✅");
+            // ✅ и запускаем визуалку (пока статикой; позже заменишь на значения с бэка)
+            // TODO backend: как только backend начнет отдавать eventType/momentum/trackCount/detector — подставь сюда
+            animationRef.current?.runSimulation({
+                eventType: "Higgs Boson",
+                energy: 13.0,
+                momentum: 1200,
+                trackCount: 45,
+                detector, // текущий выбранный
+            });
         } catch (err) {
-            if (err?.name === "AbortError") {
-                log("Прошлый запрос отменён");
-                return;
-            }
+            if (err?.name === "AbortError") return;
             const msg = err?.message || "Неизвестная ошибка";
             setApiError(msg);
-            log(`Ошибка: ${msg}`);
         } finally {
             setLoading(false);
         }
@@ -1231,9 +1282,7 @@ export default function Simulation() {
                     <div className={s.simulation}>
                         <div className={s.simulation__mini}>
                             <div className={s.simulation__parameters}>
-                                <p className={s.simulation__parameters_title}>
-                                    Параметры столкновения
-                                </p>
+                                <p className={s.simulation__parameters_title}>Параметры столкновения</p>
                                 <hr className={s.simulation__parameters_hr} />
 
                                 <div className={s.simulation__parameters_options}>
@@ -1271,10 +1320,7 @@ export default function Simulation() {
                                 </div>
 
                                 <div className={s.simulation__parameters_options}>
-                                    <label
-                                        htmlFor="energy"
-                                        className={s.simulation__parameters_text}
-                                    >
+                                    <label htmlFor="energy" className={s.simulation__parameters_text}>
                                         Энергия пучков (GeV):
                                     </label>
                                     <input
@@ -1298,9 +1344,7 @@ export default function Simulation() {
                                 </div>
 
                                 {apiError ? (
-                                    <div className={s.simulation__errorText}>
-                                        Ошибка API: {apiError}
-                                    </div>
+                                    <div className={s.simulation__errorText}>Ошибка API: {apiError}</div>
                                 ) : null}
                             </div>
 
@@ -1329,9 +1373,7 @@ export default function Simulation() {
 
                                 <div className={s.simulation__results_stages}>
                                     <div className={s.simulation__results_stage}>
-                                        <p className={s.simulation__results_stageText}>
-                                            Первая ступень:
-                                        </p>
+                                        <p className={s.simulation__results_stageText}>Первая ступень:</p>
                                         <p className={s.simulation__results_stageRes}>{stage1}</p>
                                     </div>
 
@@ -1346,8 +1388,7 @@ export default function Simulation() {
                                     type="button"
                                     onClick={() => {
                                         const hasAny = modalStages.length > 0;
-                                        if (!hasAny)
-                                            return log("Сначала запусти симуляцию — частиц пока нет");
+                                        if (!hasAny) return log("Сначала запусти симуляцию — частиц пока нет");
                                         setParticlesModalOpen(true);
                                     }}
                                 >
@@ -1358,9 +1399,91 @@ export default function Simulation() {
 
                         <div className={s.simulation__big}>
                             <div className={s.simulation__bigMain}>
-                                {/* ❌ видео удалено */}
-                                {/* ✅ анимация вставлена вместо видео */}
-                                <LHCAnimation ref={animationRef} />
+                                {/* ===== UI поверх визуалки ===== */}
+                                <div className={s.simulation__animUI}>
+                                    <div className={s.simulation__detectorLabelTop}>{detector}</div>
+
+                                    <div className={s.simulation__detectorSelection}>
+                                        {["ATLAS", "CMS", "ALICE", "LHCb"].map((d) => (
+                                            <button
+                                                key={d}
+                                                type="button"
+                                                className={`${s.simulation__detectorBtn} ${
+                                                    detector === d ? s.simulation__detectorBtnActive : ""
+                                                }`}
+                                                onClick={() => setDetector(d)}
+                                                disabled={!showAnimation}
+                                                title={!showAnimation ? "Сначала запусти симуляцию" : ""}
+                                            >
+                                                {d}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <label className={s.simulation__labelsToggle}>
+                                        <input
+                                            type="checkbox"
+                                            checked={showDetectorLabels}
+                                            onChange={(e) => setShowDetectorLabels(e.target.checked)}
+                                            disabled={!showAnimation}
+                                        />
+                                        Подписи детектора
+                                    </label>
+
+                                    {/* ===== legend ===== */}
+                                    {showLegend && (
+                                        <div
+                                            className={s.simulation__legend}
+                                            onClick={() => setShowLegend(false)}
+                                            title="Клик — скрыть"
+                                        >
+                                            <h3 className={s.simulation__legendTitle}>🎨 Легенда треков</h3>
+                                            <div className={s.simulation__legendItem}>
+                                                <span className={s.simulation__legendColor} data-c="jets" />
+                                                <span className={s.simulation__legendText}>Джеты (адроны)</span>
+                                            </div>
+                                            <div className={s.simulation__legendItem}>
+                                                <span className={s.simulation__legendColor} data-c="leptons" />
+                                                <span className={s.simulation__legendText}>Лептоны (e, μ)</span>
+                                            </div>
+                                            <div className={s.simulation__legendItem}>
+                                                <span className={s.simulation__legendColor} data-c="photons" />
+                                                <span className={s.simulation__legendText}>Фотоны (γ)</span>
+                                            </div>
+                                            <div className={s.simulation__legendItem}>
+                                                <span className={s.simulation__legendColor} data-c="muons" />
+                                                <span className={s.simulation__legendText}>Мюоны (μ)</span>
+                                            </div>
+                                            <div className={s.simulation__legendItem}>
+                                                <span className={s.simulation__legendColor} data-c="charged" />
+                                                <span className={s.simulation__legendText}>Заряженные частицы</span>
+                                            </div>
+                                            <div className={s.simulation__legendItem}>
+                                                <span className={s.simulation__legendColor} data-c="neutral" />
+                                                <span className={s.simulation__legendText}>Нейтральные частицы</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {!showLegend && (
+                                        <button
+                                            type="button"
+                                            className={s.simulation__legendToggle}
+                                            onClick={() => setShowLegend(true)}
+                                        >
+                                            📊 Легенда
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* ===== Сама визуалка — только после результата ===== */}
+                                {showAnimation ? (
+                                    <LHCAnimation ref={animationRef} />
+                                ) : (
+                                    <div className={s.simulation__animPlaceholder}>
+                                        {/* ничего/фон — по твоему желанию */}
+                                    </div>
+                                )}
                             </div>
 
                             <div className={s.simulation__console}>
