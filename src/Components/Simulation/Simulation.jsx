@@ -1,11 +1,764 @@
 import Container from "../Container/Container";
 import s from "./Simulation.module.css";
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
+import {
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    forwardRef,
+    useImperativeHandle,
+} from "react";
 import axios from "axios";
 
 import particlesData from "../../data/all_particles.json";
 import ParticlesModal from "../ParticlesModal/ParticlesModal";
+
+/**
+ * ====== LHC Animation (Three.js via CDN, NO npm import) ======
+ * Важно: НЕ импортим "three", чтобы Vite/Rollup не ломался.
+ * Загружаем https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js
+ * и используем window.THREE.
+ *
+ * API:
+ * animationRef.current.runSimulation({
+ *   eventType: 'Higgs Boson',
+ *   energy: 13.0,        // TeV
+ *   momentum: 1200,      // GeV/c
+ *   trackCount: 45,
+ *   detector: 'ATLAS'    // опционально: ATLAS/CMS/ALICE/LHCb
+ * });
+ */
+const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
+    const rootRef = useRef(null);
+
+    const threeReadyRef = useRef(false);
+
+    const sceneRef = useRef(null);
+    const cameraRef = useRef(null);
+    const rendererRef = useRef(null);
+
+    const detectorGeometryRef = useRef([]);
+    const particlesRef = useRef([]);
+    const tracksRef = useRef([]);
+
+    const isAnimatingRef = useRef(false);
+    const animationFrameRef = useRef(0);
+    const isPausedRef = useRef(false);
+
+    const currentDetectorRef = useRef("ATLAS");
+
+    const cameraRotationRef = useRef({ x: 0, y: 0 });
+    const cameraDistanceRef = useRef(30);
+    const isDraggingRef = useRef(false);
+    const prevMouseRef = useRef({ x: 0, y: 0 });
+
+    const eventDataRef = useRef({
+        energy: 13.0,
+        momentum: 1200,
+        trackCount: 45,
+        eventType: "Standard",
+    });
+
+    const MAGNETIC_FIELD = useMemo(
+        () => ({
+            ATLAS: 2.0,
+            CMS: 3.8,
+            ALICE: 0.5,
+            LHCb: 1.1,
+        }),
+        []
+    );
+
+    function loadThreeCDN() {
+        return new Promise((resolve, reject) => {
+            if (window.THREE) return resolve(window.THREE);
+
+            const exist = document.querySelector('script[data-three-cdn="true"]');
+            if (exist) {
+                // уже вставили — ждём появления window.THREE
+                const t = setInterval(() => {
+                    if (window.THREE) {
+                        clearInterval(t);
+                        resolve(window.THREE);
+                    }
+                }, 50);
+                setTimeout(() => {
+                    clearInterval(t);
+                    if (!window.THREE) reject(new Error("THREE не загрузился с CDN"));
+                }, 8000);
+                return;
+            }
+
+            const script = document.createElement("script");
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+            script.async = true;
+            script.dataset.threeCdn = "true";
+            script.onload = () => resolve(window.THREE);
+            script.onerror = () => reject(new Error("Не удалось загрузить THREE.js с CDN"));
+            document.head.appendChild(script);
+        });
+    }
+
+    function disposeObject(obj) {
+        if (!obj) return;
+        obj.traverse?.((child) => {
+            if (child.geometry) child.geometry.dispose?.();
+            if (child.material) {
+                if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose?.());
+                else child.material.dispose?.();
+            }
+        });
+    }
+
+    function clearAnimation() {
+        const scene = sceneRef.current;
+        if (!scene) return;
+
+        particlesRef.current.forEach((p) => scene.remove(p));
+        tracksRef.current.forEach((t) => scene.remove(t));
+        particlesRef.current = [];
+        tracksRef.current = [];
+
+        isAnimatingRef.current = false;
+        animationFrameRef.current = 0;
+
+        eventDataRef.current = {
+            energy: 0,
+            momentum: 0,
+            trackCount: 0,
+            eventType: "—",
+        };
+    }
+
+    function updateCamera() {
+        const camera = cameraRef.current;
+        if (!camera) return;
+
+        const rot = cameraRotationRef.current;
+        const dist = cameraDistanceRef.current;
+
+        camera.position.x = Math.sin(rot.y) * Math.cos(rot.x) * dist;
+        camera.position.y = Math.sin(rot.x) * dist;
+        camera.position.z = Math.cos(rot.y) * Math.cos(rot.x) * dist;
+        camera.lookAt(0, 0, 0);
+    }
+
+    function createCutawayRing(THREE, radius, height, color, opacity, layerName) {
+        const shape = new THREE.Shape();
+        const innerRadius = radius * 0.92;
+        const startAngle = -Math.PI / 6;
+        const endAngle = startAngle + Math.PI / 3;
+
+        for (let angle = endAngle; angle < Math.PI * 2 + startAngle; angle += 0.08) {
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            if (angle === endAngle) shape.moveTo(x, y);
+            else shape.lineTo(x, y);
+        }
+
+        for (let angle = Math.PI * 2 + startAngle; angle > endAngle; angle -= 0.08) {
+            const x = Math.cos(angle) * innerRadius;
+            const y = Math.sin(angle) * innerRadius;
+            shape.lineTo(x, y);
+        }
+
+        shape.closePath();
+
+        const extrudeSettings = { depth: height, bevelEnabled: false };
+        const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        geometry.center();
+
+        const material = new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: opacity * 0.12,
+            wireframe: true,
+            side: THREE.DoubleSide,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.rotation.y = Math.PI / 2;
+        mesh.userData.layerName = layerName;
+        mesh.userData.baseOpacity = opacity * 0.12;
+
+        const edges = new THREE.EdgesGeometry(geometry);
+        const lineMaterial = new THREE.LineBasicMaterial({
+            color,
+            transparent: true,
+            opacity: opacity * 1.5,
+        });
+        const wireframe = new THREE.LineSegments(edges, lineMaterial);
+        wireframe.rotation.y = Math.PI / 2;
+        wireframe.userData.baseOpacity = opacity * 1.5;
+
+        const group = new THREE.Group();
+        group.add(mesh);
+        group.add(wireframe);
+        group.userData.layerName = layerName;
+
+        return group;
+    }
+
+    function createEndCap(THREE, radius, position, color, opacity) {
+        const segments = 28;
+        const geometry = new THREE.RingGeometry(radius * 0.3, radius, segments);
+
+        const material = new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: opacity * 0.18,
+            wireframe: true,
+            side: THREE.DoubleSide,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.x = position;
+        mesh.rotation.y = Math.PI / 2;
+        mesh.userData.baseOpacity = opacity * 0.18;
+
+        const edges = new THREE.EdgesGeometry(geometry);
+        const lineMaterial = new THREE.LineBasicMaterial({
+            color,
+            transparent: true,
+            opacity: opacity * 1.1,
+        });
+        const wireframe = new THREE.LineSegments(edges, lineMaterial);
+        wireframe.position.x = position;
+        wireframe.rotation.y = Math.PI / 2;
+        wireframe.userData.baseOpacity = opacity * 1.1;
+
+        const group = new THREE.Group();
+        group.add(mesh);
+        group.add(wireframe);
+        return group;
+    }
+
+    function createSupportGrid(THREE, radius, height, color, opacity) {
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+
+        const numSupports = 10;
+        for (let i = 0; i < numSupports; i++) {
+            const angle = (i / numSupports) * Math.PI * 2;
+            const x1 = Math.cos(angle) * radius;
+            const y1 = Math.sin(angle) * radius;
+            vertices.push(-height / 2, x1, y1);
+            vertices.push(height / 2, x1, y1);
+        }
+
+        const numRings = 4;
+        for (let i = 0; i < numRings; i++) {
+            const z = -height / 2 + (i / (numRings - 1)) * height;
+            for (let j = 0; j < 28; j++) {
+                const a1 = (j / 28) * Math.PI * 2;
+                const a2 = ((j + 1) / 28) * Math.PI * 2;
+                vertices.push(z, Math.cos(a1) * radius, Math.sin(a1) * radius);
+                vertices.push(z, Math.cos(a2) * radius, Math.sin(a2) * radius);
+            }
+        }
+
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+
+        const material = new THREE.LineBasicMaterial({
+            color,
+            transparent: true,
+            opacity: opacity * 1.2,
+        });
+
+        const lineSegments = new THREE.LineSegments(geometry, material);
+        lineSegments.userData.baseOpacity = opacity * 1.2;
+        return lineSegments;
+    }
+
+    function createDetectorLayer(THREE, radius, height, color, opacity, layerName) {
+        const group = new THREE.Group();
+
+        const ring = createCutawayRing(THREE, radius, height, color, opacity, layerName);
+        group.add(ring);
+
+        if (radius > 5) {
+            group.add(createEndCap(THREE, radius, height / 2, color, opacity));
+            group.add(createEndCap(THREE, radius, -height / 2, color, opacity));
+        }
+
+        group.add(createSupportGrid(THREE, radius, height, color, opacity * 0.8));
+
+        group.userData.layerName = layerName;
+        group.userData.radius = radius;
+        group.userData.height = height;
+
+        return group;
+    }
+
+    function createCollisionZone(THREE, color = 0xffffff) {
+        const group = new THREE.Group();
+
+        const pointGeometry = new THREE.SphereGeometry(0.2, 12, 12);
+        const pointMaterial = new THREE.MeshStandardMaterial({
+            color,
+            emissive: color,
+            emissiveIntensity: 0.5,
+            metalness: 0.5,
+            roughness: 0.3,
+        });
+        const collisionPoint = new THREE.Mesh(pointGeometry, pointMaterial);
+        group.add(collisionPoint);
+
+        return group;
+    }
+
+    function buildDetector(detectorType) {
+        const THREE = window.THREE;
+        const scene = sceneRef.current;
+        if (!scene || !THREE) return;
+
+        detectorGeometryRef.current.forEach((obj) => {
+            scene.remove(obj);
+            disposeObject(obj);
+        });
+        detectorGeometryRef.current = [];
+
+        const addLayer = (radius, height, color, opacity, name, x = 0) => {
+            const layer = createDetectorLayer(THREE, radius, height, color, opacity, name);
+            layer.position.x = x;
+            scene.add(layer);
+            detectorGeometryRef.current.push(layer);
+        };
+
+        if (detectorType === "ATLAS") {
+            addLayer(12, 48, 0x2a5a8a, 0.12, "Muon System");
+            addLayer(10, 40, 0x3a6a9a, 0.15, "Calorimeter");
+            addLayer(7, 32, 0x4a7aaa, 0.18, "TRT");
+            addLayer(4, 24, 0x5a8aba, 0.22, "SCT");
+            addLayer(1.8, 18, 0x6a9aca, 0.26, "Pixel Detector");
+
+            const cz = createCollisionZone(THREE);
+            scene.add(cz);
+            detectorGeometryRef.current.push(cz);
+        } else if (detectorType === "CMS") {
+            addLayer(11, 42, 0x8a2a3a, 0.12, "Muon Chambers");
+            addLayer(9, 36, 0x9a3a4a, 0.15, "HCAL");
+            addLayer(6.5, 30, 0xaa4a5a, 0.18, "ECAL");
+            addLayer(4, 24, 0xba5a6a, 0.22, "Tracker");
+            addLayer(1.8, 18, 0xca6a7a, 0.26, "Silicon Tracker");
+
+            const cz = createCollisionZone(THREE, 0x8a2a3a);
+            scene.add(cz);
+            detectorGeometryRef.current.push(cz);
+        } else if (detectorType === "ALICE") {
+            addLayer(10, 50, 0x2a8a5a, 0.12, "TPC");
+            addLayer(7, 42, 0x3a9a6a, 0.15, "TRD");
+            addLayer(5, 35, 0x4aaa7a, 0.18, "TOF");
+            addLayer(3, 28, 0x5aba8a, 0.22, "ITS");
+
+            const cz = createCollisionZone(THREE, 0x2a8a5a);
+            scene.add(cz);
+            detectorGeometryRef.current.push(cz);
+        } else {
+            // LHCb
+            addLayer(2, 4, 0x9a6aca, 0.30, "VELO", 16);
+            addLayer(4, 6, 0x6a3a9a, 0.25, "RICH1", 8);
+            addLayer(5, 8, 0x7a4aaa, 0.20, "Trackers", 2);
+            addLayer(6, 10, 0x5a2a8a, 0.18, "Magnet", -6);
+            addLayer(7, 10, 0x6a3a9a, 0.15, "RICH2", -15);
+            addLayer(8, 12, 0x4a1a7a, 0.12, "Calorimeters", -26);
+
+            const cz = createCollisionZone(THREE, 0xffffff);
+            scene.add(cz);
+            detectorGeometryRef.current.push(cz);
+        }
+    }
+
+    function createParticle(THREE, position, color, size) {
+        const geometry = new THREE.SphereGeometry(size, 12, 12);
+        const material = new THREE.MeshPhongMaterial({
+            color,
+            emissive: color,
+            emissiveIntensity: 0.8,
+            shininess: 100,
+        });
+        const particle = new THREE.Mesh(geometry, material);
+        particle.position.copy(position);
+        return particle;
+    }
+
+    function createTrack(THREE, startPos, direction, color, length = 20, charge = 1, momentum = 20) {
+        const points = [];
+        const segments = 70;
+
+        const B = MAGNETIC_FIELD[currentDetectorRef.current] || 2.0;
+
+        let curvature = 0;
+        if (charge !== 0) {
+            const radiusOfCurvature = momentum / (0.3 * Math.abs(charge) * B);
+            const normalizedRadius = radiusOfCurvature / 10;
+            curvature = (length * 20) / normalizedRadius;
+            curvature *= Math.sign(charge);
+            curvature = Math.max(-2.0, Math.min(2.0, curvature));
+        }
+
+        const perpendicular = new THREE.Vector3(-direction.y, direction.x, 0).normalize();
+
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            const curve = t * t * curvature * length;
+
+            const pos = new THREE.Vector3(
+                startPos.x + direction.x * t * length + perpendicular.x * curve,
+                startPos.y + direction.y * t * length + perpendicular.y * curve,
+                startPos.z + direction.z * t * length + perpendicular.z * curve
+            );
+            points.push(pos);
+        }
+
+        const curveObj = new THREE.CatmullRomCurve3(points);
+        const tubeGeometry = new THREE.TubeGeometry(curveObj, 56, 0.045, 7, false);
+        const tubeMaterial = new THREE.MeshPhongMaterial({
+            color,
+            emissive: color,
+            emissiveIntensity: 0.7,
+            transparent: true,
+            opacity: 0.98,
+            shininess: 120,
+            specular: 0x222222,
+        });
+
+        const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+        tube.userData = {
+            spawnDelay: Math.random() * 10,
+            growthProgress: 0,
+            initialOpacity: 0.98,
+            age: 0,
+            maxAge: 150,
+        };
+        tube.scale.set(0, 0, 0);
+        return tube;
+    }
+
+    function createExplosion() {
+        const THREE = window.THREE;
+        const scene = sceneRef.current;
+        if (!scene || !THREE) return;
+
+        const collisionPoint = new THREE.Vector3(0, 0, 0);
+
+        // треки: если trackCount задан — используем, иначе дефолт
+        const numTracks = eventDataRef.current.trackCount || 50;
+
+        // небольшая вспышка
+        const coreGeo = new THREE.SphereGeometry(0.35, 12, 12);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        core.position.copy(collisionPoint);
+        core.userData = { flash: true, life: 0 };
+        scene.add(core);
+        tracksRef.current.push(core);
+
+        // треки
+        for (let i = 0; i < numTracks; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+
+            const direction = new THREE.Vector3(
+                Math.cos(phi),
+                Math.sin(phi) * Math.sin(theta),
+                Math.sin(phi) * Math.cos(theta)
+            ).normalize();
+
+            let color;
+            let charge;
+            let momentum;
+            const rand = Math.random();
+
+            if (rand < 0.6) {
+                color = Math.random() > 0.5 ? 0xffaa00 : 0xff8800;
+                charge = Math.random() > 0.5 ? 1 : -1;
+                momentum = 2 + Math.random() * 15;
+            } else if (rand < 0.85) {
+                color = 0x00ff88;
+                charge = Math.random() > 0.5 ? 1 : -1;
+                momentum = 5 + Math.random() * 20;
+            } else {
+                color = 0xff3300;
+                charge = 0;
+                momentum = 10 + Math.random() * 20;
+            }
+
+            const length = 15 + Math.random() * 15;
+            const tr = createTrack(THREE, collisionPoint, direction, color, length, charge, momentum);
+            scene.add(tr);
+            tracksRef.current.push(tr);
+        }
+    }
+
+    function runSimulation(config) {
+        const THREE = window.THREE;
+        const scene = sceneRef.current;
+        if (!scene || !THREE) return;
+
+        if (isAnimatingRef.current) return;
+
+        // detector
+        if (config?.detector && config.detector !== currentDetectorRef.current) {
+            currentDetectorRef.current = config.detector;
+            buildDetector(currentDetectorRef.current);
+        }
+
+        // чистим старое
+        particlesRef.current.forEach((p) => scene.remove(p));
+        tracksRef.current.forEach((t) => scene.remove(t));
+        particlesRef.current = [];
+        tracksRef.current = [];
+
+        // данные события
+        eventDataRef.current = {
+            eventType: config?.eventType || "Standard",
+            energy: Number(config?.energy ?? 13.0),
+            momentum: Math.floor(config?.momentum ?? 1200),
+            trackCount: Math.floor(config?.trackCount ?? 50),
+        };
+
+        isAnimatingRef.current = true;
+        animationFrameRef.current = 0;
+
+        const p1 = createParticle(THREE, new THREE.Vector3(-25, 0, 0), 0x888888, 0.4);
+        const p2 = createParticle(THREE, new THREE.Vector3(25, 0, 0), 0xaaaaaa, 0.4);
+
+        p1.userData = { velocity: new THREE.Vector3(1.0, 0, 0) };
+        p2.userData = { velocity: new THREE.Vector3(-1.0, 0, 0) };
+
+        particlesRef.current.push(p1, p2);
+        scene.add(p1);
+        scene.add(p2);
+    }
+
+    useImperativeHandle(ref, () => ({
+        runSimulation,
+        clearAnimation,
+        setDetector: (det) => {
+            if (!det) return;
+            currentDetectorRef.current = det;
+            buildDetector(det);
+        },
+        setPaused: (v) => {
+            isPausedRef.current = !!v;
+        },
+    }));
+
+    useEffect(() => {
+        let raf = 0;
+        let ro = null;
+
+        let onDown, onUp, onMove, onWheel, onKey;
+
+        loadThreeCDN()
+            .then((THREE) => {
+                threeReadyRef.current = true;
+                const root = rootRef.current;
+                if (!root) return;
+
+                const scene = new THREE.Scene();
+                scene.fog = new THREE.FogExp2(0x000000, 0.001);
+
+                const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                camera.position.set(20, 10, 20);
+                camera.lookAt(0, 0, 0);
+
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                renderer.setClearColor(0x000000, 0);
+
+                root.appendChild(renderer.domElement);
+
+                const ambient = new THREE.AmbientLight(0x404040, 1.5);
+                scene.add(ambient);
+
+                const point1 = new THREE.PointLight(0x667eea, 1, 100);
+                point1.position.set(20, 20, 20);
+                scene.add(point1);
+
+                const point2 = new THREE.PointLight(0x764ba2, 0.8, 100);
+                point2.position.set(-20, -10, -20);
+                scene.add(point2);
+
+                sceneRef.current = scene;
+                cameraRef.current = camera;
+                rendererRef.current = renderer;
+
+                buildDetector(currentDetectorRef.current);
+                updateCamera();
+
+                ro = new ResizeObserver(() => {
+                    const w = root.clientWidth || 1;
+                    const h = root.clientHeight || 1;
+                    renderer.setSize(w, h, false);
+                    camera.aspect = w / h;
+                    camera.updateProjectionMatrix();
+                });
+                ro.observe(root);
+
+                onDown = (e) => {
+                    if (e.button !== 0) return;
+                    isDraggingRef.current = true;
+                    prevMouseRef.current = { x: e.clientX, y: e.clientY };
+                };
+
+                onUp = (e) => {
+                    if (e.button !== 0) return;
+                    isDraggingRef.current = false;
+                };
+
+                onMove = (e) => {
+                    if (!isDraggingRef.current) return;
+                    const dx = e.clientX - prevMouseRef.current.x;
+                    const dy = e.clientY - prevMouseRef.current.y;
+
+                    prevMouseRef.current = { x: e.clientX, y: e.clientY };
+
+                    cameraRotationRef.current.y += dx * 0.005;
+                    cameraRotationRef.current.x += dy * 0.005;
+
+                    cameraRotationRef.current.x = Math.max(
+                        -Math.PI / 2,
+                        Math.min(Math.PI / 2, cameraRotationRef.current.x)
+                    );
+                };
+
+                onWheel = (e) => {
+                    e.preventDefault();
+                    cameraDistanceRef.current += e.deltaY * 0.05;
+                    cameraDistanceRef.current = Math.max(15, Math.min(60, cameraDistanceRef.current));
+                };
+
+                onKey = (e) => {
+                    if (e.code === "Space") {
+                        e.preventDefault();
+                        isPausedRef.current = !isPausedRef.current;
+                    }
+                };
+
+                renderer.domElement.addEventListener("mousedown", onDown);
+                window.addEventListener("mouseup", onUp);
+                window.addEventListener("mousemove", onMove);
+                renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
+                window.addEventListener("keydown", onKey);
+
+                const tick = () => {
+                    raf = requestAnimationFrame(tick);
+
+                    const scene = sceneRef.current;
+                    const camera = cameraRef.current;
+                    const renderer = rendererRef.current;
+                    const THREE = window.THREE;
+
+                    if (!scene || !camera || !renderer || !THREE) return;
+
+                    if (isAnimatingRef.current && !isPausedRef.current) {
+                        animationFrameRef.current += 1;
+
+                        if (animationFrameRef.current < 25) {
+                            particlesRef.current.forEach((p) => {
+                                if (p.userData?.velocity) p.position.add(p.userData.velocity);
+                            });
+                        }
+
+                        if (animationFrameRef.current === 25) {
+                            particlesRef.current.forEach((p) => scene.remove(p));
+                            particlesRef.current = [];
+                            createExplosion();
+                        }
+
+                        if (animationFrameRef.current > 25) {
+                            let allGrown = true;
+
+                            tracksRef.current.forEach((obj) => {
+                                if (obj.userData?.flash) {
+                                    obj.userData.life += 1;
+                                    obj.scale.multiplyScalar(1.12);
+                                    obj.material.opacity *= 0.94;
+                                    if (obj.material.opacity < 0.02) {
+                                        scene.remove(obj);
+                                    }
+                                    allGrown = false;
+                                    return;
+                                }
+
+                                if (obj.userData?.spawnDelay > 0) {
+                                    obj.userData.spawnDelay -= 1;
+                                    allGrown = false;
+                                    return;
+                                }
+
+                                if (obj.userData?.growthProgress < 1) {
+                                    obj.userData.growthProgress += 0.12;
+                                    const progress = Math.min(1, obj.userData.growthProgress);
+                                    const ease = progress < 1 ? 1 - Math.pow(1 - progress, 3) : 1;
+                                    obj.scale.set(ease, ease, ease);
+                                    if (progress >= 1) obj.material.opacity = obj.userData.initialOpacity ?? 0.98;
+                                    allGrown = false;
+                                }
+                            });
+
+                            // чистим удалённые
+                            tracksRef.current = tracksRef.current.filter((t) => t.parent);
+
+                            if (allGrown && animationFrameRef.current > 50) {
+                                isAnimatingRef.current = false;
+                            }
+                        }
+                    }
+
+                    updateCamera();
+                    renderer.render(scene, camera);
+                };
+
+                tick();
+            })
+            .catch(() => {
+                // если CDN вдруг не доступен — просто ничего не рендерим
+            });
+
+        return () => {
+            cancelAnimationFrame(raf);
+            if (ro) ro.disconnect();
+
+            const renderer = rendererRef.current;
+            const scene = sceneRef.current;
+
+            if (renderer?.domElement) {
+                try {
+                    renderer.domElement.removeEventListener("mousedown", onDown);
+                    renderer.domElement.removeEventListener("wheel", onWheel);
+                } catch {}
+            }
+            window.removeEventListener("mouseup", onUp);
+            window.removeEventListener("mousemove", onMove);
+            window.removeEventListener("keydown", onKey);
+
+            if (scene) {
+                clearAnimation();
+                detectorGeometryRef.current.forEach((obj) => {
+                    scene.remove(obj);
+                    disposeObject(obj);
+                });
+                detectorGeometryRef.current = [];
+            }
+
+            if (renderer) {
+                renderer.dispose?.();
+                const canvas = renderer.domElement;
+                if (canvas?.parentNode) canvas.parentNode.removeChild(canvas);
+            }
+
+            sceneRef.current = null;
+            cameraRef.current = null;
+            rendererRef.current = null;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    return <div className={s.simulation__animRoot} ref={rootRef} />;
+});
 
 function SearchableSelect({
     id,
@@ -37,662 +790,235 @@ function SearchableSelect({
     }, [options, query]);
 
     useEffect(() => {
-        const onDocDown = (e) => {
+        function onDocMouseDown(e) {
             if (!wrapRef.current) return;
             if (!wrapRef.current.contains(e.target)) setOpen(false);
-        };
-        document.addEventListener("mousedown", onDocDown);
-        return () => document.removeEventListener("mousedown", onDocDown);
+        }
+        document.addEventListener("mousedown", onDocMouseDown);
+        return () => document.removeEventListener("mousedown", onDocMouseDown);
     }, []);
 
     useEffect(() => {
-        if (!open) return;
-        setActiveIndex(0);
-        requestAnimationFrame(() => {
-            inputRef.current?.focus?.();
-        });
+        if (open) {
+            setQuery("");
+            setActiveIndex(0);
+            requestAnimationFrame(() => inputRef.current?.focus());
+        }
     }, [open]);
 
-    function choose(v) {
-        onChange(v);
+    useEffect(() => {
+        if (!open) return;
+        const el = listRef.current?.querySelector(`[data-idx="${activeIndex}"]`);
+        el?.scrollIntoView({ block: "nearest" });
+    }, [open, activeIndex]);
+
+    function choose(opt) {
+        onChange?.(opt.value);
         setOpen(false);
-        setQuery("");
     }
 
-    function onKeyDown(e) {
-        if (!open) return;
+    function onTriggerKeyDown(e) {
+        if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+            e.preventDefault();
+            setOpen(true);
+        }
+    }
+
+    function onSearchKeyDown(e) {
+        if (e.key === "Escape") {
+            e.preventDefault();
+            setOpen(false);
+            return;
+        }
 
         if (e.key === "ArrowDown") {
             e.preventDefault();
             setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
-            listRef.current?.children?.[Math.min(activeIndex + 1, filtered.length - 1)]?.scrollIntoView?.({
-                block: "nearest",
-            });
+            return;
         }
+
         if (e.key === "ArrowUp") {
             e.preventDefault();
             setActiveIndex((i) => Math.max(i - 1, 0));
-            listRef.current?.children?.[Math.max(activeIndex - 1, 0)]?.scrollIntoView?.({
-                block: "nearest",
-            });
+            return;
         }
+
         if (e.key === "Enter") {
             e.preventDefault();
-            const item = filtered[activeIndex];
-            if (item) choose(item.value);
-        }
-        if (e.key === "Escape") {
-            e.preventDefault();
-            setOpen(false);
+            const opt = filtered[activeIndex];
+            if (opt) choose(opt);
         }
     }
 
     return (
         <div className={s.simulation__selectWrap} ref={wrapRef}>
-            <label htmlFor={id} className={s.simulation__label}>
+            <label htmlFor={id} className={s.simulation__parameters_text}>
                 {label}
             </label>
 
             <button
-                type="button"
                 id={id}
-                name={name}
-                className={`${s.simulation__select} ${error ? s.simulation__selectError : ""}`}
+                type="button"
+                className={`${s.simulation__parameters_select} ${
+                    error ? s.simulation__fieldError : ""
+                }`}
                 onClick={() => setOpen((v) => !v)}
+                onKeyDown={onTriggerKeyDown}
+                aria-haspopup="listbox"
+                aria-expanded={open}
             >
                 <span className={s.simulation__selectValue}>
-                    {selected ? selected.label : <span className={s.simulation__placeholder}>{placeholder}</span>}
+                    {selected ? selected.label : placeholder}
                 </span>
-                <span className={s.simulation__caret} aria-hidden>
-                    ▾
-                </span>
+                <span className={s.simulation__selectChevron}>▾</span>
             </button>
 
-            {open ? (
-                <div className={s.simulation__dropdown} onKeyDown={onKeyDown}>
+            <input type="hidden" name={name} value={value || ""} />
+
+            {error ? <div className={s.simulation__errorText}>{error}</div> : null}
+
+            {open && (
+                <div className={s.simulation__dropdown} role="dialog">
                     <input
                         ref={inputRef}
-                        className={s.simulation__search}
+                        className={s.simulation__dropdownSearch}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Поиск..."
+                        onKeyDown={onSearchKeyDown}
+                        placeholder="Начни печатать для поиска…"
                     />
 
-                    <div ref={listRef} className={s.simulation__dropdownList}>
+                    <ul
+                        ref={listRef}
+                        className={s.simulation__dropdownList}
+                        role="listbox"
+                        aria-label="options"
+                    >
                         {filtered.length === 0 ? (
-                            <div className={s.simulation__dropdownEmpty}>Ничего не найдено</div>
+                            <li className={s.simulation__dropdownEmpty}>Ничего не найдено</li>
                         ) : (
-                            filtered.map((o, idx) => (
-                                <button
-                                    type="button"
-                                    key={o.value}
+                            filtered.map((opt, idx) => (
+                                <li
+                                    key={opt.value}
+                                    data-idx={idx}
                                     className={`${s.simulation__dropdownItem} ${
-                                        idx === activeIndex ? s.simulation__dropdownItemActive : ""
-                                    }`}
+                                        idx === activeIndex
+                                            ? s.simulation__dropdownItemActive
+                                            : ""
+                                    } ${opt.value === value ? s.simulation__dropdownItemSelected : ""}`}
+                                    role="option"
+                                    aria-selected={opt.value === value}
                                     onMouseEnter={() => setActiveIndex(idx)}
-                                    onClick={() => choose(o.value)}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => choose(opt)}
                                 >
-                                    {o.label}
-                                </button>
+                                    <span>{opt.label}</span>
+                                    <span className={s.simulation__dropdownType}>{opt.type}</span>
+                                </li>
                             ))
                         )}
-                    </div>
+                    </ul>
                 </div>
-            ) : null}
-
-            {error ? <div className={s.simulation__error}>{error}</div> : null}
+            )}
         </div>
     );
 }
 
-// ======================
-// Three.js визуализация столкновения (вместо видео)
-// Подготовлено под будущие данные с backend через runSimulation(config)
-// ======================
-const LHCAnimation = forwardRef(function LHCAnimation({ className = "", loading = false }, ref) {
-    const mountRef = useRef(null);
-
-    // Three.js refs
-    const sceneRef = useRef(null);
-    const cameraRef = useRef(null);
-    const rendererRef = useRef(null);
-    const rafRef = useRef(0);
-
-    // Objects refs
-    const detectorGroupRef = useRef(null);
-    const particlesRef = useRef([]);
-    const tracksRef = useRef([]);
-    const isAnimatingRef = useRef(false);
-    const animationFrameRef = useRef(0);
-
-    const currentDetectorRef = useRef("ATLAS");
-    const eventDataRef = useRef({
-        energy: 13.0,
-        momentum: 1200,
-        trackCount: 45,
-        eventType: "Standard",
-    });
-
-    // Camera control (простая orbit-логика)
-    const isDraggingRef = useRef(false);
-    const prevMouseRef = useRef({ x: 0, y: 0 });
-    const cameraRotRef = useRef({ x: 0.35, y: 0.8 });
-    const cameraDistRef = useRef(30);
-
-    function safeDispose(obj) {
-        if (!obj) return;
-        obj.traverse?.((child) => {
-            if (child.geometry) child.geometry.dispose?.();
-            if (child.material) {
-                if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose?.());
-                else child.material.dispose?.();
-            }
-        });
-    }
-
-    function clearDynamicObjects() {
-        const scene = sceneRef.current;
-        if (!scene) return;
-
-        particlesRef.current.forEach((p) => scene.remove(p));
-        tracksRef.current.forEach((t) => scene.remove(t));
-        particlesRef.current = [];
-        tracksRef.current = [];
-
-        isAnimatingRef.current = false;
-        animationFrameRef.current = 0;
-    }
-
-    function updateCamera() {
-        const camera = cameraRef.current;
-        if (!camera) return;
-
-        const rot = cameraRotRef.current;
-        const dist = cameraDistRef.current;
-
-        camera.position.x = Math.sin(rot.y) * Math.cos(rot.x) * dist;
-        camera.position.y = Math.sin(rot.x) * dist;
-        camera.position.z = Math.cos(rot.y) * Math.cos(rot.x) * dist;
-        camera.lookAt(0, 0, 0);
-    }
-
-    // ---------- Detector helpers (упрощённая версия из HTML) ----------
-    function createCutawayRing(radius, height, color, opacity) {
-        const group = new THREE.Group();
-
-        // кольцо с "вырезом" (часть окружности отсутствует)
-        const ringGeom = new THREE.CylinderGeometry(radius, radius, height, 64, 1, true, Math.PI * 0.15, Math.PI * 1.7);
-        const ringMat = new THREE.MeshPhongMaterial({
-            color,
-            transparent: true,
-            opacity,
-            side: THREE.DoubleSide,
-            shininess: 80,
-        });
-        const ring = new THREE.Mesh(ringGeom, ringMat);
-        ring.rotation.z = Math.PI / 2;
-        group.add(ring);
-
-        // тонкий контур
-        const edgeGeom = new THREE.CylinderGeometry(radius, radius, height, 64, 1, true, Math.PI * 0.15, Math.PI * 1.7);
-        const edge = new THREE.LineSegments(
-            new THREE.EdgesGeometry(edgeGeom),
-            new THREE.LineBasicMaterial({ color, transparent: true, opacity: Math.min(1, opacity + 0.2) })
-        );
-        edge.rotation.z = Math.PI / 2;
-        group.add(edge);
-
-        return group;
-    }
-
-    function createDetectorLayer(radius, height, color, opacity) {
-        const group = new THREE.Group();
-        group.add(createCutawayRing(radius, height, color, opacity));
-
-        // сетка/опоры (очень лёгкая)
-        const gridMat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: opacity * 0.6 });
-        const segments = 24;
-        const geo = new THREE.BufferGeometry();
-        const verts = [];
-        for (let i = 0; i < segments; i++) {
-            const a = (i / segments) * Math.PI * 2;
-            const y = Math.sin(a) * radius;
-            const z = Math.cos(a) * radius;
-            verts.push(-height / 2, y, z, height / 2, y, z);
-        }
-        geo.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
-        const lines = new THREE.LineSegments(geo, gridMat);
-        group.add(lines);
-
-        return group;
-    }
-
-    function buildDetector(detectorName) {
-        const scene = sceneRef.current;
-        if (!scene) return;
-
-        // удалить старый
-        if (detectorGroupRef.current) {
-            scene.remove(detectorGroupRef.current);
-            safeDispose(detectorGroupRef.current);
-            detectorGroupRef.current = null;
-        }
-
-        const det = new THREE.Group();
-
-        if (detectorName === "CMS") {
-            det.add(createDetectorLayer(6, 18, 0x00d4ff, 0.18));
-            det.add(createDetectorLayer(9, 20, 0xff6b6b, 0.12));
-            det.add(createDetectorLayer(12, 22, 0x667eea, 0.10));
-        } else if (detectorName === "ALICE") {
-            det.add(createDetectorLayer(5.5, 16, 0xffd93d, 0.16));
-            det.add(createDetectorLayer(8.5, 18, 0x6bcf63, 0.12));
-            det.add(createDetectorLayer(11, 20, 0x667eea, 0.10));
-        } else if (detectorName === "LHCb") {
-            det.add(createDetectorLayer(6.5, 14, 0xff8c42, 0.16));
-            det.add(createDetectorLayer(9.5, 16, 0x00d4ff, 0.12));
-            det.add(createDetectorLayer(12, 18, 0x667eea, 0.10));
-            det.rotation.y = Math.PI / 10;
-        } else {
-            // ATLAS default
-            det.add(createDetectorLayer(6, 20, 0x00d4ff, 0.16));
-            det.add(createDetectorLayer(10, 22, 0xff6b6b, 0.12));
-            det.add(createDetectorLayer(13, 24, 0x667eea, 0.10));
-        }
-
-        // зона столкновения
-        const collisionZone = new THREE.Mesh(
-            new THREE.SphereGeometry(1.2, 24, 24),
-            new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08 })
-        );
-        det.add(collisionZone);
-
-        detectorGroupRef.current = det;
-        scene.add(det);
-    }
-
-    function createStarField() {
-        const scene = sceneRef.current;
-        if (!scene) return;
-
-        const starsGeo = new THREE.BufferGeometry();
-        const starCount = 1200;
-
-        const positions = new Float32Array(starCount * 3);
-        for (let i = 0; i < starCount; i++) {
-            // сфера вокруг сцены
-            const r = 200 * Math.random() + 50;
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(2 * Math.random() - 1);
-
-            positions[i * 3 + 0] = r * Math.sin(phi) * Math.cos(theta);
-            positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-            positions[i * 3 + 2] = r * Math.cos(phi);
-        }
-        starsGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-
-        const stars = new THREE.Points(
-            starsGeo,
-            new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, sizeAttenuation: true, transparent: true, opacity: 0.85 })
-        );
-        stars.name = "__stars";
-        scene.add(stars);
-    }
-
-    // ---------- Collision animation ----------
-    function createParticle(position, color, size = 0.35) {
-        const geom = new THREE.SphereGeometry(size, 16, 16);
-        const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.35 });
-        const mesh = new THREE.Mesh(geom, mat);
-        mesh.position.copy(position);
-        return mesh;
-    }
-
-    function createTrack(direction, color, length = 35) {
-        const points = [];
-        const start = new THREE.Vector3(0, 0, 0);
-
-        // слегка "кривим" трек
-        const bend = new THREE.Vector3(
-            (Math.random() - 0.5) * 0.8,
-            (Math.random() - 0.5) * 0.8,
-            (Math.random() - 0.5) * 0.8
-        );
-
-        for (let i = 0; i <= 80; i++) {
-            const t = i / 80;
-            const p = start
-                .clone()
-                .add(direction.clone().multiplyScalar(t * length))
-                .add(bend.clone().multiplyScalar(t * t * length * 0.06));
-            points.push(p);
-        }
-
-        const geom = new THREE.BufferGeometry().setFromPoints(points);
-        const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.9 });
-        const line = new THREE.Line(geom, mat);
-        return line;
-    }
-
-    function createExplosion() {
-        const scene = sceneRef.current;
-        if (!scene) return;
-
-        // "вспышка" в центре
-        const flash = new THREE.Mesh(
-            new THREE.SphereGeometry(1.6, 24, 24),
-            new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 })
-        );
-        flash.userData.__fade = { type: "flash", life: 0 };
-        scene.add(flash);
-        tracksRef.current.push(flash);
-
-        // несколько "джетов" (конусов)
-        const jets = 3 + Math.floor(Math.random() * 2);
-        for (let i = 0; i < jets; i++) {
-            const cone = new THREE.Mesh(
-                new THREE.ConeGeometry(1.4, 10, 24, 1, true),
-                new THREE.MeshBasicMaterial({ color: 0xffd93d, transparent: true, opacity: 0.15, side: THREE.DoubleSide })
-            );
-            const dir = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.2, Math.random() - 0.5).normalize();
-            cone.position.set(0, 0, 0);
-            cone.lookAt(dir);
-            cone.rotateX(Math.PI / 2);
-            cone.userData.__fade = { type: "cone", life: 0, dir };
-            scene.add(cone);
-            tracksRef.current.push(cone);
-        }
-    }
-
-    function start(config) {
-        const scene = sceneRef.current;
-        if (!scene) return;
-
-        if (isAnimatingRef.current) return;
-
-        clearDynamicObjects();
-
-        // (под backend) сюда позже подставим реальные значения:
-        // - eventType: тип события (Higgs Boson / Standard / ...)
-        // - energy: энергия (TeV)
-        // - momentum: импульс
-        // - trackCount: число треков
-        // - detector: ATLAS/CMS/ALICE/LHCb
-        const cfg = {
-            eventType: config?.eventType ?? "Standard",
-            energy: typeof config?.energy === "number" ? config.energy : 13.0,
-            momentum: typeof config?.momentum === "number" ? config.momentum : 1200,
-            trackCount: typeof config?.trackCount === "number" ? config.trackCount : 45,
-            detector: config?.detector ?? currentDetectorRef.current,
-        };
-
-        eventDataRef.current = cfg;
-
-        if (cfg.detector && cfg.detector !== currentDetectorRef.current) {
-            currentDetectorRef.current = cfg.detector;
-            buildDetector(cfg.detector);
-        }
-
-        isAnimatingRef.current = true;
-        animationFrameRef.current = 0;
-
-        // два пучка навстречу
-        const p1 = createParticle(new THREE.Vector3(-25, 0, 0), 0xaaaaaa, 0.35);
-        const p2 = createParticle(new THREE.Vector3(25, 0, 0), 0x888888, 0.35);
-        p1.userData.velocity = new THREE.Vector3(1.0, 0, 0);
-        p2.userData.velocity = new THREE.Vector3(-1.0, 0, 0);
-
-        scene.add(p1);
-        scene.add(p2);
-        particlesRef.current.push(p1, p2);
-    }
-
-    useImperativeHandle(ref, () => ({
-        runSimulation: (config) => start(config),
-        setDetector: (detector) => {
-            if (!detector) return;
-            currentDetectorRef.current = detector;
-            buildDetector(detector);
-        },
-        clear: () => clearDynamicObjects(),
-    }));
-
-    useEffect(() => {
-        const mount = mountRef.current;
-        if (!mount) return;
-
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.0012);
-
-        const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 1000);
-        camera.position.set(20, 10, 20);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        renderer.setClearColor(0x000000, 0); // прозрачный, фон задаём CSS-ом
-
-        sceneRef.current = scene;
-        cameraRef.current = camera;
-        rendererRef.current = renderer;
-
-        mount.appendChild(renderer.domElement);
-
-        // light
-        scene.add(new THREE.AmbientLight(0x404040, 1.5));
-        const light1 = new THREE.PointLight(0x667eea, 1.2, 120);
-        light1.position.set(20, 20, 20);
-        scene.add(light1);
-
-        const light2 = new THREE.PointLight(0xff6b6b, 0.9, 120);
-        light2.position.set(-20, -10, -10);
-        scene.add(light2);
-
-        createStarField();
-        buildDetector(currentDetectorRef.current);
-
-        const ro = new ResizeObserver(() => {
-            const w = mount.clientWidth || 1;
-            const h = mount.clientHeight || 1;
-            renderer.setSize(w, h, false);
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-            updateCamera();
-        });
-        ro.observe(mount);
-
-        const onDown = (e) => {
-            isDraggingRef.current = true;
-            prevMouseRef.current = { x: e.clientX, y: e.clientY };
-        };
-        const onUp = () => {
-            isDraggingRef.current = false;
-        };
-        const onMove = (e) => {
-            if (!isDraggingRef.current) return;
-            const dx = e.clientX - prevMouseRef.current.x;
-            const dy = e.clientY - prevMouseRef.current.y;
-            prevMouseRef.current = { x: e.clientX, y: e.clientY };
-
-            cameraRotRef.current.y += dx * 0.006;
-            cameraRotRef.current.x += dy * 0.006;
-            cameraRotRef.current.x = Math.max(-1.15, Math.min(1.15, cameraRotRef.current.x));
-            updateCamera();
-        };
-        const onWheel = (e) => {
-            const delta = Math.sign(e.deltaY);
-            cameraDistRef.current = Math.max(18, Math.min(55, cameraDistRef.current + delta * 1.6));
-            updateCamera();
-        };
-
-        renderer.domElement.addEventListener("pointerdown", onDown);
-        window.addEventListener("pointerup", onUp);
-        window.addEventListener("pointermove", onMove);
-        renderer.domElement.addEventListener("wheel", onWheel, { passive: true });
-
-        const tick = () => {
-            rafRef.current = requestAnimationFrame(tick);
-
-            // лёгкое авто-вращение, если не тащим мышью
-            if (!isDraggingRef.current) {
-                cameraRotRef.current.y += 0.0012;
-                updateCamera();
-            }
-
-            // шаг анимации столкновения
-            if (isAnimatingRef.current) {
-                animationFrameRef.current += 1;
-
-                // движение пучков к центру
-                particlesRef.current.forEach((p) => {
-                    if (!p.userData?.velocity) return;
-                    p.position.add(p.userData.velocity);
-                });
-
-                // момент столкновения
-                const p1 = particlesRef.current[0];
-                const p2 = particlesRef.current[1];
-                if (p1 && p2 && p1.position.x >= -1 && p2.position.x <= 1) {
-                    // удалить пучки
-                    particlesRef.current.forEach((p) => scene.remove(p));
-                    particlesRef.current = [];
-
-                    // треки
-                    const cfg = eventDataRef.current;
-                    const count = Math.max(8, Math.min(120, cfg.trackCount || 45));
-                    for (let i = 0; i < count; i++) {
-                        const dir = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.2, Math.random() - 0.5).normalize();
-                        const col = i % 3 === 0 ? 0x00d4ff : i % 3 === 1 ? 0xff6b6b : 0x667eea;
-                        const tr = createTrack(dir, col, 28 + Math.random() * 18);
-                        scene.add(tr);
-                        tracksRef.current.push(tr);
-                    }
-                    createExplosion();
-
-                    // остановить "создание" через небольшую паузу
-                    // (но рендер продолжается)
-                    setTimeout(() => {
-                        isAnimatingRef.current = false;
-                    }, 600);
-                }
-            }
-
-            // fade/scale для вспышек
-            tracksRef.current.forEach((obj) => {
-                const meta = obj?.userData?.__fade;
-                if (!meta) return;
-                meta.life += 1;
-
-                if (meta.type === "flash") {
-                    obj.scale.setScalar(1 + meta.life * 0.02);
-                    obj.material.opacity = Math.max(0, 0.9 - meta.life * 0.03);
-                    if (obj.material.opacity <= 0) {
-                        scene.remove(obj);
-                        safeDispose(obj);
-                    }
-                }
-                if (meta.type === "cone") {
-                    obj.material.opacity = Math.max(0, 0.15 - meta.life * 0.004);
-                    if (obj.material.opacity <= 0) {
-                        scene.remove(obj);
-                        safeDispose(obj);
-                    }
-                }
-            });
-            tracksRef.current = tracksRef.current.filter((o) => o.parent);
-
-            renderer.render(scene, camera);
-        };
-
-        updateCamera();
-        tick();
-
-        return () => {
-            cancelAnimationFrame(rafRef.current);
-            ro.disconnect();
-
-            renderer.domElement.removeEventListener("pointerdown", onDown);
-            window.removeEventListener("pointerup", onUp);
-            window.removeEventListener("pointermove", onMove);
-            renderer.domElement.removeEventListener("wheel", onWheel);
-
-            clearDynamicObjects();
-
-            // remove stars + detector etc
-            scene.traverse((obj) => {
-                if (obj.name === "__stars") {
-                    scene.remove(obj);
-                    safeDispose(obj);
-                }
-            });
-
-            if (detectorGroupRef.current) {
-                scene.remove(detectorGroupRef.current);
-                safeDispose(detectorGroupRef.current);
-                detectorGroupRef.current = null;
-            }
-
-            renderer.dispose?.();
-            if (renderer.domElement?.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+export default function Simulation() {
+    const particleOptions = useMemo(() => {
+        const arr = Array.isArray(particlesData) ? particlesData : [];
+        return arr
+            .filter((p) => p && typeof p.name === "string")
+            .map((p) => ({
+                value: p.name,
+                label: p.name,
+                type: p.type || "",
+                raw: p,
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label));
     }, []);
 
-    // по UX: когда loading начинается — можно чуть подсветить сцену/перезапустить
-    useEffect(() => {
-        if (!loading) return;
-        // Ничего не делаем автоматически — запускаем из handleStart().
-        // Но если захочешь “авто-демо” при загрузке, раскомментируй:
-        // start({ eventType: "Standard", energy: 13.0, momentum: 1200, trackCount: 45, detector: currentDetectorRef.current });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [loading]);
+    const idToName = useMemo(() => {
+        const m = new Map();
+        const arr = Array.isArray(particlesData) ? particlesData : [];
+        for (const p of arr) {
+            const id = Number(p?.mcid);
+            if (Number.isFinite(id)) m.set(id, p?.name || String(id));
+        }
+        return m;
+    }, []);
 
-    return (
-        <div className={`${className} ${s.simulation__vizWrap}`}>
-            <div ref={mountRef} className={s.simulation__vizCanvas} />
-            <div className={s.simulation__vizHud}>
-                <div className={s.simulation__vizHudTitle}>Event</div>
-                <div className={s.simulation__vizHudRow}>
-                    <span>Type:</span>
-                    <b>{eventDataRef.current.eventType}</b>
-                </div>
-                <div className={s.simulation__vizHudRow}>
-                    <span>Energy:</span>
-                    <b>{Number(eventDataRef.current.energy).toFixed(2)} TeV</b>
-                </div>
-                <div className={s.simulation__vizHudRow}>
-                    <span>Momentum:</span>
-                    <b>{Math.floor(eventDataRef.current.momentum)} GeV/c</b>
-                </div>
-                <div className={s.simulation__vizHudRow}>
-                    <span>Tracks:</span>
-                    <b>{eventDataRef.current.trackCount}</b>
-                </div>
-            </div>
+    const particlesById = useMemo(() => {
+        const m = new Map();
+        const arr = Array.isArray(particlesData) ? particlesData : [];
+        for (const p of arr) {
+            const id = Number(p?.mcid);
+            if (Number.isFinite(id)) m.set(id, p);
+        }
+        return m;
+    }, []);
 
-            {loading ? <div className={s.simulation__vizOverlay}>Running…</div> : null}
-        </div>
-    );
-});
+    function formatStage(objOrArr) {
+        if (!objOrArr) return "-";
+        const arr = Array.isArray(objOrArr) ? objOrArr : [objOrArr];
 
-export default function Simulation() {
-    // ------------------ ТВОЙ ИСХОДНЫЙ КОД ДАЛЬШЕ ------------------
-    // (я оставил твою бизнес-логику и просто заменил видео на LHCAnimation)
+        return arr
+            .map((row) => {
+                if (!row || typeof row !== "object") return String(row);
+
+                const ids = Object.keys(row)
+                    .filter((k) => /^id_\d+$/.test(k))
+                    .sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)))
+                    .map((k) => Number(row[k]))
+                    .filter((n) => Number.isFinite(n));
+
+                if (ids.length === 0) return JSON.stringify(row);
+
+                const names = ids.map((id) => idToName.get(id) || `PDG ${id}`);
+                return names.join(" + ");
+            })
+            .join("\n");
+    }
+
+    function extractIds(objOrArr) {
+        if (!objOrArr) return [];
+        const arr = Array.isArray(objOrArr) ? objOrArr : [objOrArr];
+
+        const out = [];
+        for (const row of arr) {
+            if (!row || typeof row !== "object") continue;
+
+            const ids = Object.keys(row)
+                .filter((k) => /^id_\d+$/.test(k))
+                .sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)))
+                .map((k) => Number(row[k]))
+                .filter((n) => Number.isFinite(n));
+
+            out.push(...ids);
+        }
+        return out;
+    }
+
     const [first, setFirst] = useState("");
     const [second, setSecond] = useState("");
     const [energy, setEnergy] = useState("");
+
+    const [errors, setErrors] = useState({ first: "", second: "", energy: "" });
+
+    const [inputLine, setInputLine] = useState("—");
+
+    const [loading, setLoading] = useState(false);
+    const [apiError, setApiError] = useState("");
 
     const [stage1, setStage1] = useState("-");
     const [decay, setDecay] = useState("-");
     const [values, setValues] = useState(null);
 
-    const [errors, setErrors] = useState({});
-    const [loading, setLoading] = useState(false);
+    // для модалки частиц
+    const [particlesModalOpen, setParticlesModalOpen] = useState(false);
+    const [rawStages, setRawStages] = useState({ first: null, finals: null });
 
-    const [consoleLog, setConsoleLog] = useState("Outputs:\n");
     const [hasOutputs, setHasOutputs] = useState(false);
-    const [inputLine, setInputLine] = useState("");
-    const [apiError, setApiError] = useState("");
-
     const [outputs, setOutputs] = useState({
         mass: "",
         baryon: "",
@@ -700,77 +1026,73 @@ export default function Simulation() {
         charge: "",
     });
 
-    const [rawStages, setRawStages] = useState({ first: null, finals: null });
-    const [isModalOpen, setIsModalOpen] = useState(false);
-
     const abortRef = useRef(null);
+
+    // NEW: ref на анимацию (вместо videoRef)
     const animationRef = useRef(null);
 
-    const options = useMemo(() => {
-        return Object.keys(particlesData || {}).map((k) => ({
-            value: k,
-            label: k,
-        }));
-    }, []);
-
-    function log(msg) {
-        setConsoleLog((prev) => (prev ? `${prev}\n${msg}` : msg));
+    function log(line) {
+        console.log("[UI LOG]", line);
     }
 
     function getSelectedRawByName(name) {
-        if (!name) return null;
-        return particlesData?.[name] ?? null;
+        return particleOptions.find((o) => o.value === name)?.raw || null;
     }
 
-    function getPDGId(p) {
-        // data/all_particles.json: у тебя там ID может называться по-разному
-        if (!p) return null;
-        return p?.Id ?? p?.id ?? p?.PDG ?? p?.pdg ?? p?.pdgId ?? null;
+    function getPDGId(raw) {
+        if (!raw || typeof raw !== "object") return null;
+        const id = raw.mcid;
+        if (id === undefined || id === null) return null;
+        const n = Number(id);
+        return Number.isFinite(n) ? n : null;
     }
 
     function validate() {
-        const next = {};
-        if (!first) next.first = "Выберите первую частицу";
-        if (!second) next.second = "Выберите вторую частицу";
+        const next = { first: "", second: "", energy: "" };
 
-        const E = Number(String(energy).replace(",", "."));
-        if (!energy) next.energy = "Введите энергию";
-        else if (!Number.isFinite(E) || E <= 0) next.energy = "Энергия должна быть числом > 0";
+        if (!first) next.first = "Выбери первую частицу";
+        if (!second) next.second = "Выбери вторую частицу";
+
+        const e = Number(String(energy).replace(",", "."));
+        if (!String(energy).trim()) next.energy = "Введи энергию";
+        else if (!Number.isFinite(e)) next.energy = "Энергия должна быть числом";
+        else if (e <= 0) next.energy = "Энергия должна быть > 0";
+
+        const p1 = getSelectedRawByName(first);
+        const p2 = getSelectedRawByName(second);
+        const id1 = getPDGId(p1);
+        const id2 = getPDGId(p2);
+
+        if (first && id1 == null) next.first = "У этой частицы нет PDG id в JSON";
+        if (second && id2 == null) next.second = "У этой частицы нет PDG id в JSON";
 
         setErrors(next);
-        return Object.keys(next).length === 0;
-    }
-
-    function formatStage(stage) {
-        if (!stage) return "-";
-        if (Array.isArray(stage)) return stage.map((x) => String(x)).join(" + ");
-        if (typeof stage === "object") return JSON.stringify(stage);
-        return String(stage);
-    }
-
-    function extractIds(stage) {
-        if (!stage) return [];
-        if (Array.isArray(stage)) return stage;
-        if (typeof stage === "object") {
-            // если вдруг backend вернет { ids: [...] }
-            if (Array.isArray(stage.ids)) return stage.ids;
-        }
-        return [];
+        return !next.first && !next.second && !next.energy;
     }
 
     function updateOutputsFromValues(vals) {
-        if (!vals) return;
+        // ожидаем: [{ Mass, BaryonNum, "S,B,C": [S,B,C], Charge }]
+        const row = Array.isArray(vals) ? vals[0] : vals;
 
-        // Подстроено под твою прежнюю логику: ожидаем объект с полями
-        const mass = vals?.Mass ?? vals?.mass ?? "";
-        const baryon = vals?.BaryonNum ?? vals?.baryon ?? "";
-        const sbc = vals?.["S,B,C"] ?? vals?.sbc ?? "";
-        const charge = vals?.Charge ?? vals?.charge ?? "";
+        if (!row || typeof row !== "object") {
+            setHasOutputs(false);
+            setOutputs({ mass: "", baryon: "", sbc: "", charge: "" });
+            return;
+        }
+
+        const massNum = Number(row.Mass);
+        const mass = Number.isFinite(massNum) ? massNum.toFixed(1) : "";
+
+        const baryon = row.BaryonNum ?? "";
+        const charge = row.Charge ?? "";
+
+        const sbcArr = row["S,B,C"];
+        const sbc = Array.isArray(sbcArr) ? sbcArr.join(", ") : "";
 
         setOutputs({
-            mass: String(mass),
+            mass,
             baryon: String(baryon),
-            sbc: Array.isArray(sbc) ? sbc.join(", ") : String(sbc),
+            sbc,
             charge: String(charge),
         });
 
@@ -816,16 +1138,18 @@ export default function Simulation() {
         abortRef.current = controller;
 
         setLoading(true);
-        // Запускаем визуализацию (пока на статике / на основе ввода).
-        // TODO (backend): подставить реальные eventType/trackCount/momentum из ответа API.
+        log(`Старт симуляции: id_1=${id_1}, id_2=${id_2}, Energy=${E}`);
+
+        // ✅ ВМЕСТО ВИДЕО: запускаем анимацию
+        // TODO backend: как только backend начнет отдавать eventType/momentum/trackCount/detector —
+        // подставляй сюда реальные значения из ответа.
         animationRef.current?.runSimulation({
             eventType: "Standard",
-            energy: Number.isFinite(E) ? E / 1000 : 13.0, // GeV -> TeV (пример)
-            momentum: Number.isFinite(E) ? Math.round(E * 10) : 1200,
-            trackCount: 45,
-            detector: "ATLAS", // опционально: ATLAS/CMS/ALICE/LHCb
+            energy: 13.0,         // TeV (пока статикой)
+            momentum: 1200,       // GeV/c (пока статикой)
+            trackCount: 45,       // пока статикой
+            detector: "ATLAS",    // опционально
         });
-        log(`Старт симуляции: id_1=${id_1}, id_2=${id_2}, Energy=${E}`);
 
         try {
             const payload = [{ id_1, id_2, Energy: E }];
@@ -874,15 +1198,14 @@ export default function Simulation() {
             // сохраняем сырые стадии для модалки
             setRawStages({ first: first_finals ?? null, finals: finals ?? null });
 
-            // TODO (backend): если backend начнёт отдавать параметры события для визуалки —
-            // дерни анимацию тут, уже с реальными значениями:
-            //
+            // TODO backend:
+            // Если backend начнет отдавать данные для визуалки, делай так:
             // animationRef.current?.runSimulation({
-            //   eventType: vals?.eventType ?? "Higgs Boson",
-            //   energy: vals?.energyTeV ?? 13.0,
+            //   eventType: vals?.eventType ?? 'Standard',
+            //   energy: vals?.energy ?? 13.0,
             //   momentum: vals?.momentum ?? 1200,
             //   trackCount: vals?.trackCount ?? 45,
-            //   detector: vals?.detector ?? "ATLAS",
+            //   detector: vals?.detector ?? 'ATLAS',
             // });
 
             log("Симуляция завершена успешно ✅");
@@ -900,105 +1223,175 @@ export default function Simulation() {
     }
 
     return (
-        <Container>
-            <section className={s.simulation}>
-                <div className={s.simulation__wrapper}>
-                    <h1 className={s.simulation__title}>🎯 СИМУЛЯЦИЯ СТОЛКНОВНОВЕНИЯ</h1>
+        <>
+            <main>
+                <Container>
+                    <h2>СИМУЛЯТОР</h2>
 
-                    <div className={s.simulation__content}>
-                        <div className={s.simulation__inputs}>
-                            <SearchableSelect
-                                id="first"
-                                name="first"
-                                label="Частица 1"
-                                options={options}
-                                value={first}
-                                onChange={setFirst}
-                                error={errors.first}
-                            />
-                            <SearchableSelect
-                                id="second"
-                                name="second"
-                                label="Частица 2"
-                                options={options}
-                                value={second}
-                                onChange={setSecond}
-                                error={errors.second}
-                            />
+                    <div className={s.simulation}>
+                        <div className={s.simulation__mini}>
+                            <div className={s.simulation__parameters}>
+                                <p className={s.simulation__parameters_title}>
+                                    Параметры столкновения
+                                </p>
+                                <hr className={s.simulation__parameters_hr} />
 
-                            <div className={s.simulation__inputWrap}>
-                                <label className={s.simulation__label} htmlFor="energy">
-                                    Энергия пучка (GeV)
-                                </label>
-                                <input
-                                    id="energy"
-                                    className={`${s.simulation__input} ${errors.energy ? s.simulation__inputError : ""}`}
-                                    value={energy}
-                                    onChange={(e) => setEnergy(e.target.value)}
-                                    placeholder="Напр. 100"
-                                />
-                                {errors.energy ? <div className={s.simulation__error}>{errors.energy}</div> : null}
+                                <div className={s.simulation__parameters_options}>
+                                    <SearchableSelect
+                                        id="first"
+                                        name="first"
+                                        label="Первая частица:"
+                                        options={particleOptions}
+                                        value={first}
+                                        onChange={(v) => {
+                                            setFirst(v);
+                                            setErrors((e) => ({ ...e, first: "" }));
+                                            setApiError("");
+                                        }}
+                                        placeholder="Протон p+"
+                                        error={errors.first}
+                                    />
+                                </div>
+
+                                <div className={s.simulation__parameters_options}>
+                                    <SearchableSelect
+                                        id="second"
+                                        name="second"
+                                        label="Вторая частица:"
+                                        options={particleOptions}
+                                        value={second}
+                                        onChange={(v) => {
+                                            setSecond(v);
+                                            setErrors((e) => ({ ...e, second: "" }));
+                                            setApiError("");
+                                        }}
+                                        placeholder="не Протон не p+"
+                                        error={errors.second}
+                                    />
+                                </div>
+
+                                <div className={s.simulation__parameters_options}>
+                                    <label
+                                        htmlFor="energy"
+                                        className={s.simulation__parameters_text}
+                                    >
+                                        Энергия пучков (GeV):
+                                    </label>
+                                    <input
+                                        className={`${s.simulation__parameters_input} ${
+                                            errors.energy ? s.simulation__fieldError : ""
+                                        }`}
+                                        id="energy"
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={energy}
+                                        onChange={(e) => {
+                                            setEnergy(e.target.value);
+                                            setErrors((er) => ({ ...er, energy: "" }));
+                                            setApiError("");
+                                        }}
+                                        placeholder="60"
+                                    />
+                                    {errors.energy ? (
+                                        <div className={s.simulation__errorText}>{errors.energy}</div>
+                                    ) : null}
+                                </div>
+
+                                {apiError ? (
+                                    <div className={s.simulation__errorText}>
+                                        Ошибка API: {apiError}
+                                    </div>
+                                ) : null}
                             </div>
 
-                            <div className={s.simulation__buttons}>
-                                <button className={s.simulation__btn} onClick={handleStart} disabled={loading}>
-                                    {loading ? "Симуляция..." : "Запустить"}
-                                </button>
+                            <div className={s.simulation__inputs}>
+                                <p className={s.simulation__parameters_text}>Входные параметры:</p>
+                                <p className={s.simulation__inputs_input}>{inputLine}</p>
+                            </div>
 
-                                {modalStages.length > 0 ? (
-                                    <button
-                                        className={s.simulation__btnSecondary}
-                                        onClick={() => setIsModalOpen(true)}
-                                        type="button"
-                                    >
-                                        Частицы
-                                    </button>
-                                ) : null}
+                            <button
+                                type="button"
+                                className={s.simulation__startButton}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleStart();
+                                }}
+                                disabled={loading}
+                                aria-busy={loading}
+                            >
+                                {loading ? "Считаю..." : "Запустить симуляцию"}
+                            </button>
+
+                            <div className={s.simulation__results}>
+                                <p className={s.simulation__results_text}>Результат</p>
+                                <hr className={s.simulation__results_hr} />
+
+                                <div className={s.simulation__results_stages}>
+                                    <div className={s.simulation__results_stage}>
+                                        <p className={s.simulation__results_stageText}>
+                                            Первая ступень:
+                                        </p>
+                                        <p className={s.simulation__results_stageRes}>{stage1}</p>
+                                    </div>
+
+                                    <div className={s.simulation__results_stage}>
+                                        <p className={s.simulation__results_stageText}>Распад:</p>
+                                        <p className={s.simulation__results_stageRes}>{decay}</p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    className={s.simulation__results_button}
+                                    type="button"
+                                    onClick={() => {
+                                        const hasAny = modalStages.length > 0;
+                                        if (!hasAny)
+                                            return log("Сначала запусти симуляцию — частиц пока нет");
+                                        setParticlesModalOpen(true);
+                                    }}
+                                >
+                                    Частицы
+                                </button>
                             </div>
                         </div>
 
                         <div className={s.simulation__big}>
                             <div className={s.simulation__bigMain}>
-                                <LHCAnimation ref={animationRef} loading={loading} />
+                                {/* ❌ видео удалено */}
+                                {/* ✅ анимация вставлена вместо видео */}
+                                <LHCAnimation ref={animationRef} />
                             </div>
 
                             <div className={s.simulation__console}>
                                 <div className={s.simulation__console}>
-                                    <p className={s.simulation__consoleTitle}>Console</p>
-                                    {inputLine ? <p className={s.simulation__consoleInput}>{inputLine}</p> : null}
-                                    {apiError ? <p className={s.simulation__consoleError}>{apiError}</p> : null}
-                                    <pre className={s.simulation__consoleText}>{consoleLog}</pre>
-                                </div>
+                                    <p className={s.simulation__consoleTitle}>Outputs:</p>
 
-                                <div className={s.simulation__outputs}>
-                                    <div className={s.simulation__outputsRow}>
-                                        <span>Mass =</span>
-                                        <b>{outputs.mass}</b>
-                                    </div>
-                                    <div className={s.simulation__outputsRow}>
-                                        <span>Baryon Num =</span>
-                                        <b>{outputs.baryon}</b>
-                                    </div>
-                                    <div className={s.simulation__outputsRow}>
-                                        <span>S, B, C =</span>
-                                        <b>{outputs.sbc}</b>
-                                    </div>
-                                    <div className={s.simulation__outputsRow}>
-                                        <span>Charge =</span>
-                                        <b>{outputs.charge}</b>
-                                    </div>
+                                    {hasOutputs ? (
+                                        <div className={s.simulation__consoleOut}>
+                                            <div>Mass = {outputs.mass}</div>
+                                            <div>Baryon Num = {outputs.baryon}</div>
+                                            <div>S, B, C = {outputs.sbc}</div>
+                                            <div>Charge = {outputs.charge}</div>
+                                        </div>
+                                    ) : (
+                                        <div className={s.simulation__consoleOut} />
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <ParticlesModal
-                    open={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    stages={modalStages}
-                />
-            </section>
-        </Container>
+                    <ParticlesModal
+                        isOpen={particlesModalOpen}
+                        onClose={() => setParticlesModalOpen(false)}
+                        stages={modalStages}
+                        particlesById={particlesById}
+                        initialStageKey="stage1"
+                        title="Частицы"
+                    />
+                </Container>
+            </main>
+        </>
     );
 }
