@@ -463,226 +463,293 @@ h2 {
 
 
 
-/* ===== Three.js canvas wrapper ===== */
-.simulation__animWrap {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    min-height: 520px;
-    overflow: hidden;
+/* ====== Visualization wrapper inside .simulation__bigMain ====== */
+.simulation__vizWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  background: #000;
+  overflow: hidden;
 }
 
-.simulation__animRoot {
-    width: 100%;
-    height: 100%;
-    display: block;
+.simulation__vizCanvas {
+  position: absolute;
+  inset: 0;
 }
 
-/* слой для HTML-подписей */
-.simulation__labelsLayer {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
+.simulation__vizPlaceholder {
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid var(--Element-Light-BG-Color, #11181D);
+  background: radial-gradient(ellipse at center, rgba(102, 191, 255, 0.08), rgba(0, 0, 0, 1));
 }
 
-/* подписи слоёв детектора */
-.simulation__detectorLabel {
-    position: absolute;
-    transform: translate(-50%, -50%);
-    color: #ffffff;
-    font-size: 13px;
-    background: rgba(0, 0, 0, 0.75);
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    white-space: nowrap;
-    opacity: 0.35;
+.simulation__vizPlaceholderTitle {
+  color: #fff;
+  font-family: Rubik;
+  font-size: 22px;
+  margin-bottom: 8px;
 }
 
-/* ===== UI overlay ===== */
-.simulation__bigMain {
-    position: relative; /* чтобы UI/легенда нормально легли */
+.simulation__vizPlaceholderText {
+  color: rgba(255, 255, 255, 0.6);
+  font-family: "Inclusive Sans", Rubik, sans-serif;
+  font-size: 14px;
 }
 
-.simulation__animUI {
-    position: absolute;
-    inset: 0;
-    pointer-events: none; /* кнопкам вернём pointer-events ниже */
-    z-index: 5;
+/* ====== Global styles for embedded HTML UI (because CSS Modules) ====== */
+:global(#detectorLabel) {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: #00ff88;
+  padding: 8px 22px;
+  border-radius: 25px;
+  border: 2px solid #667eea;
+  font-family: "Courier New", monospace;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  z-index: 5;
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+  pointer-events: none;
 }
 
-.simulation__detectorLabelTop {
-    position: absolute;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.85);
-    color: #00ff88;
-    padding: 10px 30px;
-    border-radius: 25px;
-    border: 2px solid #667eea;
-    font-family: "Courier New", monospace;
-    font-size: 18px;
-    font-weight: bold;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.35);
-    pointer-events: none;
+:global(#detectorSelection) {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  max-width: 400px;
+  z-index: 10;
 }
 
-/* detector buttons */
-.simulation__detectorSelection {
-    position: absolute;
-    top: 18px;
-    left: 18px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    max-width: 420px;
-    pointer-events: auto;
+:global(.detector-btn) {
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid #667eea;
+  color: #667eea;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-.simulation__detectorBtn {
-    background: rgba(0, 0, 0, 0.7);
-    border: 2px solid #667eea;
-    color: #667eea;
-    padding: 10px 18px;
-    font-size: 13px;
-    font-weight: 700;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+:global(.detector-btn:hover) {
+  background: rgba(102, 126, 234, 0.3);
+  transform: translateY(-1px);
 }
 
-.simulation__detectorBtn:hover {
-    background: rgba(102, 126, 234, 0.3);
-    transform: translateY(-1px);
+:global(.detector-btn.active) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #764ba2;
 }
 
-.simulation__detectorBtnActive {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-color: #764ba2;
+:global(#controls) {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 12px;
 }
 
-/* labels toggle */
-.simulation__labelsToggle {
-    position: absolute;
-    bottom: 18px;
-    left: 18px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 2px solid #667eea;
-    border-radius: 10px;
-    padding: 12px 18px;
-    color: #667eea;
-    font-size: 13px;
-    user-select: none;
-    pointer-events: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
+:global(#clearBtn) {
+  background: linear-gradient(135deg, #ea6767 0%, #a24b76 100%);
+  border: none;
+  color: white;
+  padding: 10px 18px;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(234, 103, 103, 0.25);
+  transition: all 0.2s ease;
+  letter-spacing: 1px;
 }
 
-.simulation__labelsToggle input {
-    cursor: pointer;
-    width: 16px;
-    height: 16px;
+:global(#clearBtn:hover) {
+  transform: translateY(-1px);
 }
 
-/* ===== legend ===== */
-.simulation__legend {
-    position: absolute;
-    bottom: 80px;
-    left: 18px;
-    background: rgba(0, 0, 0, 0.85);
-    border: 2px solid #667eea;
-    border-radius: 10px;
-    padding: 15px 20px;
-    color: #fff;
-    font-size: 12px;
-    min-width: 220px;
-    cursor: pointer;
-    pointer-events: auto;
+:global(#hud) {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid #667eea;
+  border-radius: 15px;
+  padding: 12px 16px;
+  color: #00ff88;
+  font-size: 12px;
+  min-width: 230px;
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+  z-index: 10;
 }
 
-.simulation__legendTitle {
-    margin: 0 0 10px 0;
-    color: #667eea;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+:global(#hud div) {
+  margin: 6px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.simulation__legendItem {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 8px 0;
+:global(#hud .label) {
+  color: #888;
 }
 
-.simulation__legendColor {
-    width: 30px;
-    height: 3px;
-    border-radius: 2px;
-    display: inline-block;
+:global(#hud .value) {
+  color: #00ff88;
+  font-weight: bold;
 }
 
-.simulation__legendColor[data-c="jets"] {
-    background: #ff8800;
-    box-shadow: 0 0 5px #ff8800;
-}
-.simulation__legendColor[data-c="leptons"] {
-    background: #ff00ff;
-    box-shadow: 0 0 5px #ff00ff;
-}
-.simulation__legendColor[data-c="photons"] {
-    background: #00ff00;
-    box-shadow: 0 0 5px #00ff00;
-}
-.simulation__legendColor[data-c="muons"] {
-    background: #00ffff;
-    box-shadow: 0 0 5px #00ffff;
-}
-.simulation__legendColor[data-c="charged"] {
-    background: #00ff88;
-    box-shadow: 0 0 5px #00ff88;
-}
-.simulation__legendColor[data-c="neutral"] {
-    background: #ff3300;
-    box-shadow: 0 0 5px #ff3300;
+:global(#instructions) {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid #667eea;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #aaa;
+  font-size: 12px;
+  max-width: 220px;
+  z-index: 10;
 }
 
-.simulation__legendText {
-    color: #ccc;
-    font-size: 11px;
+:global(#labelsToggle) {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid #667eea;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #667eea;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  z-index: 10;
 }
 
-.simulation__legendToggle {
-    position: absolute;
-    bottom: 80px;
-    left: 18px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 2px solid #667eea;
-    border-radius: 10px;
-    padding: 10px 16px;
-    color: #667eea;
-    font-size: 12px;
-    cursor: pointer;
-    pointer-events: auto;
+:global(#labelsToggle input[type="checkbox"]) {
+  margin-right: 8px;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
 }
 
-/* placeholder, пока результатов нет */
-.simulation__animPlaceholder {
-    width: 100%;
-    height: 100%;
-    min-height: 520px;
-    background: radial-gradient(ellipse at center, rgba(20, 30, 40, 0.35), rgba(0, 0, 0, 0.9));
+:global(#labelsContainer) {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 12;
 }
 
+:global(.detector-label) {
+  position: absolute;
+  color: #ffffff;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+  white-space: nowrap;
+  display: none;
+  font-family: Arial, sans-serif;
+  font-weight: 500;
+  transform: translate(-50%, -50%);
+  opacity: 0.35;
+}
 
+:global(.detector-label.visible) {
+  display: block;
+}
 
+:global(.detector-label.highlighted) {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.9);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+:global(#legend) {
+  position: absolute;
+  bottom: 64px;
+  left: 14px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid #667eea;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 12px;
+  min-width: 200px;
+  z-index: 10;
+  cursor: pointer;
+}
+
+:global(#legend.hidden) {
+  display: none;
+}
+
+:global(#legend h3) {
+  margin: 0 0 10px 0;
+  color: #667eea;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+:global(.legend-item) {
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+  gap: 10px;
+}
+
+:global(.legend-color) {
+  width: 30px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+:global(.legend-label) {
+  font-size: 11px;
+  color: #ccc;
+}
+
+:global(#legendToggle) {
+  position: absolute;
+  bottom: 64px;
+  left: 14px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid #667eea;
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: #667eea;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  z-index: 10;
+  display: none;
+}
 
 @media (max-width: 1280px) {
     .simulation {

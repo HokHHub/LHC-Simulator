@@ -1,238 +1,207 @@
 import Container from "../Container/Container";
 import s from "./Simulation.module.css";
-import {
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-    forwardRef,
-    useImperativeHandle,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import particlesData from "../../data/all_particles.json";
 import ParticlesModal from "../ParticlesModal/ParticlesModal";
 
 /**
- * ====== LHC Animation (Three.js via CDN, NO npm import) ======
- * CDN: https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js
- * window.THREE
+ * Подгружаем Three.js с CDN (без import "three", чтобы Vite не падал).
  */
-const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
-    const rootRef = useRef(null);
-    const labelsLayerRef = useRef(null);
+function loadThreeFromCdn() {
+  return new Promise((resolve, reject) => {
+    if (window.THREE) return resolve(window.THREE);
 
-    const sceneRef = useRef(null);
-    const cameraRef = useRef(null);
-    const rendererRef = useRef(null);
-
-    const detectorGeometryRef = useRef([]);
-    const particlesRef = useRef([]);
-    const tracksRef = useRef([]);
-
-    const isAnimatingRef = useRef(false);
-    const animationFrameRef = useRef(0);
-    const isPausedRef = useRef(false);
-
-    const currentDetectorRef = useRef("ATLAS");
-
-    const cameraRotationRef = useRef({ x: 0, y: 0 });
-    const cameraDistanceRef = useRef(30);
-    const isDraggingRef = useRef(false);
-    const prevMouseRef = useRef({ x: 0, y: 0 });
-
-    const showLabelsRef = useRef(false);
-    const labelElementsRef = useRef([]); // [{ element, object }]
-
-    const eventDataRef = useRef({
-        energy: 13.0,
-        momentum: 1200,
-        trackCount: 45,
-        eventType: "Standard",
-    });
-
-    const MAGNETIC_FIELD = useMemo(
-        () => ({
-            ATLAS: 2.0,
-            CMS: 3.8,
-            ALICE: 0.5,
-            LHCb: 1.1,
-        }),
-        []
-    );
-
-    function loadThreeCDN() {
-        return new Promise((resolve, reject) => {
-            if (window.THREE) return resolve(window.THREE);
-
-            const exist = document.querySelector('script[data-three-cdn="true"]');
-            if (exist) {
-                const t = setInterval(() => {
-                    if (window.THREE) {
-                        clearInterval(t);
-                        resolve(window.THREE);
-                    }
-                }, 50);
-                setTimeout(() => {
-                    clearInterval(t);
-                    if (!window.THREE) reject(new Error("THREE не загрузился с CDN"));
-                }, 8000);
-                return;
-            }
-
-            const script = document.createElement("script");
-            script.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
-            script.async = true;
-            script.dataset.threeCdn = "true";
-            script.onload = () => resolve(window.THREE);
-            script.onerror = () => reject(new Error("Не удалось загрузить THREE.js с CDN"));
-            document.head.appendChild(script);
-        });
+    const existing = document.querySelector('script[data-three="r128"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.THREE));
+      existing.addEventListener("error", reject);
+      return;
     }
 
-    function disposeObject(obj) {
-        if (!obj) return;
-        obj.traverse?.((child) => {
-            if (child.geometry) child.geometry.dispose?.();
-            if (child.material) {
-                if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose?.());
-                else child.material.dispose?.();
-            }
-        });
-    }
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+    script.async = true;
+    script.dataset.three = "r128";
+    script.onload = () => resolve(window.THREE);
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
+}
 
-    function clearLabels() {
-        const layer = labelsLayerRef.current;
-        if (!layer) return;
-        layer.innerHTML = "";
-        labelElementsRef.current = [];
-    }
+/**
+ * Встраиваем твой HTML-скрипт внутрь React, но:
+ * - IDs оставляем такими же, как в HTML (script их ищет)
+ * - наружу экспортируем window.runSimulation / window.clearAnimation
+ * - добавляем window.__LHC_SIM_INIT__ чтобы не инициализировать дважды
+ */
+function injectLhcScriptOnce() {
+  if (window.__LHC_SIM_INIT__) return;
+  window.__LHC_SIM_INIT__ = true;
 
-    function createLabels() {
-        const layer = labelsLayerRef.current;
-        if (!layer) return;
+  const code = `
+    // ====== LHC SIM (embedded) ======
+    (function () {
+      if (!window.THREE) {
+        console.error("THREE not loaded");
+        return;
+      }
 
-        clearLabels();
+      const THREE = window.THREE;
 
-        detectorGeometryRef.current.forEach((obj) => {
-            if (!obj?.userData?.layerName) return;
+      let scene, camera, renderer;
+      let particles = [];
+      let tracks = [];
+      let isAnimating = false;
+      let animationFrame = 0;
+      let isPaused = false;
 
-            const div = document.createElement("div");
-            div.className = s.simulation__detectorLabel; // CSS module class name
-            div.textContent = obj.userData.layerName;
+      let currentDetector = 'ATLAS';
+      let detectorGeometry = [];
+      let labelElements = [];
+      let showDetectorLabels = false;
 
-            layer.appendChild(div);
+      let raycaster = new THREE.Raycaster();
+      let mouse = new THREE.Vector2();
+      let hoveredObject = null;
+      let clickStartPos = { x: 0, y: 0 };
 
-            labelElementsRef.current.push({
-                element: div,
-                object: obj,
-            });
-        });
-    }
+      let isDragging = false;
+      let previousMousePosition = { x: 0, y: 0 };
+      let cameraRotation = { x: 0, y: 0 };
+      let cameraDistance = 30;
 
-    function updateLabels() {
-        const root = rootRef.current;
-        const layer = labelsLayerRef.current;
-        const camera = cameraRef.current;
+      let showLegend = true;
 
-        if (!root || !layer || !camera) return;
+      let eventData = {
+        energy: 0,
+        momentum: 0,
+        trackCount: 0,
+        eventType: '—'
+      };
 
-        if (!showLabelsRef.current) {
-            labelElementsRef.current.forEach(({ element }) => {
-                element.style.display = "none";
-            });
-            return;
-        }
+      const MAGNETIC_FIELD = {
+        'ATLAS': 2.0,
+        'CMS': 3.8,
+        'ALICE': 0.5,
+        'LHCb': 1.1
+      };
 
-        const rect = root.getBoundingClientRect();
-        const w = rect.width || 1;
-        const h = rect.height || 1;
+      function getEl(id) {
+        return document.getElementById(id);
+      }
 
-        labelElementsRef.current.forEach(({ element, object }, index) => {
-            if (!object?.userData) return;
+      function init() {
+        const mount = getEl('canvas');
+        if (!mount) return;
 
-            const radius = object.userData.radius || 8;
-            const heightDet = object.userData.height || 40;
+        // если уже есть renderer DOM — не дублим
+        if (mount.querySelector('canvas')) return;
 
-            // как в html: на краю вдоль beam axis (X)
-            const side = index % 2 === 0 ? 1 : -1;
-            const xOffset = (heightDet / 2 + 3) * side;
-            const yOffset = radius * 0.3 + (index % 3) * 1.5;
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.001);
 
-            const THREE = window.THREE;
-            if (!THREE) return;
+        const w = mount.clientWidth || window.innerWidth;
+        const h = mount.clientHeight || window.innerHeight;
 
-            const labelPos = new THREE.Vector3(
-                object.position.x + xOffset,
-                yOffset,
-                object.position.z || 0
-            );
-
-            const screenPos = labelPos.clone().project(camera);
-
-            if (screenPos.z > 1 || screenPos.z < -1) {
-                element.style.display = "none";
-                return;
-            }
-
-            const x = (screenPos.x * 0.5 + 0.5) * w;
-            const y = (screenPos.y * -0.5 + 0.5) * h;
-
-            element.style.left = `${x}px`;
-            element.style.top = `${y}px`;
-            element.style.display = "block";
-        });
-    }
-
-    function clearAnimation() {
-        const scene = sceneRef.current;
-        if (!scene) return;
-
-        particlesRef.current.forEach((p) => scene.remove(p));
-        tracksRef.current.forEach((t) => scene.remove(t));
-        particlesRef.current = [];
-        tracksRef.current = [];
-
-        isAnimatingRef.current = false;
-        animationFrameRef.current = 0;
-
-        eventDataRef.current = {
-            energy: 0,
-            momentum: 0,
-            trackCount: 0,
-            eventType: "—",
-        };
-    }
-
-    function updateCamera() {
-        const camera = cameraRef.current;
-        if (!camera) return;
-
-        const rot = cameraRotationRef.current;
-        const dist = cameraDistanceRef.current;
-
-        camera.position.x = Math.sin(rot.y) * Math.cos(rot.x) * dist;
-        camera.position.y = Math.sin(rot.x) * dist;
-        camera.position.z = Math.cos(rot.y) * Math.cos(rot.x) * dist;
+        camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
+        camera.position.set(20, 10, 20);
         camera.lookAt(0, 0, 0);
-    }
 
-    function createCutawayRing(THREE, radius, height, color, opacity, layerName) {
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(w, h);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        mount.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+        scene.add(ambientLight);
+
+        const pointLight1 = new THREE.PointLight(0x667eea, 1, 100);
+        pointLight1.position.set(20, 20, 20);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x764ba2, 0.8, 100);
+        pointLight2.position.set(-20, -10, -20);
+        scene.add(pointLight2);
+
+        buildDetector(currentDetector);
+
+        window.addEventListener('resize', onWindowResize);
+        document.addEventListener('mousedown', onMouseDown);
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+        document.addEventListener('click', onMouseClick);
+        document.addEventListener('wheel', onMouseWheel, { passive: false });
+        document.addEventListener('keydown', onKeyDown);
+
+        // UI hooks
+        const clearBtn = getEl('clearBtn');
+        clearBtn && clearBtn.addEventListener('click', clearAnimation);
+
+        const showLabels = getEl('showLabels');
+        showLabels && showLabels.addEventListener('change', function(e) {
+          showDetectorLabels = e.target.checked;
+          if (!showDetectorLabels) {
+            labelElements.forEach(label => label.element.classList.remove('visible'));
+          }
+        });
+
+        const legendToggle = getEl('legendToggle');
+        legendToggle && legendToggle.addEventListener('click', function() {
+          showLegend = !showLegend;
+          const legend = getEl('legend');
+          const legendToggle = getEl('legendToggle');
+          if (!legend || !legendToggle) return;
+
+          if (showLegend) {
+            legend.classList.remove('hidden');
+            legendToggle.style.display = 'none';
+          } else {
+            legend.classList.add('hidden');
+            legendToggle.style.display = 'block';
+          }
+        });
+
+        const legend = getEl('legend');
+        legend && legend.addEventListener('click', function() {
+          showLegend = false;
+          this.classList.add('hidden');
+          const t = getEl('legendToggle');
+          if (t) t.style.display = 'block';
+        });
+
+        document.querySelectorAll('.detector-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            if (currentDetector === this.dataset.detector) return;
+
+            document.querySelectorAll('.detector-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            currentDetector = this.dataset.detector;
+            buildDetector(currentDetector);
+          });
+        });
+
+        animate();
+      }
+
+      function createCutawayRing(radius, height, color, opacity, layerName) {
         const shape = new THREE.Shape();
         const innerRadius = radius * 0.92;
         const startAngle = -Math.PI / 6;
         const endAngle = startAngle + Math.PI / 3;
 
         for (let angle = endAngle; angle < Math.PI * 2 + startAngle; angle += 0.08) {
-            const x = Math.cos(angle) * radius;
-            const y = Math.sin(angle) * radius;
-            if (angle === endAngle) shape.moveTo(x, y);
-            else shape.lineTo(x, y);
+          const x = Math.cos(angle) * radius;
+          const y = Math.sin(angle) * radius;
+          if (angle === endAngle) shape.moveTo(x, y);
+          else shape.lineTo(x, y);
         }
 
         for (let angle = Math.PI * 2 + startAngle; angle > endAngle; angle -= 0.08) {
-            const x = Math.cos(angle) * innerRadius;
-            const y = Math.sin(angle) * innerRadius;
-            shape.lineTo(x, y);
+          const x = Math.cos(angle) * innerRadius;
+          const y = Math.sin(angle) * innerRadius;
+          shape.lineTo(x, y);
         }
 
         shape.closePath();
@@ -242,11 +211,11 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
         geometry.center();
 
         const material = new THREE.MeshBasicMaterial({
-            color,
-            transparent: true,
-            opacity: opacity * 0.12,
-            wireframe: true,
-            side: THREE.DoubleSide,
+          color,
+          transparent: true,
+          opacity: opacity * 0.12,
+          wireframe: true,
+          side: THREE.DoubleSide
         });
 
         const mesh = new THREE.Mesh(geometry, material);
@@ -256,9 +225,9 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
 
         const edges = new THREE.EdgesGeometry(geometry);
         const lineMaterial = new THREE.LineBasicMaterial({
-            color,
-            transparent: true,
-            opacity: opacity * 1.5,
+          color,
+          transparent: true,
+          opacity: opacity * 1.5
         });
         const wireframe = new THREE.LineSegments(edges, lineMaterial);
         wireframe.rotation.y = Math.PI / 2;
@@ -267,21 +236,18 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
         const group = new THREE.Group();
         group.add(mesh);
         group.add(wireframe);
-        group.userData.layerName = layerName;
-
         return group;
-    }
+      }
 
-    function createEndCap(THREE, radius, position, color, opacity) {
-        const segments = 28;
-        const geometry = new THREE.RingGeometry(radius * 0.3, radius, segments);
+      function createEndCap(radius, height, position, color, opacity) {
+        const geometry = new THREE.RingGeometry(radius * 0.3, radius, 28);
 
         const material = new THREE.MeshBasicMaterial({
-            color,
-            transparent: true,
-            opacity: opacity * 0.18,
-            wireframe: true,
-            side: THREE.DoubleSide,
+          color,
+          transparent: true,
+          opacity: opacity * 0.18,
+          wireframe: true,
+          side: THREE.DoubleSide
         });
 
         const mesh = new THREE.Mesh(geometry, material);
@@ -291,9 +257,9 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
 
         const edges = new THREE.EdgesGeometry(geometry);
         const lineMaterial = new THREE.LineBasicMaterial({
-            color,
-            transparent: true,
-            opacity: opacity * 1.1,
+          color,
+          transparent: true,
+          opacity: opacity * 1.1
         });
         const wireframe = new THREE.LineSegments(edges, lineMaterial);
         wireframe.position.x = position;
@@ -304,1217 +270,1430 @@ const LHCAnimation = forwardRef(function LHCAnimation(_, ref) {
         group.add(mesh);
         group.add(wireframe);
         return group;
-    }
+      }
 
-    function createSupportGrid(THREE, radius, height, color, opacity) {
+      function createSupportGrid(radius, height, color, opacity) {
         const geometry = new THREE.BufferGeometry();
         const vertices = [];
 
         const numSupports = 10;
         for (let i = 0; i < numSupports; i++) {
-            const angle = (i / numSupports) * Math.PI * 2;
-            const x1 = Math.cos(angle) * radius;
-            const y1 = Math.sin(angle) * radius;
-            vertices.push(-height / 2, x1, y1);
-            vertices.push(height / 2, x1, y1);
+          const angle = (i / numSupports) * Math.PI * 2;
+          const x1 = Math.cos(angle) * radius;
+          const y1 = Math.sin(angle) * radius;
+
+          vertices.push(-height/2, x1, y1);
+          vertices.push(height/2, x1, y1);
         }
 
         const numRings = 4;
         for (let i = 0; i < numRings; i++) {
-            const z = -height / 2 + (i / (numRings - 1)) * height;
-            for (let j = 0; j < 28; j++) {
-                const a1 = (j / 28) * Math.PI * 2;
-                const a2 = ((j + 1) / 28) * Math.PI * 2;
-                vertices.push(z, Math.cos(a1) * radius, Math.sin(a1) * radius);
-                vertices.push(z, Math.cos(a2) * radius, Math.sin(a2) * radius);
-            }
+          const z = -height/2 + (i / (numRings-1)) * height;
+          for (let j = 0; j < 28; j++) {
+            const angle1 = (j / 28) * Math.PI * 2;
+            const angle2 = ((j+1) / 28) * Math.PI * 2;
+
+            vertices.push(z, Math.cos(angle1) * radius, Math.sin(angle1) * radius);
+            vertices.push(z, Math.cos(angle2) * radius, Math.sin(angle2) * radius);
+          }
         }
 
-        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
 
         const material = new THREE.LineBasicMaterial({
-            color,
-            transparent: true,
-            opacity: opacity * 1.2,
+          color,
+          transparent: true,
+          opacity: opacity * 1.2
         });
 
         const lineSegments = new THREE.LineSegments(geometry, material);
         lineSegments.userData.baseOpacity = opacity * 1.2;
         return lineSegments;
-    }
+      }
 
-    function createDetectorLayer(THREE, radius, height, color, opacity, layerName) {
+      function createDetectorLayer(radius, height, color, opacity, layerName) {
         const group = new THREE.Group();
 
-        const ring = createCutawayRing(THREE, radius, height, color, opacity, layerName);
+        const ring = createCutawayRing(radius, height, color, opacity, layerName);
         group.add(ring);
 
         if (radius > 5) {
-            group.add(createEndCap(THREE, radius, height / 2, color, opacity));
-            group.add(createEndCap(THREE, radius, -height / 2, color, opacity));
+          group.add(createEndCap(radius, height, height/2, color, opacity));
+          group.add(createEndCap(radius, height, -height/2, color, opacity));
         }
 
-        group.add(createSupportGrid(THREE, radius, height, color, opacity * 0.8));
+        group.add(createSupportGrid(radius, height, color, opacity * 0.8));
 
         group.userData.layerName = layerName;
         group.userData.radius = radius;
         group.userData.height = height;
-
         return group;
-    }
+      }
 
-    function createCollisionZone(THREE, color = 0xffffff) {
+      function createCollisionZone(color = 0xffffff) {
         const group = new THREE.Group();
 
         const pointGeometry = new THREE.SphereGeometry(0.2, 12, 12);
         const pointMaterial = new THREE.MeshStandardMaterial({
-            color,
-            emissive: color,
-            emissiveIntensity: 0.5,
-            metalness: 0.5,
-            roughness: 0.3,
+          color,
+          emissive: color,
+          emissiveIntensity: 0.5,
+          metalness: 0.5,
+          roughness: 0.3
         });
         const collisionPoint = new THREE.Mesh(pointGeometry, pointMaterial);
         group.add(collisionPoint);
 
-        return group;
-    }
-
-    function buildDetector(detectorType) {
-        const THREE = window.THREE;
-        const scene = sceneRef.current;
-        if (!scene || !THREE) return;
-
-        detectorGeometryRef.current.forEach((obj) => {
-            scene.remove(obj);
-            disposeObject(obj);
-        });
-        detectorGeometryRef.current = [];
-
-        const addLayer = (radius, height, color, opacity, name, x = 0) => {
-            const layer = createDetectorLayer(THREE, radius, height, color, opacity, name);
-            layer.position.x = x;
-            scene.add(layer);
-            detectorGeometryRef.current.push(layer);
-        };
-
-        if (detectorType === "ATLAS") {
-            addLayer(12, 48, 0x2a5a8a, 0.12, "Muon System");
-            addLayer(10, 40, 0x3a6a9a, 0.15, "Calorimeter");
-            addLayer(7, 32, 0x4a7aaa, 0.18, "TRT");
-            addLayer(4, 24, 0x5a8aba, 0.22, "SCT");
-            addLayer(1.8, 18, 0x6a9aca, 0.26, "Pixel Detector");
-
-            const cz = createCollisionZone(THREE);
-            scene.add(cz);
-            detectorGeometryRef.current.push(cz);
-        } else if (detectorType === "CMS") {
-            addLayer(11, 42, 0x8a2a3a, 0.12, "Muon Chambers");
-            addLayer(9, 36, 0x9a3a4a, 0.15, "HCAL");
-            addLayer(6.5, 30, 0xaa4a5a, 0.18, "ECAL");
-            addLayer(4, 24, 0xba5a6a, 0.22, "Tracker");
-            addLayer(1.8, 18, 0xca6a7a, 0.26, "Silicon Tracker");
-
-            const cz = createCollisionZone(THREE, 0x8a2a3a);
-            scene.add(cz);
-            detectorGeometryRef.current.push(cz);
-        } else if (detectorType === "ALICE") {
-            addLayer(10, 50, 0x2a8a5a, 0.12, "TPC");
-            addLayer(7, 42, 0x3a9a6a, 0.15, "TRD");
-            addLayer(5, 35, 0x4aaa7a, 0.18, "TOF");
-            addLayer(3, 28, 0x5aba8a, 0.22, "ITS");
-
-            const cz = createCollisionZone(THREE, 0x2a8a5a);
-            scene.add(cz);
-            detectorGeometryRef.current.push(cz);
-        } else {
-            // LHCb
-            addLayer(2, 4, 0x9a6aca, 0.30, "VELO", 16);
-            addLayer(4, 6, 0x6a3a9a, 0.25, "RICH1", 8);
-            addLayer(5, 8, 0x7a4aaa, 0.20, "Trackers", 2);
-            addLayer(6, 10, 0x5a2a8a, 0.18, "Magnet", -6);
-            addLayer(7, 10, 0x6a3a9a, 0.15, "RICH2", -15);
-            addLayer(8, 12, 0x4a1a7a, 0.12, "Calorimeters", -26);
-
-            const cz = createCollisionZone(THREE, 0xffffff);
-            scene.add(cz);
-            detectorGeometryRef.current.push(cz);
+        const linesGeometry = new THREE.BufferGeometry();
+        const linesVertices = [];
+        for (let i = 0; i < 8; i++) {
+          const angle = (i / 8) * Math.PI * 2;
+          const length = 1.5;
+          linesVertices.push(0, 0, 0);
+          linesVertices.push(Math.cos(angle) * length, Math.sin(angle) * length, 0);
         }
+        linesGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linesVertices, 3));
+        const linesMaterial = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.3 });
+        group.add(new THREE.LineSegments(linesGeometry, linesMaterial));
+
+        return group;
+      }
+
+      function buildATLAS() {
+        const lbl = getEl('detectorLabel');
+        if (lbl) lbl.textContent = 'ATLAS';
+
+        const layers = [
+          { radius: 12, height: 48, color: 0x2a5a8a, opacity: 0.12, name: 'Muon System' },
+          { radius: 10, height: 40, color: 0x3a6a9a, opacity: 0.15, name: 'Calorimeter' },
+          { radius: 7, height: 32, color: 0x4a7aaa, opacity: 0.18, name: 'TRT' },
+          { radius: 4, height: 24, color: 0x5a8aba, opacity: 0.22, name: 'SCT' },
+          { radius: 1.8, height: 18, color: 0x6a9aca, opacity: 0.26, name: 'Pixel Detector' }
+        ];
+
+        layers.forEach((layer) => {
+          const g = createDetectorLayer(layer.radius, layer.height, layer.color, layer.opacity, layer.name);
+          scene.add(g);
+          detectorGeometry.push(g);
+        });
+
+        const cz = createCollisionZone();
+        scene.add(cz);
+        detectorGeometry.push(cz);
+      }
+
+      function buildCMS() {
+        const lbl = getEl('detectorLabel');
+        if (lbl) lbl.textContent = 'CMS';
+
+        const layers = [
+          { radius: 11, height: 42, color: 0x8a2a3a, opacity: 0.12, name: 'Muon Chambers' },
+          { radius: 9, height: 36, color: 0x9a3a4a, opacity: 0.15, name: 'HCAL' },
+          { radius: 6.5, height: 30, color: 0xaa4a5a, opacity: 0.18, name: 'ECAL' },
+          { radius: 4, height: 24, color: 0xba5a6a, opacity: 0.22, name: 'Tracker' },
+          { radius: 1.8, height: 18, color: 0xca6a7a, opacity: 0.26, name: 'Silicon Tracker' }
+        ];
+
+        layers.forEach((layer) => {
+          const g = createDetectorLayer(layer.radius, layer.height, layer.color, layer.opacity, layer.name);
+          scene.add(g);
+          detectorGeometry.push(g);
+        });
+
+        const cz = createCollisionZone(0x8a2a3a);
+        scene.add(cz);
+        detectorGeometry.push(cz);
+      }
+
+      function buildALICE() {
+        const lbl = getEl('detectorLabel');
+        if (lbl) lbl.textContent = 'ALICE';
+
+        const layers = [
+          { radius: 10, height: 50, color: 0x2a8a5a, opacity: 0.12, name: 'TPC' },
+          { radius: 7, height: 42, color: 0x3a9a6a, opacity: 0.15, name: 'TRD' },
+          { radius: 5, height: 35, color: 0x4aaa7a, opacity: 0.18, name: 'TOF' },
+          { radius: 3, height: 28, color: 0x5aba8a, opacity: 0.22, name: 'ITS' }
+        ];
+
+        layers.forEach((layer) => {
+          const g = createDetectorLayer(layer.radius, layer.height, layer.color, layer.opacity, layer.name);
+          scene.add(g);
+          detectorGeometry.push(g);
+        });
+
+        const cz = createCollisionZone(0x2a8a5a);
+        scene.add(cz);
+        detectorGeometry.push(cz);
+      }
+
+      function buildLHCb() {
+        const lbl = getEl('detectorLabel');
+        if (lbl) lbl.textContent = 'LHCb';
+
+        const components = [
+          { radius: 2, height: 4, z: 16, color: 0x9a6aca, opacity: 0.30, name: 'VELO' },
+          { radius: 4, height: 6, z: 8, color: 0x6a3a9a, opacity: 0.25, name: 'RICH1' },
+          { radius: 5, height: 8, z: 2, color: 0x7a4aaa, opacity: 0.20, name: 'Trackers' },
+          { radius: 6, height: 10, z: -6, color: 0x5a2a8a, opacity: 0.18, name: 'Magnet' },
+          { radius: 7, height: 10, z: -15, color: 0x6a3a9a, opacity: 0.15, name: 'RICH2' },
+          { radius: 8, height: 12, z: -26, color: 0x4a1a7a, opacity: 0.12, name: 'Calorimeters' }
+        ];
+
+        components.forEach((comp) => {
+          const g = createDetectorLayer(comp.radius, comp.height, comp.color, comp.opacity, comp.name);
+          g.position.x = comp.z;
+          scene.add(g);
+          detectorGeometry.push(g);
+        });
+      }
+
+      function buildDetector(detectorType) {
+        detectorGeometry.forEach(obj => scene.remove(obj));
+        detectorGeometry = [];
+
+        const labelsContainer = getEl('labelsContainer');
+        if (labelsContainer) labelsContainer.innerHTML = '';
+        labelElements = [];
+
+        if (detectorType === 'ATLAS') buildATLAS();
+        else if (detectorType === 'CMS') buildCMS();
+        else if (detectorType === 'ALICE') buildALICE();
+        else if (detectorType === 'LHCb') buildLHCb();
 
         createLabels();
-    }
 
-    function createParticle(THREE, position, color, size) {
+        const mf = MAGNETIC_FIELD[currentDetector] || 2.0;
+        const hudMf = getEl('magneticField');
+        if (hudMf) hudMf.textContent = mf + ' T';
+      }
+
+      function createLabels() {
+        const labelsContainer = getEl('labelsContainer');
+        if (!labelsContainer) return;
+
+        detectorGeometry.forEach((obj) => {
+          if (obj.userData.layerName) {
+            const d = document.createElement('div');
+            d.className = 'detector-label';
+            d.textContent = obj.userData.layerName;
+            labelsContainer.appendChild(d);
+            labelElements.push({ element: d, object: obj });
+          }
+        });
+      }
+
+      function updateLabels() {
+        if (!showDetectorLabels) {
+          labelElements.forEach(label => label.element.classList.remove('visible'));
+          return;
+        }
+
+        labelElements.forEach((label, index) => {
+          const obj = label.object;
+          const radius = obj.userData.radius || 8;
+          const height = obj.userData.height || 40;
+
+          const side = index % 2 === 0 ? 1 : -1;
+          const xOffset = (height / 2 + 3) * side;
+          const yOffset = radius * 0.3 + (index % 3) * 1.5;
+
+          const labelPos = new THREE.Vector3(
+            obj.position.x + xOffset,
+            yOffset,
+            0
+          );
+
+          const mount = getEl('canvas');
+          const rect = mount ? mount.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight, left: 0, top: 0 };
+
+          const screenPos = labelPos.clone().project(camera);
+          if (screenPos.z > 1 || screenPos.z < -1) {
+            label.element.classList.remove('visible');
+            return;
+          }
+
+          const x = (screenPos.x * 0.5 + 0.5) * rect.width + rect.left;
+          const y = (screenPos.y * -0.5 + 0.5) * rect.height + rect.top;
+
+          label.element.style.left = x + 'px';
+          label.element.style.top = y + 'px';
+          label.element.classList.add('visible');
+
+          if (hoveredObject && hoveredObject === obj) label.element.classList.add('highlighted');
+          else label.element.classList.remove('highlighted');
+        });
+      }
+
+      function createParticle(position, color, size) {
         const geometry = new THREE.SphereGeometry(size, 12, 12);
         const material = new THREE.MeshPhongMaterial({
-            color,
-            emissive: color,
-            emissiveIntensity: 0.8,
-            shininess: 100,
+          color,
+          emissive: color,
+          emissiveIntensity: 0.8,
+          shininess: 100
         });
         const particle = new THREE.Mesh(geometry, material);
         particle.position.copy(position);
         return particle;
-    }
+      }
 
-    function createTrack(THREE, startPos, direction, color, length = 20, charge = 1, momentum = 20) {
+      function createJetCone(origin, direction, color, length) {
+        const coneRadius = length * 0.35;
+        const coneGeometry = new THREE.ConeGeometry(coneRadius, length, 16, 1, false);
+        coneGeometry.translate(0, -length / 2, 0);
+
+        const coneMaterial = new THREE.MeshPhongMaterial({
+          color,
+          emissive: color,
+          emissiveIntensity: 0.8,
+          transparent: true,
+          opacity: 0.65,
+          side: THREE.DoubleSide,
+          shininess: 120,
+          specular: 0x444444,
+          depthWrite: false
+        });
+
+        const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+        cone.renderOrder = 100;
+        cone.position.copy(origin);
+
+        const quaternion = new THREE.Quaternion();
+        quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+        cone.quaternion.copy(quaternion);
+
+        cone.userData = {
+          age: 0,
+          maxAge: 120,
+          growthProgress: 0,
+          spawnDelay: 0,
+          initialOpacity: 0.65
+        };
+
+        cone.scale.set(0, 0, 0);
+
+        tracks.push(cone);
+        scene.add(cone);
+      }
+
+      function createTrack(startPos, direction, color, length = 20, isMuon = false, hasTrail = false, charge = 1, momentum = 1000) {
         const points = [];
         const segments = 70;
 
-        const B = MAGNETIC_FIELD[currentDetectorRef.current] || 2.0;
-
+        const B = MAGNETIC_FIELD[currentDetector] || 2.0;
         let curvature = 0;
+
         if (charge !== 0) {
-            const radiusOfCurvature = momentum / (0.3 * Math.abs(charge) * B);
-            const normalizedRadius = radiusOfCurvature / 10;
-            curvature = (length * 20) / normalizedRadius;
-            curvature *= Math.sign(charge);
-            curvature = Math.max(-2.0, Math.min(2.0, curvature));
+          const radiusOfCurvature = momentum / (0.3 * Math.abs(charge) * B);
+          const normalizedRadius = radiusOfCurvature / 10;
+          curvature = (length * 20) / normalizedRadius;
+          curvature *= Math.sign(charge);
+          curvature = Math.max(-2.0, Math.min(2.0, curvature));
         }
+
+        if (isMuon) curvature *= 0.3;
 
         const perpendicular = new THREE.Vector3(-direction.y, direction.x, 0).normalize();
 
         for (let i = 0; i <= segments; i++) {
-            const t = i / segments;
-            const curve = t * t * curvature * length;
+          const t = i / segments;
+          const curve = t * t * curvature * length;
 
-            const pos = new THREE.Vector3(
-                startPos.x + direction.x * t * length + perpendicular.x * curve,
-                startPos.y + direction.y * t * length + perpendicular.y * curve,
-                startPos.z + direction.z * t * length + perpendicular.z * curve
-            );
-            points.push(pos);
+          const pos = new THREE.Vector3(
+            startPos.x + direction.x * t * length + perpendicular.x * curve,
+            startPos.y + direction.y * t * length + perpendicular.y * curve,
+            startPos.z + direction.z * t * length + perpendicular.z * curve
+          );
+          points.push(pos);
         }
 
-        const curveObj = new THREE.CatmullRomCurve3(points);
-        const tubeGeometry = new THREE.TubeGeometry(curveObj, 56, 0.045, 7, false);
+        const curve = new THREE.CatmullRomCurve3(points);
+        const tubeRadius = isMuon ? 0.06 : (hasTrail ? 0.055 : 0.045);
+        const tubeGeometry = new THREE.TubeGeometry(curve, 56, tubeRadius, 7, false);
         const tubeMaterial = new THREE.MeshPhongMaterial({
-            color,
-            emissive: color,
-            emissiveIntensity: 0.7,
-            transparent: true,
-            opacity: 0.98,
-            shininess: 120,
-            specular: 0x222222,
+          color,
+          emissive: color,
+          emissiveIntensity: isMuon ? 1.2 : (hasTrail ? 0.9 : 0.7),
+          transparent: true,
+          opacity: 0.98,
+          shininess: 120,
+          specular: 0x222222
         });
 
         const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+
         tube.userData = {
-            spawnDelay: Math.random() * 10,
-            growthProgress: 0,
-            initialOpacity: 0.98,
+          age: 0,
+          maxAge: isMuon ? 180 : 150,
+          direction: direction.clone(),
+          initialOpacity: 0.98,
+          isMuon,
+          charge,
+          momentum
         };
-        tube.scale.set(0, 0, 0);
+
         return tube;
-    }
+      }
 
-    function createExplosion() {
-        const THREE = window.THREE;
-        const scene = sceneRef.current;
-        if (!scene || !THREE) return;
+      function updateHUD() {
+        const energy = getEl('energy');
+        const momentum = getEl('momentum');
+        const trackCount = getEl('trackCount');
+        const eventType = getEl('eventType');
+        if (energy) energy.textContent = eventData.energy + ' TeV';
+        if (momentum) momentum.textContent = eventData.momentum + ' GeV/c';
+        if (trackCount) trackCount.textContent = eventData.trackCount;
+        if (eventType) eventType.textContent = eventData.eventType;
+      }
 
+      function clearAnimation() {
+        particles.forEach(p => scene.remove(p));
+        tracks.forEach(t => scene.remove(t));
+        particles = [];
+        tracks = [];
+
+        isAnimating = false;
+        animationFrame = 0;
+
+        eventData = { energy: 0, momentum: 0, trackCount: 0, eventType: '—' };
+        updateHUD();
+      }
+
+      function createExplosion() {
+        let numTracks = eventData.trackCount || 50;
         const collisionPoint = new THREE.Vector3(0, 0, 0);
-        const numTracks = eventDataRef.current.trackCount || 50;
 
+        // вспышка
+        const flashLayers = [];
+        const coreFlash = new THREE.Mesh(
+          new THREE.SphereGeometry(0.3, 12, 12),
+          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 })
+        );
+        coreFlash.position.copy(collisionPoint);
+        scene.add(coreFlash);
+        flashLayers.push(coreFlash);
+
+        const midFlash = new THREE.Mesh(
+          new THREE.SphereGeometry(0.8, 12, 12),
+          new THREE.MeshBasicMaterial({ color: 0xff66ff, transparent: true, opacity: 0.5 })
+        );
+        midFlash.position.copy(collisionPoint);
+        scene.add(midFlash);
+        flashLayers.push(midFlash);
+
+        const outerFlash = new THREE.Mesh(
+          new THREE.SphereGeometry(1.2, 12, 12),
+          new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.4 })
+        );
+        outerFlash.position.copy(collisionPoint);
+        scene.add(outerFlash);
+        flashLayers.push(outerFlash);
+
+        let flashFrame = 0;
+        const flashInterval = setInterval(() => {
+          flashFrame++;
+          flashLayers.forEach((flash, index) => {
+            const speed = 1 + index * 0.2;
+            flash.scale.multiplyScalar(1 + 0.12 * speed);
+            flash.material.opacity *= 0.94;
+          });
+          if (flashFrame > 15) {
+            clearInterval(flashInterval);
+            flashLayers.forEach(flash => scene.remove(flash));
+          }
+        }, 20);
+
+        // джеты
+        const numJets = Math.random() < 0.4 ? 2 : (Math.random() < 0.7 ? 3 : 4);
+        for (let j = 0; j < numJets; j++) {
+          const jetAngle = (j / numJets) * Math.PI * 2 + Math.random() * 0.5;
+          const jetColor = j % 2 === 0 ? 0xffaa00 : 0x00ff88;
+
+          const jetDirection = new THREE.Vector3(
+            Math.cos(jetAngle * 0.3),
+            Math.sin(jetAngle) * 0.4,
+            Math.cos(jetAngle) * 0.4
+          ).normalize();
+
+          createJetCone(collisionPoint, jetDirection, jetColor, 8 + Math.random() * 4);
+        }
+
+        // стандартные треки
         for (let i = 0; i < numTracks; i++) {
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.random() * Math.PI;
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.random() * Math.PI;
 
-            const direction = new THREE.Vector3(
-                Math.cos(phi),
-                Math.sin(phi) * Math.sin(theta),
-                Math.sin(phi) * Math.cos(theta)
-            ).normalize();
+          const direction = new THREE.Vector3(
+            Math.cos(phi),
+            Math.sin(phi) * Math.sin(theta),
+            Math.sin(phi) * Math.cos(theta)
+          );
 
-            let color;
-            let charge;
-            let momentum;
-            const rand = Math.random();
+          let color, charge, momentum;
+          const rand = Math.random();
 
-            if (rand < 0.6) {
-                color = Math.random() > 0.5 ? 0xffaa00 : 0xff8800; // jets/hadrons
-                charge = Math.random() > 0.5 ? 1 : -1;
-                momentum = 2 + Math.random() * 15;
-            } else if (rand < 0.85) {
-                color = 0x00ff88; // charged
-                charge = Math.random() > 0.5 ? 1 : -1;
-                momentum = 5 + Math.random() * 20;
-            } else {
-                color = 0xff3300; // neutral
-                charge = 0;
-                momentum = 10 + Math.random() * 20;
-            }
+          if (rand < 0.6) {
+            color = Math.random() > 0.5 ? 0xffaa00 : 0xff8800;
+            charge = Math.random() > 0.5 ? 1 : -1;
+            momentum = 2 + Math.random() * 15;
+          } else if (rand < 0.85) {
+            color = 0x00ff88;
+            charge = Math.random() > 0.5 ? 1 : -1;
+            momentum = 5 + Math.random() * 20;
+          } else {
+            color = 0xff3300;
+            charge = 0;
+            momentum = 10 + Math.random() * 20;
+          }
 
-            const length = 15 + Math.random() * 15;
-            const tr = createTrack(THREE, collisionPoint, direction, color, length, charge, momentum);
-            scene.add(tr);
-            tracksRef.current.push(tr);
+          const length = 15 + Math.random() * 15;
+          const track = createTrack(collisionPoint, direction, color, length, false, false, charge, momentum);
+
+          track.userData.spawnDelay = Math.random() * 10;
+          track.userData.growthProgress = 0;
+          track.scale.set(0, 0, 0);
+
+          tracks.push(track);
+          scene.add(track);
         }
-    }
+      }
 
-    function runSimulation(config) {
-        const THREE = window.THREE;
-        const scene = sceneRef.current;
-        if (!scene || !THREE) return;
-        if (isAnimatingRef.current) return;
-
-        if (config?.detector && config.detector !== currentDetectorRef.current) {
-            currentDetectorRef.current = config.detector;
-            buildDetector(currentDetectorRef.current);
+      function runSimulation(config) {
+        if (isAnimating) {
+          console.warn('Симуляция уже запущена. Дождитесь завершения или используйте clearAnimation().');
+          return;
         }
 
-        particlesRef.current.forEach((p) => scene.remove(p));
-        tracksRef.current.forEach((t) => scene.remove(t));
-        particlesRef.current = [];
-        tracksRef.current = [];
+        if (config && config.detector && config.detector !== currentDetector) {
+          const detectorBtn = document.querySelector('[data-detector="' + config.detector + '"]');
+          if (detectorBtn) detectorBtn.click();
+          else console.warn('Detector not found:', config.detector);
+        }
 
-        eventDataRef.current = {
-            eventType: config?.eventType || "Standard",
-            energy: Number(config?.energy ?? 13.0),
-            momentum: Math.floor(config?.momentum ?? 1200),
-            trackCount: Math.floor(config?.trackCount ?? 50),
-        };
+        particles.forEach(p => scene.remove(p));
+        tracks.forEach(t => scene.remove(t));
+        particles = [];
+        tracks = [];
 
-        isAnimatingRef.current = true;
-        animationFrameRef.current = 0;
+        eventData.eventType = (config && config.eventType) ? config.eventType : 'Standard';
+        eventData.energy = Number((config && config.energy) ? config.energy : 13.0).toFixed(2);
+        eventData.momentum = Math.floor((config && config.momentum) ? config.momentum : 1000);
+        eventData.trackCount = (config && config.trackCount) ? config.trackCount : 50;
 
-        const p1 = createParticle(THREE, new THREE.Vector3(-25, 0, 0), 0x888888, 0.4);
-        const p2 = createParticle(THREE, new THREE.Vector3(25, 0, 0), 0xaaaaaa, 0.4);
+        updateHUD();
 
-        p1.userData = { velocity: new THREE.Vector3(1.0, 0, 0) };
-        p2.userData = { velocity: new THREE.Vector3(-1.0, 0, 0) };
+        isAnimating = true;
+        animationFrame = 0;
 
-        particlesRef.current.push(p1, p2);
-        scene.add(p1);
-        scene.add(p2);
-    }
+        const particle1 = createParticle(new THREE.Vector3(-25, 0, 0), 0x888888, 0.4);
+        const particle2 = createParticle(new THREE.Vector3(25, 0, 0), 0xaaaaaa, 0.4);
 
-    useImperativeHandle(ref, () => ({
-        runSimulation,
-        clearAnimation,
-        setDetector: (det) => {
-            if (!det) return;
-            currentDetectorRef.current = det;
-            buildDetector(det);
-        },
-        setShowLabels: (v) => {
-            showLabelsRef.current = !!v;
-            updateLabels();
-        },
-        setPaused: (v) => {
-            isPausedRef.current = !!v;
-        },
-        getDetector: () => currentDetectorRef.current,
-    }));
+        particle1.userData = { velocity: new THREE.Vector3(1.0, 0, 0) };
+        particle2.userData = { velocity: new THREE.Vector3(-1.0, 0, 0) };
 
-    useEffect(() => {
-        let raf = 0;
-        let ro = null;
+        particles.push(particle1, particle2);
+        scene.add(particle1);
+        scene.add(particle2);
+      }
 
-        let onDown, onUp, onMove, onWheel, onKey;
+      function animate() {
+        requestAnimationFrame(animate);
 
-        loadThreeCDN()
-            .then((THREE) => {
-                const root = rootRef.current;
-                if (!root) return;
+        if (isAnimating && !isPaused) {
+          animationFrame++;
 
-                const scene = new THREE.Scene();
-                scene.fog = new THREE.FogExp2(0x000000, 0.001);
+          if (animationFrame < 25) {
+            particles.forEach(p => {
+              if (p.userData.velocity) p.position.add(p.userData.velocity);
+            });
+          }
 
-                const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-                camera.position.set(20, 10, 20);
-                camera.lookAt(0, 0, 0);
+          if (animationFrame === 25) {
+            particles.forEach(p => scene.remove(p));
+            particles = [];
+            createExplosion();
+          }
 
-                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-                renderer.setClearColor(0x000000, 0);
+          if (animationFrame > 25) {
+            let allGrown = true;
 
-                root.appendChild(renderer.domElement);
-
-                const ambient = new THREE.AmbientLight(0x404040, 1.5);
-                scene.add(ambient);
-
-                const point1 = new THREE.PointLight(0x667eea, 1, 100);
-                point1.position.set(20, 20, 20);
-                scene.add(point1);
-
-                const point2 = new THREE.PointLight(0x764ba2, 0.8, 100);
-                point2.position.set(-20, -10, -20);
-                scene.add(point2);
-
-                sceneRef.current = scene;
-                cameraRef.current = camera;
-                rendererRef.current = renderer;
-
-                buildDetector(currentDetectorRef.current);
-                updateCamera();
-
-                ro = new ResizeObserver(() => {
-                    const w = root.clientWidth || 1;
-                    const h = root.clientHeight || 1;
-                    renderer.setSize(w, h, false);
-                    camera.aspect = w / h;
-                    camera.updateProjectionMatrix();
-                });
-                ro.observe(root);
-
-                onDown = (e) => {
-                    if (e.button !== 0) return;
-                    isDraggingRef.current = true;
-                    prevMouseRef.current = { x: e.clientX, y: e.clientY };
-                };
-
-                onUp = (e) => {
-                    if (e.button !== 0) return;
-                    isDraggingRef.current = false;
-                };
-
-                onMove = (e) => {
-                    if (!isDraggingRef.current) return;
-                    const dx = e.clientX - prevMouseRef.current.x;
-                    const dy = e.clientY - prevMouseRef.current.y;
-
-                    prevMouseRef.current = { x: e.clientX, y: e.clientY };
-
-                    cameraRotationRef.current.y += dx * 0.005;
-                    cameraRotationRef.current.x += dy * 0.005;
-
-                    cameraRotationRef.current.x = Math.max(
-                        -Math.PI / 2,
-                        Math.min(Math.PI / 2, cameraRotationRef.current.x)
-                    );
-                };
-
-                onWheel = (e) => {
-                    e.preventDefault();
-                    cameraDistanceRef.current += e.deltaY * 0.05;
-                    cameraDistanceRef.current = Math.max(15, Math.min(60, cameraDistanceRef.current));
-                };
-
-                onKey = (e) => {
-                    if (e.code === "Space") {
-                        e.preventDefault();
-                        isPausedRef.current = !isPausedRef.current;
-                    }
-                };
-
-                renderer.domElement.addEventListener("mousedown", onDown);
-                window.addEventListener("mouseup", onUp);
-                window.addEventListener("mousemove", onMove);
-                renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
-                window.addEventListener("keydown", onKey);
-
-                const tick = () => {
-                    raf = requestAnimationFrame(tick);
-
-                    const scene = sceneRef.current;
-                    const camera = cameraRef.current;
-                    const renderer = rendererRef.current;
-                    const THREE = window.THREE;
-
-                    if (!scene || !camera || !renderer || !THREE) return;
-
-                    if (isAnimatingRef.current && !isPausedRef.current) {
-                        animationFrameRef.current += 1;
-
-                        if (animationFrameRef.current < 25) {
-                            particlesRef.current.forEach((p) => {
-                                if (p.userData?.velocity) p.position.add(p.userData.velocity);
-                            });
-                        }
-
-                        if (animationFrameRef.current === 25) {
-                            particlesRef.current.forEach((p) => scene.remove(p));
-                            particlesRef.current = [];
-                            createExplosion();
-                        }
-
-                        if (animationFrameRef.current > 25) {
-                            let allGrown = true;
-
-                            tracksRef.current.forEach((obj) => {
-                                if (obj.userData?.spawnDelay > 0) {
-                                    obj.userData.spawnDelay -= 1;
-                                    allGrown = false;
-                                    return;
-                                }
-
-                                if (obj.userData?.growthProgress < 1) {
-                                    obj.userData.growthProgress += 0.12;
-                                    const progress = Math.min(1, obj.userData.growthProgress);
-                                    const ease = progress < 1 ? 1 - Math.pow(1 - progress, 3) : 1;
-                                    obj.scale.set(ease, ease, ease);
-                                    if (progress >= 1) obj.material.opacity = obj.userData.initialOpacity ?? 0.98;
-                                    allGrown = false;
-                                }
-                            });
-
-                            if (allGrown && animationFrameRef.current > 50) {
-                                isAnimatingRef.current = false;
-                            }
-                        }
-                    }
-
-                    updateCamera();
-                    renderer.render(scene, camera);
-                    updateLabels();
-                };
-
-                tick();
-            })
-            .catch(() => {
-                // CDN недоступен — просто не рисуем
+            tracks.forEach((track) => {
+              if (track.userData && track.userData.spawnDelay !== undefined) {
+                if (track.userData.spawnDelay > 0) {
+                  track.userData.spawnDelay--;
+                  allGrown = false;
+                } else if (track.userData.growthProgress < 1) {
+                  track.userData.growthProgress += 0.12;
+                  const progress = Math.min(1, track.userData.growthProgress);
+                  const easeProgress = progress < 1 ? 1 - Math.pow(1 - progress, 3) : 1;
+                  track.scale.set(easeProgress, easeProgress, easeProgress);
+                  allGrown = false;
+                }
+              }
+              if (track.userData) track.userData.age = (track.userData.age || 0) + 1;
             });
 
-        return () => {
-            cancelAnimationFrame(raf);
-            if (ro) ro.disconnect();
+            if (allGrown && animationFrame > 50) isAnimating = false;
+          }
+        }
 
-            const renderer = rendererRef.current;
-            const scene = sceneRef.current;
+        updateCamera();
+        updateLabels();
 
-            if (renderer?.domElement) {
-                try {
-                    renderer.domElement.removeEventListener("mousedown", onDown);
-                    renderer.domElement.removeEventListener("wheel", onWheel);
-                } catch {}
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      }
+
+      function onMouseDown(e) {
+        if (e.button === 0) {
+          isDragging = true;
+          previousMousePosition = { x: e.clientX, y: e.clientY };
+          clickStartPos = { x: e.clientX, y: e.clientY };
+        }
+      }
+
+      function onMouseMove(e) {
+        const mount = getEl('canvas');
+        const rect = mount ? mount.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight, left: 0, top: 0 };
+
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+
+        if (showDetectorLabels && !isDragging) {
+          raycaster.setFromCamera(mouse, camera);
+          raycaster.params.Line.threshold = 0.5;
+          raycaster.params.Points.threshold = 0.5;
+
+          const intersects = raycaster.intersectObjects(detectorGeometry, true);
+
+          if (hoveredObject) {
+            const layerGroup = hoveredObject.parent && hoveredObject.parent.userData.layerName
+              ? hoveredObject.parent
+              : hoveredObject;
+
+            layerGroup.traverse((child) => {
+              if (child.material && child.userData.baseOpacity !== undefined) {
+                child.material.opacity = child.userData.baseOpacity;
+              }
+            });
+            hoveredObject = null;
+          }
+
+          if (intersects.length > 0) {
+            let intersected = intersects[0].object;
+            let layerGroup = intersected;
+            while (layerGroup.parent && !layerGroup.userData.layerName) {
+              layerGroup = layerGroup.parent;
             }
-            window.removeEventListener("mouseup", onUp);
-            window.removeEventListener("mousemove", onMove);
-            window.removeEventListener("keydown", onKey);
 
-            if (scene) {
-                clearAnimation();
-                detectorGeometryRef.current.forEach((obj) => {
-                    scene.remove(obj);
-                    disposeObject(obj);
-                });
-                detectorGeometryRef.current = [];
+            if (layerGroup.userData.layerName) {
+              hoveredObject = layerGroup;
+              layerGroup.traverse((child) => {
+                if (child.material && child.userData.baseOpacity !== undefined) {
+                  child.material.opacity = child.userData.baseOpacity * 2.0;
+                }
+              });
+              if (renderer && renderer.domElement) renderer.domElement.style.cursor = 'pointer';
+            } else {
+              if (renderer && renderer.domElement) renderer.domElement.style.cursor = 'default';
             }
+          } else {
+            if (renderer && renderer.domElement) renderer.domElement.style.cursor = 'default';
+          }
+        } else {
+          if (renderer && renderer.domElement) renderer.domElement.style.cursor = 'default';
+        }
 
-            clearLabels();
+        if (isDragging) {
+          const deltaX = e.clientX - previousMousePosition.x;
+          const deltaY = e.clientY - previousMousePosition.y;
 
-            if (renderer) {
-                renderer.dispose?.();
-                const canvas = renderer.domElement;
-                if (canvas?.parentNode) canvas.parentNode.removeChild(canvas);
-            }
+          cameraRotation.y += deltaX * 0.005;
+          cameraRotation.x += deltaY * 0.005;
 
-            sceneRef.current = null;
-            cameraRef.current = null;
-            rendererRef.current = null;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+          cameraRotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraRotation.x));
+          previousMousePosition = { x: e.clientX, y: e.clientY };
+        }
+      }
 
-    return (
-        <div className={s.simulation__animWrap}>
-            <div className={s.simulation__animRoot} ref={rootRef} />
-            <div className={s.simulation__labelsLayer} ref={labelsLayerRef} />
-        </div>
-    );
-});
+      function onMouseUp(e) {
+        if (e.button === 0) isDragging = false;
+      }
+
+      function onMouseClick(e) {
+        // модалку ты сейчас не просил — оставим пустым.
+        const dragDistance = Math.sqrt(
+          Math.pow(e.clientX - clickStartPos.x, 2) +
+          Math.pow(e.clientY - clickStartPos.y, 2)
+        );
+        if (!showDetectorLabels || dragDistance >= 5) return;
+      }
+
+      function onMouseWheel(e) {
+        e.preventDefault();
+        cameraDistance += e.deltaY * 0.05;
+        cameraDistance = Math.max(15, Math.min(60, cameraDistance));
+      }
+
+      function onKeyDown(e) {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          isPaused = !isPaused;
+        }
+      }
+
+      function updateCamera() {
+        camera.position.x = Math.sin(cameraRotation.y) * Math.cos(cameraRotation.x) * cameraDistance;
+        camera.position.y = Math.sin(cameraRotation.x) * cameraDistance;
+        camera.position.z = Math.cos(cameraRotation.y) * Math.cos(cameraRotation.x) * cameraDistance;
+        camera.lookAt(0, 0, 0);
+      }
+
+      function onWindowResize() {
+        const mount = getEl('canvas');
+        if (!mount || !camera || !renderer) return;
+
+        const w = mount.clientWidth || window.innerWidth;
+        const h = mount.clientHeight || window.innerHeight;
+
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+
+      // expose API
+      window.runSimulation = runSimulation;
+      window.clearAnimation = clearAnimation;
+
+      // init when mount exists
+      init();
+    })();
+  `;
+
+  const script = document.createElement("script");
+  script.dataset.lhc = "embedded";
+  script.textContent = code;
+  document.body.appendChild(script);
+}
 
 function SearchableSelect({
-    id,
-    name,
-    label,
-    options,
-    value,
-    onChange,
-    placeholder = "Выберите...",
-    error,
+  id,
+  name,
+  label,
+  options,
+  value,
+  onChange,
+  placeholder = "Выберите...",
+  error,
 }) {
-    const [open, setOpen] = useState(false);
-    const [query, setQuery] = useState("");
-    const [activeIndex, setActiveIndex] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
 
-    const wrapRef = useRef(null);
-    const inputRef = useRef(null);
-    const listRef = useRef(null);
+  const wrapRef = useRef(null);
+  const inputRef = useRef(null);
+  const listRef = useRef(null);
 
-    const selected = useMemo(
-        () => options.find((o) => o.value === value) || null,
-        [options, value]
-    );
+  const selected = useMemo(
+    () => options.find((o) => o.value === value) || null,
+    [options, value]
+  );
 
-    const filtered = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        if (!q) return options;
-        return options.filter((o) => o.label.toLowerCase().includes(q));
-    }, [options, query]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((o) => o.label.toLowerCase().includes(q));
+  }, [options, query]);
 
-    useEffect(() => {
-        function onDocMouseDown(e) {
-            if (!wrapRef.current) return;
-            if (!wrapRef.current.contains(e.target)) setOpen(false);
-        }
-        document.addEventListener("mousedown", onDocMouseDown);
-        return () => document.removeEventListener("mousedown", onDocMouseDown);
-    }, []);
+  useEffect(() => {
+    function onDocMouseDown(e) {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, []);
 
-    useEffect(() => {
-        if (open) {
-            setQuery("");
-            setActiveIndex(0);
-            requestAnimationFrame(() => inputRef.current?.focus());
-        }
-    }, [open]);
+  useEffect(() => {
+    if (open) {
+      setQuery("");
+      setActiveIndex(0);
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [open]);
 
-    useEffect(() => {
-        if (!open) return;
-        const el = listRef.current?.querySelector(`[data-idx="${activeIndex}"]`);
-        el?.scrollIntoView({ block: "nearest" });
-    }, [open, activeIndex]);
+  useEffect(() => {
+    if (!open) return;
+    const el = listRef.current?.querySelector(`[data-idx="${activeIndex}"]`);
+    el?.scrollIntoView({ block: "nearest" });
+  }, [open, activeIndex]);
 
-    function choose(opt) {
-        onChange?.(opt.value);
-        setOpen(false);
+  function choose(opt) {
+    onChange?.(opt.value);
+    setOpen(false);
+  }
+
+  function onTriggerKeyDown(e) {
+    if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+      e.preventDefault();
+      setOpen(true);
+    }
+  }
+
+  function onSearchKeyDown(e) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+      return;
     }
 
-    function onTriggerKeyDown(e) {
-        if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
-            e.preventDefault();
-            setOpen(true);
-        }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+      return;
     }
 
-    function onSearchKeyDown(e) {
-        if (e.key === "Escape") {
-            e.preventDefault();
-            setOpen(false);
-            return;
-        }
-
-        if (e.key === "ArrowDown") {
-            e.preventDefault();
-            setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
-            return;
-        }
-
-        if (e.key === "ArrowUp") {
-            e.preventDefault();
-            setActiveIndex((i) => Math.max(i - 1, 0));
-            return;
-        }
-
-        if (e.key === "Enter") {
-            e.preventDefault();
-            const opt = filtered[activeIndex];
-            if (opt) choose(opt);
-        }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+      return;
     }
 
-    return (
-        <div className={s.simulation__selectWrap} ref={wrapRef}>
-            <label htmlFor={id} className={s.simulation__parameters_text}>
-                {label}
-            </label>
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const opt = filtered[activeIndex];
+      if (opt) choose(opt);
+    }
+  }
 
-            <button
-                id={id}
-                type="button"
-                className={`${s.simulation__parameters_select} ${
-                    error ? s.simulation__fieldError : ""
-                }`}
-                onClick={() => setOpen((v) => !v)}
-                onKeyDown={onTriggerKeyDown}
-                aria-haspopup="listbox"
-                aria-expanded={open}
-            >
-                <span className={s.simulation__selectValue}>
-                    {selected ? selected.label : placeholder}
-                </span>
-                <span className={s.simulation__selectChevron}>▾</span>
-            </button>
+  return (
+    <div className={s.simulation__selectWrap} ref={wrapRef}>
+      <label htmlFor={id} className={s.simulation__parameters_text}>
+        {label}
+      </label>
 
-            <input type="hidden" name={name} value={value || ""} />
+      <button
+        id={id}
+        type="button"
+        className={`${s.simulation__parameters_select} ${error ? s.simulation__fieldError : ""}`}
+        onClick={() => setOpen((v) => !v)}
+        onKeyDown={onTriggerKeyDown}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={s.simulation__selectValue}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <span className={s.simulation__selectChevron}>▾</span>
+      </button>
 
-            {error ? <div className={s.simulation__errorText}>{error}</div> : null}
+      <input type="hidden" name={name} value={value || ""} />
+      {error ? <div className={s.simulation__errorText}>{error}</div> : null}
 
-            {open && (
-                <div className={s.simulation__dropdown} role="dialog">
-                    <input
-                        ref={inputRef}
-                        className={s.simulation__dropdownSearch}
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        onKeyDown={onSearchKeyDown}
-                        placeholder="Начни печатать для поиска…"
-                    />
+      {open && (
+        <div className={s.simulation__dropdown} role="dialog">
+          <input
+            ref={inputRef}
+            className={s.simulation__dropdownSearch}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={onSearchKeyDown}
+            placeholder="Начни печатать для поиска…"
+          />
 
-                    <ul
-                        ref={listRef}
-                        className={s.simulation__dropdownList}
-                        role="listbox"
-                        aria-label="options"
-                    >
-                        {filtered.length === 0 ? (
-                            <li className={s.simulation__dropdownEmpty}>Ничего не найдено</li>
-                        ) : (
-                            filtered.map((opt, idx) => (
-                                <li
-                                    key={opt.value}
-                                    data-idx={idx}
-                                    className={`${s.simulation__dropdownItem} ${
-                                        idx === activeIndex ? s.simulation__dropdownItemActive : ""
-                                    } ${opt.value === value ? s.simulation__dropdownItemSelected : ""}`}
-                                    role="option"
-                                    aria-selected={opt.value === value}
-                                    onMouseEnter={() => setActiveIndex(idx)}
-                                    onMouseDown={(e) => e.preventDefault()}
-                                    onClick={() => choose(opt)}
-                                >
-                                    <span>{opt.label}</span>
-                                    <span className={s.simulation__dropdownType}>{opt.type}</span>
-                                </li>
-                            ))
-                        )}
-                    </ul>
-                </div>
+          <ul
+            ref={listRef}
+            className={s.simulation__dropdownList}
+            role="listbox"
+            aria-label="options"
+          >
+            {filtered.length === 0 ? (
+              <li className={s.simulation__dropdownEmpty}>Ничего не найдено</li>
+            ) : (
+              filtered.map((opt, idx) => (
+                <li
+                  key={opt.value}
+                  data-idx={idx}
+                  className={`${s.simulation__dropdownItem}
+                    ${idx === activeIndex ? s.simulation__dropdownItemActive : ""}
+                    ${opt.value === value ? s.simulation__dropdownItemSelected : ""}`}
+                  role="option"
+                  aria-selected={opt.value === value}
+                  onMouseEnter={() => setActiveIndex(idx)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => choose(opt)}
+                >
+                  <span>{opt.label}</span>
+                  <span className={s.simulation__dropdownType}>{opt.type}</span>
+                </li>
+              ))
             )}
+          </ul>
         </div>
-    );
+      )}
+    </div>
+  );
 }
 
 export default function Simulation() {
-    const particleOptions = useMemo(() => {
-        const arr = Array.isArray(particlesData) ? particlesData : [];
-        return arr
-            .filter((p) => p && typeof p.name === "string")
-            .map((p) => ({
-                value: p.name,
-                label: p.name,
-                type: p.type || "",
-                raw: p,
-            }))
-            .sort((a, b) => a.label.localeCompare(b.label));
-    }, []);
+  const particleOptions = useMemo(() => {
+    const arr = Array.isArray(particlesData) ? particlesData : [];
+    return arr
+      .filter((p) => p && typeof p.name === "string")
+      .map((p) => ({ value: p.name, label: p.name, type: p.type || "", raw: p }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, []);
 
-    const idToName = useMemo(() => {
-        const m = new Map();
-        const arr = Array.isArray(particlesData) ? particlesData : [];
-        for (const p of arr) {
-            const id = Number(p?.mcid);
-            if (Number.isFinite(id)) m.set(id, p?.name || String(id));
-        }
-        return m;
-    }, []);
+  const idToName = useMemo(() => {
+    const m = new Map();
+    const arr = Array.isArray(particlesData) ? particlesData : [];
+    for (const p of arr) {
+      const id = Number(p?.mcid);
+      if (Number.isFinite(id)) m.set(id, p?.name || String(id));
+    }
+    return m;
+  }, []);
 
-    const particlesById = useMemo(() => {
-        const m = new Map();
-        const arr = Array.isArray(particlesData) ? particlesData : [];
-        for (const p of arr) {
-            const id = Number(p?.mcid);
-            if (Number.isFinite(id)) m.set(id, p);
-        }
-        return m;
-    }, []);
+  const particlesById = useMemo(() => {
+    const m = new Map();
+    const arr = Array.isArray(particlesData) ? particlesData : [];
+    for (const p of arr) {
+      const id = Number(p?.mcid);
+      if (Number.isFinite(id)) m.set(id, p);
+    }
+    return m;
+  }, []);
 
-    function formatStage(objOrArr) {
-        if (!objOrArr) return "-";
-        const arr = Array.isArray(objOrArr) ? objOrArr : [objOrArr];
+  function formatStage(objOrArr) {
+    if (!objOrArr) return "-";
+    const arr = Array.isArray(objOrArr) ? objOrArr : [objOrArr];
 
-        return arr
-            .map((row) => {
-                if (!row || typeof row !== "object") return String(row);
+    return arr
+      .map((row) => {
+        if (!row || typeof row !== "object") return String(row);
 
-                const ids = Object.keys(row)
-                    .filter((k) => /^id_\d+$/.test(k))
-                    .sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)))
-                    .map((k) => Number(row[k]))
-                    .filter((n) => Number.isFinite(n));
+        const ids = Object.keys(row)
+          .filter((k) => /^id_\\d+$/.test(k))
+          .sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)))
+          .map((k) => Number(row[k]))
+          .filter((n) => Number.isFinite(n));
 
-                if (ids.length === 0) return JSON.stringify(row);
+        if (ids.length === 0) return JSON.stringify(row);
 
-                const names = ids.map((id) => idToName.get(id) || `PDG ${id}`);
-                return names.join(" + ");
-            })
-            .join("\n");
+        const names = ids.map((id) => idToName.get(id) || `PDG ${id}`);
+        return names.join(" + ");
+      })
+      .join("\\n");
+  }
+
+  function extractIds(objOrArr) {
+    if (!objOrArr) return [];
+    const arr = Array.isArray(objOrArr) ? objOrArr : [objOrArr];
+
+    const out = [];
+    for (const row of arr) {
+      if (!row || typeof row !== "object") continue;
+
+      const ids = Object.keys(row)
+        .filter((k) => /^id_\\d+$/.test(k))
+        .sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)))
+        .map((k) => Number(row[k]))
+        .filter((n) => Number.isFinite(n));
+
+      out.push(...ids);
+    }
+    return out;
+  }
+
+  const [first, setFirst] = useState("");
+  const [second, setSecond] = useState("");
+  const [energy, setEnergy] = useState("");
+  const [errors, setErrors] = useState({ first: "", second: "", energy: "" });
+
+  const [inputLine, setInputLine] = useState("—");
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
+
+  const [stage1, setStage1] = useState("-");
+  const [decay, setDecay] = useState("-");
+  const [values, setValues] = useState(null);
+
+  const [particlesModalOpen, setParticlesModalOpen] = useState(false);
+  const [rawStages, setRawStages] = useState({ first: null, finals: null });
+
+  const [hasOutputs, setHasOutputs] = useState(false);
+  const [outputs, setOutputs] = useState({ mass: "", baryon: "", sbc: "", charge: "" });
+
+  const [showViz, setShowViz] = useState(false);
+  const vizReadyRef = useRef(false);
+
+  const abortRef = useRef(null);
+
+  function log(line) {
+    console.log("[UI LOG]", line);
+  }
+
+  function getSelectedRawByName(name) {
+    return particleOptions.find((o) => o.value === name)?.raw || null;
+  }
+
+  function getPDGId(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const id = raw.mcid;
+    if (id === undefined || id === null) return null;
+    const n = Number(id);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function validate() {
+    const next = { first: "", second: "", energy: "" };
+
+    if (!first) next.first = "Выбери первую частицу";
+    if (!second) next.second = "Выбери вторую частицу";
+
+    const e = Number(String(energy).replace(",", "."));
+    if (!String(energy).trim()) next.energy = "Введи энергию";
+    else if (!Number.isFinite(e)) next.energy = "Энергия должна быть числом";
+    else if (e <= 0) next.energy = "Энергия должна быть > 0";
+
+    const p1 = getSelectedRawByName(first);
+    const p2 = getSelectedRawByName(second);
+    const id1 = getPDGId(p1);
+    const id2 = getPDGId(p2);
+
+    if (first && id1 == null) next.first = "У этой частицы нет PDG id в JSON";
+    if (second && id2 == null) next.second = "У этой частицы нет PDG id в JSON";
+
+    setErrors(next);
+    return !next.first && !next.second && !next.energy;
+  }
+
+  function updateOutputsFromValues(vals) {
+    const row = Array.isArray(vals) ? vals[0] : vals;
+
+    if (!row || typeof row !== "object") {
+      setHasOutputs(false);
+      setOutputs({ mass: "", baryon: "", sbc: "", charge: "" });
+      return;
     }
 
-    function extractIds(objOrArr) {
-        if (!objOrArr) return [];
-        const arr = Array.isArray(objOrArr) ? objOrArr : [objOrArr];
+    const massNum = Number(row.Mass);
+    const mass = Number.isFinite(massNum) ? massNum.toFixed(1) : "";
 
-        const out = [];
-        for (const row of arr) {
-            if (!row || typeof row !== "object") continue;
+    const baryon = row.BaryonNum ?? "";
+    const charge = row.Charge ?? "";
 
-            const ids = Object.keys(row)
-                .filter((k) => /^id_\d+$/.test(k))
-                .sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)))
-                .map((k) => Number(row[k]))
-                .filter((n) => Number.isFinite(n));
+    const sbcArr = row["S,B,C"];
+    const sbc = Array.isArray(sbcArr) ? sbcArr.join(", ") : "";
 
-            out.push(...ids);
-        }
-        return out;
-    }
-
-    const [first, setFirst] = useState("");
-    const [second, setSecond] = useState("");
-    const [energy, setEnergy] = useState("");
-
-    const [errors, setErrors] = useState({ first: "", second: "", energy: "" });
-
-    const [inputLine, setInputLine] = useState("—");
-
-    const [loading, setLoading] = useState(false);
-    const [apiError, setApiError] = useState("");
-
-    const [stage1, setStage1] = useState("-");
-    const [decay, setDecay] = useState("-");
-    const [values, setValues] = useState(null);
-
-    const [particlesModalOpen, setParticlesModalOpen] = useState(false);
-    const [rawStages, setRawStages] = useState({ first: null, finals: null });
-
-    const [hasOutputs, setHasOutputs] = useState(false);
-    const [outputs, setOutputs] = useState({
-        mass: "",
-        baryon: "",
-        sbc: "",
-        charge: "",
+    setOutputs({
+      mass,
+      baryon: String(baryon),
+      sbc,
+      charge: String(charge),
     });
 
-    const abortRef = useRef(null);
+    setHasOutputs(true);
+  }
 
-    const animationRef = useRef(null);
+  const modalStages = useMemo(() => {
+    const firstIds = extractIds(rawStages.first);
+    const finalIds = extractIds(rawStages.finals);
 
-    // ✅ NEW: показываем визуалку только после результатов
-    const [showAnimation, setShowAnimation] = useState(false);
+    return [
+      { key: "stage1", label: "1 ступень", ids: firstIds },
+      { key: "decay", label: "Распад", ids: finalIds },
+    ].filter((x) => (x.ids?.length ?? 0) > 0);
+  }, [rawStages]);
 
-    // ✅ NEW: UI детекторов/подписей/легенды
-    const [detector, setDetector] = useState("ATLAS");
-    const [showDetectorLabels, setShowDetectorLabels] = useState(false);
-    const [showLegend, setShowLegend] = useState(true);
+  // Инициализируем визуализацию один раз, когда она стала видима
+  useEffect(() => {
+    if (!showViz) return;
 
-    useEffect(() => {
-        animationRef.current?.setDetector(detector);
-    }, [detector]);
+    (async () => {
+      try {
+        await loadThreeFromCdn();
+        injectLhcScriptOnce();
+        vizReadyRef.current = true;
+      } catch (e) {
+        console.error("Failed to init visualization:", e);
+      }
+    })();
+  }, [showViz]);
 
-    useEffect(() => {
-        animationRef.current?.setShowLabels(showDetectorLabels);
-    }, [showDetectorLabels]);
+  function startVizAutoRun() {
+    // тут backend-ready: подставишь реальные данные из ответа (или своих вычислений)
+    // пока — запускаем красиво “по факту успешной симуляции”
+    if (!window.runSimulation) return;
 
-    function log(line) {
-        console.log("[UI LOG]", line);
+    // ⚙️ примерные значения:
+    const eNum = Number(String(energy).replace(",", ".")) || 13.0;
+
+    // eventType можно потом брать с бэка (например data.eventType)
+    // сейчас просто ставим Higgs, если масса большая, иначе Standard (условно)
+    const massGuess = Number(outputs.mass);
+    const eventType = Number.isFinite(massGuess) && massGuess > 10 ? "Higgs Boson" : "Standard";
+
+    window.runSimulation({
+      eventType,
+      energy: Math.max(10, Math.min(14, eNum / 10)) || 13.0, // чисто чтобы похоже на TeV было
+      momentum: 1200,
+      trackCount: 45,
+      detector: "ATLAS",
+    });
+  }
+
+  async function handleStart() {
+    if (!validate()) {
+      log("Валидация не прошла ❌");
+      return;
     }
 
-    function getSelectedRawByName(name) {
-        return particleOptions.find((o) => o.value === name)?.raw || null;
+    const p1 = getSelectedRawByName(first);
+    const p2 = getSelectedRawByName(second);
+
+    const id_1 = getPDGId(p1);
+    const id_2 = getPDGId(p2);
+    const E = Number(String(energy).replace(",", "."));
+
+    setInputLine(`${first} + ${second} (${E} GeV)`);
+
+    setStage1("-");
+    setDecay("-");
+    setValues(null);
+    setHasOutputs(false);
+    setOutputs({ mass: "", baryon: "", sbc: "", charge: "" });
+    setRawStages({ first: null, finals: null });
+    setApiError("");
+
+    // Визуализацию показываем только после успешного результата — заранее не трогаем
+    // (если хочешь “подготовить заранее”, можно сделать setShowViz(true) тут, но ты просил после результата)
+
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setLoading(true);
+    log(`Старт симуляции: id_1=${id_1}, id_2=${id_2}, Energy=${E}`);
+
+    try {
+      const payload = [{ id_1, id_2, Energy: E }];
+
+      function getCookie(name) {
+        const v = `; ${document.cookie}`;
+        const parts = v.split(`; ${name}=`);
+        return parts.length === 2 ? parts.pop().split(";").shift() : null;
+      }
+
+      const res = await fetch("/api/simulation/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      const text = await res.text().catch(() => "");
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}. Ответ: ${text.slice(0, 300)}`);
+      }
+
+      let data;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        throw new Error(`Сервер вернул НЕ JSON: ${text.slice(0, 300)}`);
+      }
+
+      const finals = Array.isArray(data) ? data[0] : data?.finals;
+      const first_finals = Array.isArray(data) ? data[1] : data?.first_finals;
+      const vals = Array.isArray(data) ? data[2] : data?.values;
+
+      setStage1(formatStage(first_finals));
+      setDecay(formatStage(finals));
+      setValues(vals ?? null);
+      updateOutputsFromValues(vals ?? null);
+      setHasOutputs(true);
+
+      setRawStages({ first: first_finals ?? null, finals: finals ?? null });
+
+      // ✅ теперь показываем визуализацию (после результатов)
+      setShowViz(true);
+
+      log("Симуляция завершена успешно ✅");
+    } catch (err) {
+      if (err?.name === "AbortError") {
+        log("Прошлый запрос отменён");
+        return;
+      }
+      const msg = err?.message || "Неизвестная ошибка";
+      setApiError(msg);
+      log(`Ошибка: ${msg}`);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    function getPDGId(raw) {
-        if (!raw || typeof raw !== "object") return null;
-        const id = raw.mcid;
-        if (id === undefined || id === null) return null;
-        const n = Number(id);
-        return Number.isFinite(n) ? n : null;
-    }
+  // автозапуск визуализации после появления результатов
+  useEffect(() => {
+    if (!showViz) return;
+    // ждём, пока init подцепит window.runSimulation
+    const t = setTimeout(() => {
+      startVizAutoRun();
+    }, 150);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showViz, stage1, decay]);
 
-    function validate() {
-        const next = { first: "", second: "", energy: "" };
+  return (
+    <main>
+      <Container>
+        <h2>СИМУЛЯТОР</h2>
 
-        if (!first) next.first = "Выбери первую частицу";
-        if (!second) next.second = "Выбери вторую частицу";
+        <div className={s.simulation}>
+          <div className={s.simulation__mini}>
+            <div className={s.simulation__parameters}>
+              <p className={s.simulation__parameters_title}>Параметры столкновения</p>
+              <hr className={s.simulation__parameters_hr} />
 
-        const e = Number(String(energy).replace(",", "."));
-        if (!String(energy).trim()) next.energy = "Введи энергию";
-        else if (!Number.isFinite(e)) next.energy = "Энергия должна быть числом";
-        else if (e <= 0) next.energy = "Энергия должна быть > 0";
+              <div className={s.simulation__parameters_options}>
+                <SearchableSelect
+                  id="first"
+                  name="first"
+                  label="Первая частица:"
+                  options={particleOptions}
+                  value={first}
+                  onChange={(v) => {
+                    setFirst(v);
+                    setErrors((e) => ({ ...e, first: "" }));
+                    setApiError("");
+                  }}
+                  placeholder="Протон p+"
+                  error={errors.first}
+                />
+              </div>
 
-        const p1 = getSelectedRawByName(first);
-        const p2 = getSelectedRawByName(second);
-        const id1 = getPDGId(p1);
-        const id2 = getPDGId(p2);
+              <div className={s.simulation__parameters_options}>
+                <SearchableSelect
+                  id="second"
+                  name="second"
+                  label="Вторая частица:"
+                  options={particleOptions}
+                  value={second}
+                  onChange={(v) => {
+                    setSecond(v);
+                    setErrors((e) => ({ ...e, second: "" }));
+                    setApiError("");
+                  }}
+                  placeholder="не Протон не p+"
+                  error={errors.second}
+                />
+              </div>
 
-        if (first && id1 == null) next.first = "У этой частицы нет PDG id в JSON";
-        if (second && id2 == null) next.second = "У этой частицы нет PDG id в JSON";
+              <div className={s.simulation__parameters_options}>
+                <label htmlFor="energy" className={s.simulation__parameters_text}>
+                  Энергия пучков (GeV):
+                </label>
+                <input
+                  className={`${s.simulation__parameters_input} ${errors.energy ? s.simulation__fieldError : ""}`}
+                  id="energy"
+                  type="text"
+                  inputMode="decimal"
+                  value={energy}
+                  onChange={(e) => {
+                    setEnergy(e.target.value);
+                    setErrors((er) => ({ ...er, energy: "" }));
+                    setApiError("");
+                  }}
+                  placeholder="60"
+                />
+                {errors.energy ? <div className={s.simulation__errorText}>{errors.energy}</div> : null}
+              </div>
 
-        setErrors(next);
-        return !next.first && !next.second && !next.energy;
-    }
+              {apiError ? <div className={s.simulation__errorText}>Ошибка API: {apiError}</div> : null}
+            </div>
 
-    function updateOutputsFromValues(vals) {
-        const row = Array.isArray(vals) ? vals[0] : vals;
+            <div className={s.simulation__inputs}>
+              <p className={s.simulation__parameters_text}>Входные параметры:</p>
+              <p className={s.simulation__inputs_input}>{inputLine}</p>
+            </div>
 
-        if (!row || typeof row !== "object") {
-            setHasOutputs(false);
-            setOutputs({ mass: "", baryon: "", sbc: "", charge: "" });
-            return;
-        }
+            <button
+              type="button"
+              className={s.simulation__startButton}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleStart();
+              }}
+              disabled={loading}
+              aria-busy={loading}
+            >
+              {loading ? "Считаю..." : "Запустить симуляцию"}
+            </button>
 
-        const massNum = Number(row.Mass);
-        const mass = Number.isFinite(massNum) ? massNum.toFixed(1) : "";
+            <div className={s.simulation__results}>
+              <p className={s.simulation__results_text}>Результат</p>
+              <hr className={s.simulation__results_hr} />
 
-        const baryon = row.BaryonNum ?? "";
-        const charge = row.Charge ?? "";
+              <div className={s.simulation__results_stages}>
+                <div className={s.simulation__results_stage}>
+                  <p className={s.simulation__results_stageText}>Первая ступень:</p>
+                  <p className={s.simulation__results_stageRes}>{stage1}</p>
+                </div>
 
-        const sbcArr = row["S,B,C"];
-        const sbc = Array.isArray(sbcArr) ? sbcArr.join(", ") : "";
+                <div className={s.simulation__results_stage}>
+                  <p className={s.simulation__results_stageText}>Распад:</p>
+                  <p className={s.simulation__results_stageRes}>{decay}</p>
+                </div>
+              </div>
 
-        setOutputs({
-            mass,
-            baryon: String(baryon),
-            sbc,
-            charge: String(charge),
-        });
+              <button
+                className={s.simulation__results_button}
+                type="button"
+                onClick={() => {
+                  const hasAny = modalStages.length > 0;
+                  if (!hasAny) return log("Сначала запусти симуляцию — частиц пока нет");
+                  setParticlesModalOpen(true);
+                }}
+              >
+                Частицы
+              </button>
+            </div>
+          </div>
 
-        setHasOutputs(true);
-    }
+          <div className={s.simulation__big}>
+            <div className={s.simulation__bigMain}>
+              {!showViz ? (
+                <div className={s.simulation__vizPlaceholder}>
+                  <div className={s.simulation__vizPlaceholderTitle}>Visualization</div>
+                  <div className={s.simulation__vizPlaceholderText}>
+                    Появится после успешной симуляции
+                  </div>
+                </div>
+              ) : (
+                <div className={s.simulation__vizWrap}>
+                  {/* mount for WebGL */}
+                  <div id="canvas" className={s.simulation__vizCanvas} />
 
-    const modalStages = useMemo(() => {
-        const firstIds = extractIds(rawStages.first);
-        const finalIds = extractIds(rawStages.finals);
+                  {/* label + controls (вернул как просил) */}
+                  <div id="detectorLabel">ATLAS</div>
 
-        return [
-            { key: "stage1", label: "1 ступень", ids: firstIds },
-            { key: "decay", label: "Распад", ids: finalIds },
-        ].filter((x) => (x.ids?.length ?? 0) > 0);
-    }, [rawStages]);
+                  <div id="detectorSelection">
+                    <button className="detector-btn active" data-detector="ATLAS">ATLAS</button>
+                    <button className="detector-btn" data-detector="CMS">CMS</button>
+                    <button className="detector-btn" data-detector="ALICE">ALICE</button>
+                    <button className="detector-btn" data-detector="LHCb">LHCb</button>
+                  </div>
 
-    async function handleStart() {
-        if (!validate()) return;
+                  <div id="controls">
+                    {/* startBtn нам не нужен (мы автостартим), но оставим скрытым — на всякий */}
+                    <button id="startBtn" style={{ display: "none" }}>Запустить коллайдер</button>
+                    <button id="clearBtn">Очистить</button>
+                  </div>
 
-        const p1 = getSelectedRawByName(first);
-        const p2 = getSelectedRawByName(second);
-
-        const id_1 = getPDGId(p1);
-        const id_2 = getPDGId(p2);
-        const E = Number(String(energy).replace(",", "."));
-
-        setInputLine(`${first} + ${second} (${E} GeV)`);
-
-        setStage1("-");
-        setDecay("-");
-        setValues(null);
-
-        setHasOutputs(false);
-        setOutputs({ mass: "", baryon: "", sbc: "", charge: "" });
-
-        setRawStages({ first: null, finals: null });
-        setApiError("");
-
-        // ✅ важное: до результата симуляции визуалку НЕ показываем
-        setShowAnimation(false);
-
-        if (abortRef.current) abortRef.current.abort();
-        const controller = new AbortController();
-        abortRef.current = controller;
-
-        setLoading(true);
-
-        try {
-            const payload = [{ id_1, id_2, Energy: E }];
-
-            function getCookie(name) {
-                const v = `; ${document.cookie}`;
-                const parts = v.split(`; ${name}=`);
-                return parts.length === 2 ? parts.pop().split(";").shift() : null;
-            }
-
-            const res = await fetch("/api/simulation/", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                    "X-CSRFToken": getCookie("csrftoken"),
-                },
-                body: JSON.stringify(payload),
-                signal: controller.signal,
-            });
-
-            const text = await res.text().catch(() => "");
-
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status}. Ответ: ${text.slice(0, 300)}`);
-            }
-
-            let data;
-            try {
-                data = text ? JSON.parse(text) : null;
-            } catch {
-                throw new Error(`Сервер вернул НЕ JSON: ${text.slice(0, 300)}`);
-            }
-
-            const finals = Array.isArray(data) ? data[0] : data?.finals;
-            const first_finals = Array.isArray(data) ? data[1] : data?.first_finals;
-            const vals = Array.isArray(data) ? data[2] : data?.values;
-
-            setStage1(formatStage(first_finals));
-            setDecay(formatStage(finals));
-            setValues(vals ?? null);
-
-            updateOutputsFromValues(vals ?? null);
-
-            setRawStages({ first: first_finals ?? null, finals: finals ?? null });
-
-            // ✅ теперь результат есть → показываем анимацию
-            setShowAnimation(true);
-
-            // ✅ и запускаем визуалку (пока статикой; позже заменишь на значения с бэка)
-            // TODO backend: как только backend начнет отдавать eventType/momentum/trackCount/detector — подставь сюда
-            animationRef.current?.runSimulation({
-                eventType: "Higgs Boson",
-                energy: 13.0,
-                momentum: 1200,
-                trackCount: 45,
-                detector, // текущий выбранный
-            });
-        } catch (err) {
-            if (err?.name === "AbortError") return;
-            const msg = err?.message || "Неизвестная ошибка";
-            setApiError(msg);
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    return (
-        <>
-            <main>
-                <Container>
-                    <h2>СИМУЛЯТОР</h2>
-
-                    <div className={s.simulation}>
-                        <div className={s.simulation__mini}>
-                            <div className={s.simulation__parameters}>
-                                <p className={s.simulation__parameters_title}>Параметры столкновения</p>
-                                <hr className={s.simulation__parameters_hr} />
-
-                                <div className={s.simulation__parameters_options}>
-                                    <SearchableSelect
-                                        id="first"
-                                        name="first"
-                                        label="Первая частица:"
-                                        options={particleOptions}
-                                        value={first}
-                                        onChange={(v) => {
-                                            setFirst(v);
-                                            setErrors((e) => ({ ...e, first: "" }));
-                                            setApiError("");
-                                        }}
-                                        placeholder="Протон p+"
-                                        error={errors.first}
-                                    />
-                                </div>
-
-                                <div className={s.simulation__parameters_options}>
-                                    <SearchableSelect
-                                        id="second"
-                                        name="second"
-                                        label="Вторая частица:"
-                                        options={particleOptions}
-                                        value={second}
-                                        onChange={(v) => {
-                                            setSecond(v);
-                                            setErrors((e) => ({ ...e, second: "" }));
-                                            setApiError("");
-                                        }}
-                                        placeholder="не Протон не p+"
-                                        error={errors.second}
-                                    />
-                                </div>
-
-                                <div className={s.simulation__parameters_options}>
-                                    <label htmlFor="energy" className={s.simulation__parameters_text}>
-                                        Энергия пучков (GeV):
-                                    </label>
-                                    <input
-                                        className={`${s.simulation__parameters_input} ${
-                                            errors.energy ? s.simulation__fieldError : ""
-                                        }`}
-                                        id="energy"
-                                        type="text"
-                                        inputMode="decimal"
-                                        value={energy}
-                                        onChange={(e) => {
-                                            setEnergy(e.target.value);
-                                            setErrors((er) => ({ ...er, energy: "" }));
-                                            setApiError("");
-                                        }}
-                                        placeholder="60"
-                                    />
-                                    {errors.energy ? (
-                                        <div className={s.simulation__errorText}>{errors.energy}</div>
-                                    ) : null}
-                                </div>
-
-                                {apiError ? (
-                                    <div className={s.simulation__errorText}>Ошибка API: {apiError}</div>
-                                ) : null}
-                            </div>
-
-                            <div className={s.simulation__inputs}>
-                                <p className={s.simulation__parameters_text}>Входные параметры:</p>
-                                <p className={s.simulation__inputs_input}>{inputLine}</p>
-                            </div>
-
-                            <button
-                                type="button"
-                                className={s.simulation__startButton}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleStart();
-                                }}
-                                disabled={loading}
-                                aria-busy={loading}
-                            >
-                                {loading ? "Считаю..." : "Запустить симуляцию"}
-                            </button>
-
-                            <div className={s.simulation__results}>
-                                <p className={s.simulation__results_text}>Результат</p>
-                                <hr className={s.simulation__results_hr} />
-
-                                <div className={s.simulation__results_stages}>
-                                    <div className={s.simulation__results_stage}>
-                                        <p className={s.simulation__results_stageText}>Первая ступень:</p>
-                                        <p className={s.simulation__results_stageRes}>{stage1}</p>
-                                    </div>
-
-                                    <div className={s.simulation__results_stage}>
-                                        <p className={s.simulation__results_stageText}>Распад:</p>
-                                        <p className={s.simulation__results_stageRes}>{decay}</p>
-                                    </div>
-                                </div>
-
-                                <button
-                                    className={s.simulation__results_button}
-                                    type="button"
-                                    onClick={() => {
-                                        const hasAny = modalStages.length > 0;
-                                        if (!hasAny) return log("Сначала запусти симуляцию — частиц пока нет");
-                                        setParticlesModalOpen(true);
-                                    }}
-                                >
-                                    Частицы
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className={s.simulation__big}>
-                            <div className={s.simulation__bigMain}>
-                                {/* ===== UI поверх визуалки ===== */}
-                                <div className={s.simulation__animUI}>
-                                    <div className={s.simulation__detectorLabelTop}>{detector}</div>
-
-                                    <div className={s.simulation__detectorSelection}>
-                                        {["ATLAS", "CMS", "ALICE", "LHCb"].map((d) => (
-                                            <button
-                                                key={d}
-                                                type="button"
-                                                className={`${s.simulation__detectorBtn} ${
-                                                    detector === d ? s.simulation__detectorBtnActive : ""
-                                                }`}
-                                                onClick={() => setDetector(d)}
-                                                disabled={!showAnimation}
-                                                title={!showAnimation ? "Сначала запусти симуляцию" : ""}
-                                            >
-                                                {d}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    <label className={s.simulation__labelsToggle}>
-                                        <input
-                                            type="checkbox"
-                                            checked={showDetectorLabels}
-                                            onChange={(e) => setShowDetectorLabels(e.target.checked)}
-                                            disabled={!showAnimation}
-                                        />
-                                        Подписи детектора
-                                    </label>
-
-                                    {/* ===== legend ===== */}
-                                    {showLegend && (
-                                        <div
-                                            className={s.simulation__legend}
-                                            onClick={() => setShowLegend(false)}
-                                            title="Клик — скрыть"
-                                        >
-                                            <h3 className={s.simulation__legendTitle}>🎨 Легенда треков</h3>
-                                            <div className={s.simulation__legendItem}>
-                                                <span className={s.simulation__legendColor} data-c="jets" />
-                                                <span className={s.simulation__legendText}>Джеты (адроны)</span>
-                                            </div>
-                                            <div className={s.simulation__legendItem}>
-                                                <span className={s.simulation__legendColor} data-c="leptons" />
-                                                <span className={s.simulation__legendText}>Лептоны (e, μ)</span>
-                                            </div>
-                                            <div className={s.simulation__legendItem}>
-                                                <span className={s.simulation__legendColor} data-c="photons" />
-                                                <span className={s.simulation__legendText}>Фотоны (γ)</span>
-                                            </div>
-                                            <div className={s.simulation__legendItem}>
-                                                <span className={s.simulation__legendColor} data-c="muons" />
-                                                <span className={s.simulation__legendText}>Мюоны (μ)</span>
-                                            </div>
-                                            <div className={s.simulation__legendItem}>
-                                                <span className={s.simulation__legendColor} data-c="charged" />
-                                                <span className={s.simulation__legendText}>Заряженные частицы</span>
-                                            </div>
-                                            <div className={s.simulation__legendItem}>
-                                                <span className={s.simulation__legendColor} data-c="neutral" />
-                                                <span className={s.simulation__legendText}>Нейтральные частицы</span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {!showLegend && (
-                                        <button
-                                            type="button"
-                                            className={s.simulation__legendToggle}
-                                            onClick={() => setShowLegend(true)}
-                                        >
-                                            📊 Легенда
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* ===== Сама визуалка — только после результата ===== */}
-                                {showAnimation ? (
-                                    <LHCAnimation ref={animationRef} />
-                                ) : (
-                                    <div className={s.simulation__animPlaceholder}>
-                                        {/* ничего/фон — по твоему желанию */}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className={s.simulation__console}>
-                                <div className={s.simulation__console}>
-                                    <p className={s.simulation__consoleTitle}>Outputs:</p>
-
-                                    {hasOutputs ? (
-                                        <div className={s.simulation__consoleOut}>
-                                            <div>Mass = {outputs.mass}</div>
-                                            <div>Baryon Num = {outputs.baryon}</div>
-                                            <div>S, B, C = {outputs.sbc}</div>
-                                            <div>Charge = {outputs.charge}</div>
-                                        </div>
-                                    ) : (
-                                        <div className={s.simulation__consoleOut} />
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                  <div id="hud">
+                    <div>
+                      <span className="label">Энергия:</span>
+                      <span className="value" id="energy">0 TeV</span>
                     </div>
+                    <div>
+                      <span className="label">Импульс:</span>
+                      <span className="value" id="momentum">0 GeV/c</span>
+                    </div>
+                    <div>
+                      <span className="label">Треки:</span>
+                      <span className="value" id="trackCount">0</span>
+                    </div>
+                    <div>
+                      <span className="label">Событие:</span>
+                      <span className="value" id="eventType">—</span>
+                    </div>
+                    <div>
+                      <span className="label">🧲 Магн. поле:</span>
+                      <span className="value" id="magneticField">2.0 T</span>
+                    </div>
+                  </div>
 
-                    <ParticlesModal
-                        isOpen={particlesModalOpen}
-                        onClose={() => setParticlesModalOpen(false)}
-                        stages={modalStages}
-                        particlesById={particlesById}
-                        initialStageKey="stage1"
-                        title="Частицы"
-                    />
-                </Container>
-            </main>
-        </>
-    );
+                  <div id="instructions">
+                    <div>🖱️ ЛКМ - вращение</div>
+                    <div>🔍 Колесико - зум</div>
+                    <div>⏸️ Space - пауза</div>
+                  </div>
+
+                  <label id="labelsToggle">
+                    <input type="checkbox" id="showLabels" />
+                    Подписи детектора
+                  </label>
+
+                  <div id="labelsContainer"></div>
+
+                  <div id="legend">
+                    <h3>🎨 Легенда треков</h3>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#ff8800", boxShadow: "0 0 5px #ff8800" }}></div>
+                      <span className="legend-label">Джеты (адроны)</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#ff00ff", boxShadow: "0 0 5px #ff00ff" }}></div>
+                      <span className="legend-label">Лептоны (e, μ)</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#00ff00", boxShadow: "0 0 5px #00ff00" }}></div>
+                      <span className="legend-label">Фотоны (γ)</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#00ffff", boxShadow: "0 0 5px #00ffff" }}></div>
+                      <span className="legend-label">Мюоны (μ)</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#00ff88", boxShadow: "0 0 5px #00ff88" }}></div>
+                      <span className="legend-label">Заряженные частицы</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#ff3300", boxShadow: "0 0 5px #ff3300" }}></div>
+                      <span className="legend-label">Нейтральные частицы</span>
+                    </div>
+                  </div>
+
+                  <button id="legendToggle">📊 Легенда</button>
+                </div>
+              )}
+            </div>
+
+            <div className={s.simulation__console}>
+              <div className={s.simulation__console}>
+                <p className={s.simulation__consoleTitle}>Outputs:</p>
+
+                {hasOutputs ? (
+                  <div className={s.simulation__consoleOut}>
+                    <div>Mass = {outputs.mass}</div>
+                    <div>Baryon Num = {outputs.baryon}</div>
+                    <div>S, B, C = {outputs.sbc}</div>
+                    <div>Charge = {outputs.charge}</div>
+                  </div>
+                ) : (
+                  <div className={s.simulation__consoleOut} />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ParticlesModal
+          isOpen={particlesModalOpen}
+          onClose={() => setParticlesModalOpen(false)}
+          stages={modalStages}
+          particlesById={particlesById}
+          initialStageKey="stage1"
+          title="Частицы"
+        />
+      </Container>
+    </main>
+  );
 }
