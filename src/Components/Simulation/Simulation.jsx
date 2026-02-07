@@ -1013,18 +1013,6 @@ function SearchableSelect({
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
-  useEffect(() => {
-    const onClick = (e) => {
-      const { layerName, detector } = e.detail || {};
-      if (!layerName) return;
-      setDetectorLayer({ layerName, detector });
-      setDetectorModalOpen(true);
-    };
-
-    window.addEventListener("lhc:labelClick", onClick);
-    return () => window.removeEventListener("lhc:labelClick", onClick);
-  }, []);
-
 
   const selected = useMemo(
     () => options.find((o) => o.value === value) || null,
@@ -1168,6 +1156,7 @@ function SearchableSelect({
 }
 
 export default function Simulation() {
+
   const particleOptions = useMemo(() => {
     const arr = Array.isArray(particlesData) ? particlesData : [];
     return arr
@@ -1260,6 +1249,20 @@ export default function Simulation() {
   const vizReadyRef = useRef(false);
 
   const abortRef = useRef(null);
+  const [detectorModalOpen, setDetectorModalOpen] = useState(false);
+  const [detectorLayer, setDetectorLayer] = useState(null);
+  useEffect(() => {
+    const onClick = (e) => {
+      const { layerName, detector } = e.detail || {};
+      if (!layerName) return;
+      setDetectorLayer({ layerName, detector });
+      setDetectorModalOpen(true);
+    };
+
+    window.addEventListener("lhc:labelClick", onClick);
+    return () => window.removeEventListener("lhc:labelClick", onClick);
+  }, []);
+
 
   function log(line) {
     console.log("[UI LOG]", line);
@@ -1741,6 +1744,37 @@ export default function Simulation() {
           initialStageKey="stage1"
           title="Частицы"
         />
+
+        {detectorModalOpen && (
+  <div
+    className={s.detectorModalBackdrop}
+    onMouseDown={() => setDetectorModalOpen(false)}
+    role="dialog"
+    aria-modal="true"
+  >
+    <div
+      className={s.detectorModal}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <div className={s.detectorModalHeader}>
+        <div className={s.detectorModalTitle}>Слой детектора</div>
+        <button
+          className={s.detectorModalClose}
+          onClick={() => setDetectorModalOpen(false)}
+          type="button"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className={s.detectorModalBody}>
+        <div><b>Детектор:</b> {detectorLayer?.detector}</div>
+        <div><b>Слой:</b> {detectorLayer?.layerName}</div>
+      </div>
+    </div>
+  </div>
+)}
+
       </Container>
     </main>
   );
