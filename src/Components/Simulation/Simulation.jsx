@@ -1343,6 +1343,16 @@ export default function Simulation() {
     });
   }
 
+  function safeJsonParse(maybeString) {
+    if (typeof maybeString !== "string") return maybeString;
+    try {
+      return JSON.parse(maybeString);
+    } catch {
+      return maybeString; // если строка не JSON — пусть останется строкой
+    }
+  }
+
+
   async function handleStart() {
     if (!validate()) {
       log("Валидация не прошла ❌");
@@ -1410,8 +1420,12 @@ export default function Simulation() {
         throw new Error(`Сервер вернул НЕ JSON: ${text.slice(0, 300)}`);
       }
 
-      const finals = Array.isArray(data) ? data[0] : data?.finals;
-      const first_finals = Array.isArray(data) ? data[1] : data?.first_finals;
+      let finals = Array.isArray(data) ? data[0] : data?.finals;
+      let first_finals = Array.isArray(data) ? data[1] : data?.first_finals;
+
+      finals = safeJsonParse(finals);
+      first_finals = safeJsonParse(first_finals);
+
       const vals = Array.isArray(data) ? data[2] : data?.values;
 
       setStage1(formatStage(first_finals));
@@ -1419,8 +1433,8 @@ export default function Simulation() {
       setValues(vals ?? null);
       updateOutputsFromValues(vals ?? null);
       setHasOutputs(true);
-
       setRawStages({ first: first_finals ?? null, finals: finals ?? null });
+
 
       // ✅ теперь показываем визуализацию (после результатов)
       setShowViz(true);
