@@ -141,6 +141,7 @@ function injectLhcScriptOnce() {
         const showLabels = getEl('showLabels');
         showLabels && showLabels.addEventListener('change', function(e) {
           showDetectorLabels = e.target.checked;
+          if (showDetectorLabels) updateLabels();
           if (!showDetectorLabels) {
             labelElements.forEach(label => label.element.classList.remove('visible'));
           }
@@ -477,6 +478,11 @@ function injectLhcScriptOnce() {
             const d = document.createElement('div');
             d.className = 'detector-label';
             d.textContent = obj.userData.layerName;
+            d.addEventListener("click", () => {
+              window.dispatchEvent(new CustomEvent("lhc:labelClick", {
+                detail: { layerName: obj.userData.layerName, detector: currentDetector }
+              }));
+            });
             labelsContainer.appendChild(d);
             labelElements.push({ element: d, object: obj });
           }
@@ -922,11 +928,25 @@ function injectLhcScriptOnce() {
 
       function onMouseClick(e) {
         // модалку ты сейчас не просил — оставим пустым.
-        const dragDistance = Math.sqrt(
+         const dragDistance = Math.sqrt(
           Math.pow(e.clientX - clickStartPos.x, 2) +
           Math.pow(e.clientY - clickStartPos.y, 2)
         );
         if (!showDetectorLabels || dragDistance >= 5) return;
+
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObjects(detectorGeometry, true);
+          if (!intersects.length) return;
+
+          let layerGroup = intersects[0].object;
+          while (layerGroup.parent && !layerGroup.userData.layerName) {
+            layerGroup = layerGroup.parent;
+          }
+          if (!layerGroup.userData.layerName) return;
+
+          window.dispatchEvent(new CustomEvent("lhc:labelClick", {
+            detail: { layerName: layerGroup.userData.layerName, detector: currentDetector }
+        }));
       }
 
       function onMouseWheel(e) {
@@ -993,6 +1013,18 @@ function SearchableSelect({
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+  useEffect(() => {
+    const onClick = (e) => {
+      const { layerName, detector } = e.detail || {};
+      if (!layerName) return;
+      setDetectorLayer({ layerName, detector });
+      setDetectorModalOpen(true);
+    };
+
+    window.addEventListener("lhc:labelClick", onClick);
+    return () => window.removeEventListener("lhc:labelClick", onClick);
+  }, []);
+
 
   const selected = useMemo(
     () => options.find((o) => o.value === value) || null,

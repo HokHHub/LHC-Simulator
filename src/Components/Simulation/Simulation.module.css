@@ -751,6 +751,41 @@ h2 {
   display: none;
 }
 
+:global(#labelsContainer) {
+  position: fixed;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+:global(.detector-label) {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(6px);
+  transition: opacity .15s ease, transform .15s ease;
+  white-space: nowrap;
+}
+
+:global(.detector-label.visible) {
+  opacity: 1;
+  pointer-events: auto; /* важно для клика */
+}
+
+:global(.detector-label.highlighted) {
+  border-color: rgba(255,255,255,0.35);
+  box-shadow: 0 0 10px rgba(255,255,255,0.15);
+}
+
+
 @media (max-width: 1280px) {
     .simulation {
         justify-content: center;
