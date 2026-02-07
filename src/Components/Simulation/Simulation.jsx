@@ -1422,6 +1422,8 @@ export default function Simulation() {
 
       let finals = Array.isArray(data) ? data[0] : data?.finals;
       let first_finals = Array.isArray(data) ? data[1] : data?.first_finals;
+      console.log("RAW first_finals:", first_finals, typeof first_finals);
+      console.log("RAW finals:", finals, typeof finals);
 
       finals = safeJsonParse(finals);
       first_finals = safeJsonParse(first_finals);
