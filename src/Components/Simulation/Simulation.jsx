@@ -1173,7 +1173,7 @@ export default function Simulation() {
         if (!row || typeof row !== "object") return String(row);
 
         const ids = Object.keys(row)
-          .filter((k) => /^id_\\d+$/.test(k))
+          .filter((k) => /^id_\d+$/.test(k))           // ✅ ВОТ ТУТ ФИКС
           .sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)))
           .map((k) => Number(row[k]))
           .filter((n) => Number.isFinite(n));
@@ -1183,7 +1183,7 @@ export default function Simulation() {
         const names = ids.map((id) => idToName.get(id) || `PDG ${id}`);
         return names.join(" + ");
       })
-      .join("\\n");
+      .join("\n");
   }
 
   function extractIds(objOrArr) {
