@@ -776,14 +776,14 @@ h2 {
 }
 
 :global(.detector-label.visible) {
-    opacity: 1;
+    opacity: 0.6;
     pointer-events: auto;
     /* важно для клика */
 }
 
 :global(.detector-label.highlighted) {
     border-color: rgba(255, 255, 255, 0.35);
-    opacity: 0.6;
+    opacity: 1;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
 }
 
