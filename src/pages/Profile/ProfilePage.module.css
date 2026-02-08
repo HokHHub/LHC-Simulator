@@ -467,6 +467,29 @@
   line-height: 1;
 }
 
+.simItem{
+  position: relative;           /* важно для absolute */
+  border-radius: 10px;
+  padding: 12px 56px 12px 14px; /* справа больше, чтобы время не наезжало */
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.timeAgoRight{
+  position: absolute;
+  right: 14px;                  /* как на скрине */
+  top: 50%;
+  transform: translateY(-50%);  /* центр по вертикали */
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.titleRight{
+  padding-right: 18px; /* чуть воздуха */
+}
+
 @media (max-width: 1280px) {
   .content {
     width: 100%;
