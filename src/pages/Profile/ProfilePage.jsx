@@ -15,7 +15,7 @@ const mockProfile = {
 const mockStats = {
   simulations: 25,
   points: 120,
-  rank: "Ученик",
+  rank: "пїЅпїЅпїЅпїЅпїЅпїЅ",
 };
 
 const mockSimulations = [
@@ -64,16 +64,16 @@ const mockLeaderboard = [
 ];
 
 const formatTimeAgo = (value) => {
-  if (!value) return "1 мин назад";
+  if (!value) return "1 пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ";
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "1 мин назад";
+  if (Number.isNaN(parsed.getTime())) return "1 пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ";
   const diffMs = Date.now() - parsed.getTime();
   const diffMin = Math.max(1, Math.round(diffMs / 60000));
-  if (diffMin < 60) return `${diffMin} мин назад`;
+  if (diffMin < 60) return `${diffMin} пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ`;
   const diffHours = Math.round(diffMin / 60);
-  if (diffHours < 24) return `${diffHours} ч назад`;
+  if (diffHours < 24) return `${diffHours} пїЅ пїЅпїЅпїЅпїЅпїЅ`;
   const diffDays = Math.round(diffHours / 24);
-  return `${diffDays} дн назад`;
+  return `${diffDays} пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ`;
 };
 
 const normalizeSimulation = (sim) => {
@@ -163,7 +163,7 @@ const ProfilePage = () => {
         );
       } catch (err) {
         if (!isMounted) return;
-        setError(err?.response?.data?.detail || "Не удалось загрузить данные профиля");
+        setError(err?.response?.data?.detail || "пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -200,7 +200,7 @@ const ProfilePage = () => {
   const simulationsCount =
     stats?.simulations ?? stats?.simulations_count ?? stats?.count ?? simulations.length ?? 0;
   const points = stats?.points ?? stats?.score ?? stats?.total_points ?? 0;
-  const rankTitle = stats?.rank ?? stats?.level ?? "Ученик";
+  const rankTitle = stats?.rank ?? stats?.level ?? "пїЅпїЅпїЅпїЅпїЅпїЅ";
 
   const handleLogout = async () => {
     await logout();
@@ -235,7 +235,7 @@ const ProfilePage = () => {
       setProfile(updated.data);
       setIsEditing(false);
     } catch (err) {
-      setFormError(err?.response?.data?.detail || "Не удалось обновить профиль");
+      setFormError(err?.response?.data?.detail || "пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
     } finally {
       setIsSaving(false);
     }
@@ -257,12 +257,12 @@ const ProfilePage = () => {
 
           <div className={styles.statsCard}>
             <div className={styles.statsValue}>{simulationsCount}</div>
-            <div className={styles.statsLabel}>симуляций</div>
-            <div className={styles.statsPoints}>{points} Очков</div>
+            <div className={styles.statsLabel}>СЃРёРјСѓР»СЏС†РёР№</div>
+            <div className={styles.statsPoints}>{points} РћС‡РєРѕРІ</div>
           </div>
 
           <div className={styles.leaderboardLabel} data-count={leaderboard.length}>
-            Таблица лидеров
+            РўР°Р±Р»РёС†Р° Р»РёРґРµСЂРѕРІ
           </div>
 
           <div className={styles.buttonsBlock}>
@@ -272,24 +272,24 @@ const ProfilePage = () => {
                 className={styles.actionButton}
                 onClick={handleEditToggle}
               >
-                Изменить профиль
+                РР·РјРµРЅРёС‚СЊ РїСЂРѕС„РёР»СЊ
               </button>
               <button type="button" className={styles.actionButton} onClick={handleLogout}>
-                Выйти
+                Р’С‹Р№С‚Рё
               </button>
             </div>
-            <div className={styles.helpText}>Нужна помощь?</div>
+            <div className={styles.helpText}>РќСѓР¶РЅР° РїРѕРјРѕС‰СЊ?</div>
           </div>
         </section>
 
         <section className={styles.historyCard}>
-          <div className={styles.historyTitle}>Ваши столкновения</div>
+          <div className={styles.historyTitle}>Р’Р°С€Рё СЃС‚РѕР»РєРЅРѕРІРµРЅРёСЏ</div>
 
           <div className={styles.simList}>
-            {loading && <div className={styles.stateText}>Загрузка...</div>}
+            {loading && <div className={styles.stateText}>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ...</div>}
             {!loading && error && <div className={styles.stateText}>{error}</div>}
             {!loading && !error && normalizedSims.length === 0 && (
-              <div className={styles.stateText}>Нет симуляций</div>
+              <div className={styles.stateText}>РџРѕРєР° РЅРµС‚ СЃС‚РѕР»РєРЅРѕРІРµРЅРёР№</div>
             )}
             {!loading && !error && normalizedSims.length > 0 && (
               <div className={styles.simListInner}>
@@ -318,10 +318,10 @@ const ProfilePage = () => {
       {isEditing && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
-            <div className={styles.modalTitle}>Изменить профиль</div>
+            <div className={styles.modalTitle}>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</div>
             <form className={styles.modalForm} onSubmit={handleSubmit}>
               <label className={styles.inputLabel}>
-                Имя пользователя
+                пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 <input
                   className={styles.inputField}
                   name="username"
@@ -342,7 +342,7 @@ const ProfilePage = () => {
               </label>
               <div className={styles.modalRow}>
                 <label className={styles.inputLabel}>
-                  Имя
+                  пїЅпїЅпїЅ
                   <input
                     className={styles.inputField}
                     name="first_name"
@@ -352,7 +352,7 @@ const ProfilePage = () => {
                   />
                 </label>
                 <label className={styles.inputLabel}>
-                  Фамилия
+                  пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                   <input
                     className={styles.inputField}
                     name="last_name"
@@ -369,10 +369,10 @@ const ProfilePage = () => {
                   className={styles.actionButton}
                   onClick={handleEditToggle}
                 >
-                  Отмена
+                  пїЅпїЅпїЅпїЅпїЅпїЅ
                 </button>
                 <button type="submit" className={styles.actionButton} disabled={isSaving}>
-                  {isSaving ? "Сохранение..." : "Сохранить"}
+                  {isSaving ? "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ..." : "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ"}
                 </button>
               </div>
             </form>
