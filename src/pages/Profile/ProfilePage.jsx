@@ -4,6 +4,28 @@ import { authAPI } from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
 import styles from "./ProfilePage.module.css";
 import particlesData from "../../data/all_particles.json";
+const particleById = new Map(
+  (Array.isArray(particlesData) ? particlesData : []).map((p) => [p.mcid, p])
+);
+
+const particleLabel = (mcid) => {
+  if (mcid === null || mcid === undefined) return "—";
+  const p = particleById.get(mcid);
+
+  // если есть символ — используем его, иначе name, иначе просто id
+  if (p) return p.symbol || p.name || String(mcid);
+
+  // если частицы нет в json — всё равно показываем id
+  return String(mcid);
+};
+
+// делаем "γ(22)" или "K0(311)" — по желанию
+const particleLabelWithId = (mcid) => {
+  const p = particleById.get(mcid);
+  const base = p?.symbol || p?.name || String(mcid);
+  return `${base} (${mcid})`;
+};
+
 
 const mockProfile = {
   id: "dev_user",
@@ -159,24 +181,39 @@ const normalizeSimulation = (sim) => {
     sim?.timestamp ||
     null;
 
-  // Гарантируем массив результатов
+  // Строго по твоей структуре:
+  // simulation_results: [ [ {id_1,id_2,id_3?} ], [ {id_1,id_2,id_3?} ], [ {Mass,...} ] ]
   const rawResults = Array.isArray(sim?.simulation_results) ? sim.simulation_results : [];
 
-  // Берём "пары" частиц из 1-го и 2-го этапа (учитываем, что там может быть массив массивов)
-  const inPair = rawResults?.[0]?.[0] ?? rawResults?.[0] ?? null;
-  const outPair = rawResults?.[1]?.[0] ?? rawResults?.[1] ?? null;
+  const step1 = Array.isArray(rawResults?.[0]) ? rawResults[0] : [];
+  const step2 = Array.isArray(rawResults?.[1]) ? rawResults[1] : [];
+  const step3 = Array.isArray(rawResults?.[2]) ? rawResults[2] : [];
 
-  const inText =
-    inPair && typeof inPair === "object"
-      ? `${formatValue(inPair.id_1)} + ${formatValue(inPair.id_2)}`
-      : "—";
+  const inObj = step1?.[0] ?? null;
+  const outObj = step2?.[0] ?? null;
+  const propsObj = step3?.[0] ?? null;
 
-  const outText =
-    outPair && typeof outPair === "object"
-      ? `${formatValue(outPair.id_1)} + ${formatValue(outPair.id_2)}`
-      : "—";
+  const formatCollision = (obj) => {
+    if (!obj || typeof obj !== "object") return "—";
 
-  const resultsText = formatSimulationResults(rawResults);
+    const a = ("id_1" in obj) ? particleLabelWithId(obj.id_1) : "—";
+    const b = ("id_2" in obj) ? particleLabelWithId(obj.id_2) : "—";
+    const c = ("id_3" in obj && obj.id_3 !== null && obj.id_3 !== undefined)
+      ? particleLabelWithId(obj.id_3)
+      : null;
+
+    // если есть третий — показываем как "A + B → C"
+    if (c) return `${a} + ${b} → ${c}`;
+    return `${a} + ${b}`;
+  };
+
+  const inText = formatCollision(inObj);
+  const outText = formatCollision(outObj);
+
+  const massText =
+    propsObj && typeof propsObj === "object" && "Mass" in propsObj
+      ? `m=${Number(propsObj.Mass).toFixed(3)}`
+      : null;
 
   return {
     id: sim?.id ?? `${type}-${createdAt || "unknown"}`,
@@ -185,15 +222,16 @@ const normalizeSimulation = (sim) => {
     createdAt,
     dateLabel: formatDateTime(createdAt),
 
-    // поля под UI
+    // для карточки
     inText,
     outText,
-    resultsText,
+    massText,
 
-    // если захочешь показывать детали
+    // если нужно дальше где-то
     rawResults,
   };
 };
+
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -400,7 +438,7 @@ const ProfilePage = () => {
                     </div>
 
                     <div className={styles.simRight}>
-                      <div className={styles.simTitleSecondary}>Результаты</div>
+                      <div className={styles.simTitleSecondary}>{sim.outText}</div>
                       <div className={styles.simProducts}>{sim.outText}</div>
                     </div>
 
