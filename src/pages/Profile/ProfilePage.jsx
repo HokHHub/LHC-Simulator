@@ -219,21 +219,37 @@ const normalizeSimulation = (sim) => {
 
   const rawResults = Array.isArray(sim?.simulation_results) ? sim.simulation_results : [];
 
-  // По твоему примеру:
-  // step1 = [ { id_1, id_2, id_3? } ]  (вход/или первый этап)
-  // step2 = [ { id_1, id_2, id_3? } ]  (выход/второй этап)
-  const step1Obj = Array.isArray(rawResults?.[0]) ? rawResults[0]?.[0] : null;
-  const step2Obj = Array.isArray(rawResults?.[1]) ? rawResults[1]?.[0] : null;
+  // Новая логика согласно требованию:
+  // titleLeft (inTitle) = simulation_results[3] (init_id1, init_id2:)
+  // titleRight (outTitle) = simulation_results[1] (id_1, id_2, id_3?)
+  // metaProducts (productsText) = simulation_results[0] (id_1, id_2, id_3?)
+  
+  const step1Obj = Array.isArray(rawResults?.[0]) ? rawResults[0]?.[0] : null; // для productsText
+  const step2Obj = Array.isArray(rawResults?.[1]) ? rawResults[1]?.[0] : null; // для titleRight
+  const step4Obj = Array.isArray(rawResults?.[3]) ? rawResults[3]?.[0] : null; // для titleLeft
 
-  const inIds = extractIdsFromObj(step1Obj);
+  // Для titleLeft (step4) - ищем init_id1 и init_id2:
+  const extractInitIds = (obj) => {
+    if (!obj || typeof obj !== "object") return [];
+    const ids = [];
+    if ("init_id1" in obj && obj.init_id1 !== null && obj.init_id1 !== undefined) {
+      ids.push(obj.init_id1);
+    }
+    if ("init_id2:" in obj && obj["init_id2:"] !== null && obj["init_id2:"] !== undefined) {
+      ids.push(obj["init_id2:"]);
+    }
+    return ids;
+  };
+
+  const inIds = extractInitIds(step4Obj);
   const outIds = extractIdsFromObj(step2Obj);
+  const productsIds = extractIdsFromObj(step1Obj);
 
   const inTitle = inIds.length ? inIds.map(particleName).join(" + ") : "—";
   const outTitle = outIds.length
-    ? outIds.slice(0, 2).map(particleName).join(" + ") // как на скрине: кратко
+    ? outIds.slice(0, 2).map(particleName).join(" + ")
     : "—";
-
-  const productsText = outIds.length ? outIds.map(particleName).join(" + ") : "—";
+  const productsText = productsIds.length ? productsIds.map(particleName).join(" + ") : "—";
 
   // тип столкновения красивее
   const typeLabel =
