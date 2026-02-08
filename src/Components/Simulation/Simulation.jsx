@@ -1430,6 +1430,8 @@ export default function Simulation() {
         return parts.length === 2 ? parts.pop().split(";").shift() : null;
       }
 
+      const token = localStorage.getItem("access_token");
+
       const res = await fetch("/api/simulation/", {
         method: "POST",
         credentials: "include",
@@ -1437,10 +1439,11 @@ export default function Simulation() {
           "Content-Type": "application/json",
           Accept: "application/json",
           "X-CSRFToken": getCookie("csrftoken"),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(payload),
-        signal: controller.signal,
       });
+
 
       const text = await res.text().catch(() => "");
 
@@ -1746,34 +1749,34 @@ export default function Simulation() {
         />
 
         {detectorModalOpen && (
-  <div
-    className={s.detectorModalBackdrop}
-    onMouseDown={() => setDetectorModalOpen(false)}
-    role="dialog"
-    aria-modal="true"
-  >
-    <div
-      className={s.detectorModal}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
-      <div className={s.detectorModalHeader}>
-        <div className={s.detectorModalTitle}>Слой детектора</div>
-        <button
-          className={s.detectorModalClose}
-          onClick={() => setDetectorModalOpen(false)}
-          type="button"
-        >
-          ✕
-        </button>
-      </div>
+          <div
+            className={s.detectorModalBackdrop}
+            onMouseDown={() => setDetectorModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div
+              className={s.detectorModal}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div className={s.detectorModalHeader}>
+                <div className={s.detectorModalTitle}>Слой детектора</div>
+                <button
+                  className={s.detectorModalClose}
+                  onClick={() => setDetectorModalOpen(false)}
+                  type="button"
+                >
+                  ✕
+                </button>
+              </div>
 
-      <div className={s.detectorModalBody}>
-        <div><b>Детектор:</b> {detectorLayer?.detector}</div>
-        <div><b>Слой:</b> {detectorLayer?.layerName}</div>
-      </div>
-    </div>
-  </div>
-)}
+              <div className={s.detectorModalBody}>
+                <div><b>Детектор:</b> {detectorLayer?.detector}</div>
+                <div><b>Слой:</b> {detectorLayer?.layerName}</div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </Container>
     </main>
