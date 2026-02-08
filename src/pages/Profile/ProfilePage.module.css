@@ -234,7 +234,7 @@
   box-shadow: 6px 9px 4px 0px rgba(0, 0, 0, 0.25);
   position: relative;
   padding: 10px 20px;
-  display: grid;
+  /* display: grid; */
   grid-template-columns: 1fr 1fr auto;
   align-items: center;
   gap: 10px;
@@ -376,10 +376,10 @@
 }
 
 .simItem {
-  border-radius: 10px;
-  padding: 12px 14px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  border: 3px solid #19242B;
+  background: linear-gradient(90deg, #001214 0%, #080C0E 100%);
+  box-shadow: 9px 9px 7.5px 0 rgba(0, 0, 0, 0.25) inset, 6px 9px 4px 0 rgba(0, 0, 0, 0.25);
 }
 
 .topRow {
@@ -390,18 +390,27 @@
 }
 
 .titleLeft {
-  font-size: 22px;
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1.15;
+  color: var(--White-Color, #FFF);
+  text-align: center;
+
+  /* SubTitle Font */
+  font-family: Rubik;
+  font-size: 25px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
 }
 
 .titleRight {
-  font-size: 22px;
-  font-weight: 700;
-  color: rgba(110, 170, 255, 0.75);
-  line-height: 1.15;
-  text-align: right;
+  color: var(--Outline-Light-Color, #3E5C76);
+  text-align: center;
+
+  /* SubTitle Font */
+  font-family: Rubik;
+  font-size: 25px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
 }
 
 .bottomRow {
@@ -414,8 +423,15 @@
 
 .metaLeft,
 .metaCenter {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--White-Color, #FFF);
+  text-align: center;
+
+  /* Little Font */
+  font-family: Rubik;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: normal;
   white-space: nowrap;
 }
 
@@ -424,12 +440,15 @@
 }
 
 .metaRight {
-  font-size: 12px;
-  color: rgba(110, 170, 255, 0.35);
-  text-align: right;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: var(--White-Color, #FFF);
+  text-align: center;
+
+  /* Little Font */
+  font-family: Rubik;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: normal;
 }
 
 
@@ -460,6 +479,7 @@
 }
 
 @media (max-width: 768px) {
+
   .profileCard,
   .historyCard {
     height: auto;
