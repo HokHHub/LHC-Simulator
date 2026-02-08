@@ -30,12 +30,8 @@ const mockSimulations = [
     },
     duration: null,
     simulation_results: [
-      [
-        { id_1: 421, id_2: -421, id_3: 21 },
-      ],
-      [
-        { id_1: 21, id_2: -511 },
-      ],
+      [{ id_1: 421, id_2: -421, id_3: 21 }],
+      [{ id_1: 21, id_2: -511 }],
       [
         {
           Mass: 25.35581499892298,
@@ -57,12 +53,8 @@ const mockSimulations = [
     },
     duration: 18.4,
     simulation_results: [
-      [
-        { id_1: 2212, id_2: 2212 },
-      ],
-      [
-        { id_1: 211, id_2: -211, id_3: 111 },
-      ],
+      [{ id_1: 2212, id_2: 2212 }],
+      [{ id_1: 211, id_2: -211, id_3: 111 }],
       [
         {
           Mass: 9.12,
@@ -157,27 +149,49 @@ const normalizeSimulation = (sim) => {
     sim?.collision_type ||
     sim?.mode ||
     "Неизвестный тип";
-  const energy =
-    sim?.energy?.parsedValue ??
-    sim?.energy?.source ??
-    sim?.energy ??
-    null;
+
+  const energy = sim?.energy?.parsedValue ?? sim?.energy?.source ?? sim?.energy ?? null;
+
   const createdAt =
     sim?.created_at ||
     sim?.createdAt ||
     sim?.time ||
     sim?.timestamp ||
     null;
-  const results = Array.isArray(sim?.simulation_results) ? sim.simulation_results : [];
-  const resultsText = formatSimulationResults(results);
+
+  // Гарантируем массив результатов
+  const rawResults = Array.isArray(sim?.simulation_results) ? sim.simulation_results : [];
+
+  // Берём "пары" частиц из 1-го и 2-го этапа (учитываем, что там может быть массив массивов)
+  const inPair = rawResults?.[0]?.[0] ?? rawResults?.[0] ?? null;
+  const outPair = rawResults?.[1]?.[0] ?? rawResults?.[1] ?? null;
+
+  const inText =
+    inPair && typeof inPair === "object"
+      ? `${formatValue(inPair.id_1)} + ${formatValue(inPair.id_2)}`
+      : "—";
+
+  const outText =
+    outPair && typeof outPair === "object"
+      ? `${formatValue(outPair.id_1)} + ${formatValue(outPair.id_2)}`
+      : "—";
+
+  const resultsText = formatSimulationResults(rawResults);
 
   return {
-    id: sim?.id || `${type}-${createdAt || "unknown"}`,
+    id: sim?.id ?? `${type}-${createdAt || "unknown"}`,
     simulationType: type,
     energyTev: energy,
     createdAt,
     dateLabel: formatDateTime(createdAt),
+
+    // поля под UI
+    inText,
+    outText,
     resultsText,
+
+    // если захочешь показывать детали
+    rawResults,
   };
 };
 
@@ -217,13 +231,16 @@ const ProfilePage = () => {
         ]);
 
         if (!isMounted) return;
+
         setProfile(profileRes.data);
         setStats(statsRes.data);
+
         setSimulations(
           Array.isArray(simsRes.data)
             ? simsRes.data
             : simsRes.data?.simulations || simsRes.data?.results || []
         );
+
         setLeaderboard(
           Array.isArray(leaderboardRes.data)
             ? leaderboardRes.data
@@ -369,21 +386,24 @@ const ProfilePage = () => {
             {!loading && !error && normalizedSims.length === 0 && (
               <div className={styles.stateText}>Пока нет симуляций</div>
             )}
+
             {!loading && !error && normalizedSims.length > 0 && (
               <div className={styles.simListInner}>
                 {normalizedSims.map((sim) => (
                   <div key={sim.id} className={styles.simItem}>
                     <div className={styles.simLeft}>
-                      <div className={styles.simTitle}>{sim.simulation_results[0].id_1} + {sim.simulation_results[0].id_2}</div>
+                      <div className={styles.simTitle}>{sim.inText}</div>
                       <div className={styles.simMeta}>
                         <span>{sim.energyTev ?? "—"} GeV</span>
                         <span>{sim.simulationType}</span>
                       </div>
                     </div>
+
                     <div className={styles.simRight}>
                       <div className={styles.simTitleSecondary}>Результаты</div>
-                      <div className={styles.simProducts}>{sim.simulation_results[1].id_1} + {sim.simulation_results[1].id_2}</div>
+                      <div className={styles.simProducts}>{sim.outText}</div>
                     </div>
+
                     <div className={styles.simTime}>Дата: {sim.dateLabel}</div>
                   </div>
                 ))}
@@ -408,6 +428,7 @@ const ProfilePage = () => {
                   type="text"
                 />
               </label>
+
               <label className={styles.inputLabel}>
                 Email
                 <input
@@ -418,6 +439,7 @@ const ProfilePage = () => {
                   type="email"
                 />
               </label>
+
               <div className={styles.modalRow}>
                 <label className={styles.inputLabel}>
                   Имя
@@ -440,7 +462,9 @@ const ProfilePage = () => {
                   />
                 </label>
               </div>
+
               {formError && <div className={styles.formError}>{formError}</div>}
+
               <div className={styles.modalActions}>
                 <button
                   type="button"
