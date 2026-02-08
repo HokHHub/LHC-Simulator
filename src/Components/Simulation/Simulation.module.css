@@ -778,7 +778,6 @@ h2 {
 :global(.detector-label.visible) {
     opacity: 0.6;
     pointer-events: auto;
-    /* важно для клика */
 }
 
 :global(.detector-label.highlighted) {
