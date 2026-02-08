@@ -213,9 +213,9 @@ const normalizeSimulation = (sim) => {
   const typeLabel =
     typeof type === "string"
       ? type
-        .split("-")
-        .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
-        .join("-")
+          .split("-")
+          .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+          .join("-")
       : "Hadron-Hadron";
 
   return {
@@ -428,18 +428,21 @@ const ProfilePage = () => {
               <div className={styles.simListInner}>
                 {normalizedSims.map((sim) => (
                   <div key={sim.id} className={styles.simItem}>
-                    <div className={styles.topRow}>
-                      <div className={styles.titleLeft}>{sim.inTitle}</div>
-                      <div className={styles.titleRight}>{sim.outTitle}</div>
+                    <div className={styles.simLeft}>
+                      <div className={styles.simTitle}>{sim.inText}</div>
+                      <div className={styles.simMeta}>
+                        <span>{sim.energyTev ?? "—"} GeV</span>
+                        <span>{sim.simulationType}</span>
+                      </div>
                     </div>
 
-                    <div className={styles.bottomRow}>
-                      <div className={styles.metaLeft}>{sim.energyLabel}</div>
-                      <div className={styles.metaCenter}>{sim.typeLabel}</div>
-                      <div className={styles.metaRight}>{sim.productsText}</div>
+                    <div className={styles.simRight}>
+                      <div className={styles.simTitleSecondary}>{sim.outText}</div>
+                      <div className={styles.simProducts}>{sim.outText}</div>
                     </div>
+
+                    <div className={styles.simTime}>Дата: {sim.dateLabel}</div>
                   </div>
-
                 ))}
               </div>
             )}
