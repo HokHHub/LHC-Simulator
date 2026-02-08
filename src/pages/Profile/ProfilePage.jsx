@@ -8,16 +8,26 @@ const particleById = new Map(
   (Array.isArray(particlesData) ? particlesData : []).map((p) => [p.mcid, p])
 );
 
-const particleLabel = (mcid) => {
-  if (mcid === null || mcid === undefined) return "—";
-  const p = particleById.get(mcid);
-
-  // если есть символ — используем его, иначе name, иначе просто id
-  if (p) return p.symbol || p.name || String(mcid);
-
-  // если частицы нет в json — всё равно показываем id
-  return String(mcid);
+const titleCase = (s) => {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
 };
+
+const particleName = (mcid) => {
+  const p = particleById.get(mcid);
+  return titleCase(p?.name ?? String(mcid));
+};
+
+// Достаём ВСЕ id_* из объекта (id_1, id_2, id_3...) и превращаем в список имён
+const extractIdsFromObj = (obj) => {
+  if (!obj || typeof obj !== "object") return [];
+  return Object.keys(obj)
+    .filter((k) => k.startsWith("id_"))
+    .sort() // id_1, id_2, id_3...
+    .map((k) => obj[k])
+    .filter((v) => v !== null && v !== undefined);
+};
+
 
 // делаем "γ(22)" или "K0(311)" — по желанию
 const particleLabelWithId = (mcid) => {
@@ -170,7 +180,7 @@ const normalizeSimulation = (sim) => {
     sim?.type ||
     sim?.collision_type ||
     sim?.mode ||
-    "Неизвестный тип";
+    "Unknown";
 
   const energy = sim?.energy?.parsedValue ?? sim?.energy?.source ?? sim?.energy ?? null;
 
@@ -181,56 +191,45 @@ const normalizeSimulation = (sim) => {
     sim?.timestamp ||
     null;
 
-  // Строго по твоей структуре:
-  // simulation_results: [ [ {id_1,id_2,id_3?} ], [ {id_1,id_2,id_3?} ], [ {Mass,...} ] ]
   const rawResults = Array.isArray(sim?.simulation_results) ? sim.simulation_results : [];
 
-  const step1 = Array.isArray(rawResults?.[0]) ? rawResults[0] : [];
-  const step2 = Array.isArray(rawResults?.[1]) ? rawResults[1] : [];
-  const step3 = Array.isArray(rawResults?.[2]) ? rawResults[2] : [];
+  // По твоему примеру:
+  // step1 = [ { id_1, id_2, id_3? } ]  (вход/или первый этап)
+  // step2 = [ { id_1, id_2, id_3? } ]  (выход/второй этап)
+  const step1Obj = Array.isArray(rawResults?.[0]) ? rawResults[0]?.[0] : null;
+  const step2Obj = Array.isArray(rawResults?.[1]) ? rawResults[1]?.[0] : null;
 
-  const inObj = step1?.[0] ?? null;
-  const outObj = step2?.[0] ?? null;
-  const propsObj = step3?.[0] ?? null;
+  const inIds = extractIdsFromObj(step1Obj);
+  const outIds = extractIdsFromObj(step2Obj);
 
-  const formatCollision = (obj) => {
-    if (!obj || typeof obj !== "object") return "—";
+  const inTitle = inIds.length ? inIds.map(particleName).join(" + ") : "—";
+  const outTitle = outIds.length
+    ? outIds.slice(0, 2).map(particleName).join(" + ") // как на скрине: кратко
+    : "—";
 
-    const a = ("id_1" in obj) ? particleLabelWithId(obj.id_1) : "—";
-    const b = ("id_2" in obj) ? particleLabelWithId(obj.id_2) : "—";
-    const c = ("id_3" in obj && obj.id_3 !== null && obj.id_3 !== undefined)
-      ? particleLabelWithId(obj.id_3)
-      : null;
+  const productsText = outIds.length ? outIds.map(particleName).join(" + ") : "—";
 
-    // если есть третий — показываем как "A + B → C"
-    if (c) return `${a} + ${b} → ${c}`;
-    return `${a} + ${b}`;
-  };
-
-  const inText = formatCollision(inObj);
-  const outText = formatCollision(outObj);
-
-  const massText =
-    propsObj && typeof propsObj === "object" && "Mass" in propsObj
-      ? `m=${Number(propsObj.Mass).toFixed(3)}`
-      : null;
+  // тип столкновения красивее
+  const typeLabel =
+    typeof type === "string"
+      ? type
+          .split("-")
+          .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+          .join("-")
+      : "Hadron-Hadron";
 
   return {
     id: sim?.id ?? `${type}-${createdAt || "unknown"}`,
-    simulationType: type,
-    energyTev: energy,
-    createdAt,
+    energyLabel: energy !== null && energy !== undefined ? `${energy} GeV` : "—",
+    typeLabel,
     dateLabel: formatDateTime(createdAt),
 
-    // для карточки
-    inText,
-    outText,
-    massText,
-
-    // если нужно дальше где-то
-    rawResults,
+    inTitle,        // Proton + Neutron
+    outTitle,       // Sigma + Proton
+    productsText,   // Proton + Pion + Neutron (или что реально пришло)
   };
 };
+
 
 
 const ProfilePage = () => {
