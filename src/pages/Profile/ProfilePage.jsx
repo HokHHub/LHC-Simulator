@@ -455,18 +455,20 @@ const ProfilePage = () => {
               <div className={styles.simListInner}>
                 {normalizedSims.map((sim) => (
                   <div key={sim.id} className={styles.simItem}>
-                    <div className={styles.colLeft}>
-                      <div className={styles.titleLeft}>{sim.inTitle}</div>
-                      <div className={styles.metaL}>
-                        <div className={styles.metaLeft}>{sim.energyLabel}</div>
-                        <div className={styles.metaType}>{sim.typeLabel}</div>
+                    <div className={styles.colLC}>
+                      <div className={styles.colLeft}>
+                        <div className={styles.titleLeft}>{sim.inTitle}</div>
+                        <div className={styles.metaL}>
+                          <div className={styles.metaLeft}>{sim.energyLabel}</div>
+                          <div className={styles.metaType}>{sim.typeLabel}</div>
+                        </div>
                       </div>
-                    </div>
 
 
-                    <div className={styles.colCenter}>
-                      <div className={styles.titleRight}>{sim.outTitle}</div>
-                      <div className={styles.metaProducts}>{sim.productsText}</div>
+                      <div className={styles.colCenter}>
+                        <div className={styles.titleRight}>{sim.outTitle}</div>
+                        <div className={styles.metaProducts}>{sim.productsText}</div>
+                      </div>
                     </div>
 
                     <div className={styles.colRight}>

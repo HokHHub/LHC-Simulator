@@ -450,8 +450,15 @@
   text-align: center;
 }
 
+.colLC {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+}
+
 .metaL {
   display: flex;
+  justify-content: space-between;
 }
 
 /* responsive */
