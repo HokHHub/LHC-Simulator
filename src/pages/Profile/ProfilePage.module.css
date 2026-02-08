@@ -453,6 +453,19 @@
   line-height: normal;
 }
 
+.rightBlock{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:2px;
+  min-width: 140px;
+}
+
+.timeAgo{
+  font-size:12px;
+  color: rgba(255,255,255,0.35);
+  line-height: 1;
+}
 
 @media (max-width: 1280px) {
   .content {

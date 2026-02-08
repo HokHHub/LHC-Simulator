@@ -122,6 +122,32 @@ const formatDateTime = (value) => {
   return `${date} ${time}`;
 };
 
+const timeAgo = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const t = d.getTime();
+  if (Number.isNaN(t)) return "";
+
+  const diffMs = Date.now() - t;
+  const sec = Math.floor(diffMs / 1000);
+
+  if (sec < 5) return "только что";
+  if (sec < 60) return `${sec} сек назад`;
+
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} мин назад`;
+
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} ч назад`;
+
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day} дн назад`;
+
+  // дальше уже лучше показывать дату
+  return formatDateTime(iso);
+};
+
+
 const formatValue = (value) => {
   if (value === null || value === undefined) return "—";
   if (Array.isArray(value)) return value.join(", ");
@@ -213,9 +239,9 @@ const normalizeSimulation = (sim) => {
   const typeLabel =
     typeof type === "string"
       ? type
-          .split("-")
-          .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
-          .join("-")
+        .split("-")
+        .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+        .join("-")
       : "Hadron-Hadron";
 
   return {
@@ -223,10 +249,11 @@ const normalizeSimulation = (sim) => {
     energyLabel: energy !== null && energy !== undefined ? `${energy} GeV` : "—",
     typeLabel,
     dateLabel: formatDateTime(createdAt),
+    timeAgoLabel: timeAgo(createdAt),
 
-    inTitle,        // Proton + Neutron
-    outTitle,       // Sigma + Proton
-    productsText,   // Proton + Pion + Neutron (или что реально пришло)
+    inTitle,
+    outTitle,
+    productsText,
   };
 };
 
@@ -430,8 +457,13 @@ const ProfilePage = () => {
                   <div key={sim.id} className={styles.simItem}>
                     <div className={styles.topRow}>
                       <div className={styles.titleLeft}>{sim.inTitle}</div>
-                      <div className={styles.titleRight}>{sim.outTitle}</div>
+
+                      <div className={styles.rightBlock}>
+                        <div className={styles.titleRight}>{sim.outTitle}</div>
+                        <div className={styles.timeAgo}>{sim.timeAgoLabel}</div>
+                      </div>
                     </div>
+
 
                     <div className={styles.bottomRow}>
                       <div className={styles.metaLeft}>{sim.energyLabel}</div>
