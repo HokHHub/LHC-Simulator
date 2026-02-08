@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { authAPI } from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
 import styles from "./ProfilePage.module.css";
+import particlesData from "../../data/all_particles.json";
 
 const mockProfile = {
   id: "dev_user",
@@ -373,15 +374,15 @@ const ProfilePage = () => {
                 {normalizedSims.map((sim) => (
                   <div key={sim.id} className={styles.simItem}>
                     <div className={styles.simLeft}>
-                      <div className={styles.simTitle}>Тип столкновения</div>
+                      <div className={styles.simTitle}>{sim.simulation_results[0].id_1} + {sim.simulation_results[0].id_2}</div>
                       <div className={styles.simMeta}>
+                        <span>{sim.energyTev ?? "—"} GeV</span>
                         <span>{sim.simulationType}</span>
-                        <span>Энергия: {sim.energyTev ?? "—"} TeV</span>
                       </div>
                     </div>
                     <div className={styles.simRight}>
                       <div className={styles.simTitleSecondary}>Результаты</div>
-                      <div className={styles.simProducts}>{sim.resultsText}</div>
+                      <div className={styles.simProducts}>{sim.simulation_results[1].id_1} + {sim.simulation_results[1].id_2}</div>
                     </div>
                     <div className={styles.simTime}>Дата: {sim.dateLabel}</div>
                   </div>
