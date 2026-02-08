@@ -373,8 +373,18 @@ const ProfilePage = () => {
 
   const avatarLetter = (displayName || "U").charAt(0).toUpperCase();
   const simulationsCount =
-    stats?.simulations ?? stats?.simulations_count ?? stats?.count ?? simulations.length ?? 0;
-  const points = stats?.points ?? stats?.score ?? stats?.total_points ?? 0;
+    stats?.user?.simulation_count ?? 
+    stats?.simulations ?? 
+    stats?.simulations_count ?? 
+    stats?.count ?? 
+    simulations.length ?? 
+    0;
+  const points = 
+    stats?.user?.rating_score ?? 
+    stats?.points ?? 
+    stats?.score ?? 
+    stats?.total_points ?? 
+    0;
   const rankTitle = stats?.rank ?? stats?.level ?? "Ранг";
 
   const handleLogout = async () => {
