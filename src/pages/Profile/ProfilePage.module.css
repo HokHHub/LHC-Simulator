@@ -157,7 +157,11 @@
   height: 40px;
   border: none;
   border-radius: 5px;
-  background-image: linear-gradient(-0.642364deg, rgba(25, 36, 43, 0.5) 3.2705%, rgba(62, 92, 118, 0.5) 96.73%);
+  background-image: linear-gradient(
+    -0.642364deg,
+    rgba(25, 36, 43, 0.5) 3.2705%,
+    rgba(62, 92, 118, 0.5) 96.73%
+  );
   box-shadow: 3px 4px 7.4px 0px #000000;
   color: #ffffff;
   font-size: 15px;
@@ -225,6 +229,10 @@
   gap: 23px;
 }
 
+/* =======================
+   SIM CARD (3 columns)
+   ======================= */
+
 .simItem {
   height: 75px;
   width: 650px;
@@ -234,10 +242,11 @@
   box-shadow: 6px 9px 4px 0px rgba(0, 0, 0, 0.25);
   position: relative;
   padding: 10px 20px;
-  /* display: grid; */
-  grid-template-columns: 1fr 1fr auto;
+
+  display: grid;
+  grid-template-columns: 1.25fr 1.35fr auto;
   align-items: center;
-  gap: 10px;
+  column-gap: 20px;
 }
 
 .simItem::after {
@@ -249,45 +258,110 @@
   pointer-events: none;
 }
 
-.simLeft,
-.simRight {
+/* left column */
+.colLeft {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.simTitle {
-  font-size: 25px;
-  font-weight: 400;
-}
-
-.simTitleSecondary {
-  font-size: 25px;
-  font-weight: 400;
-  color: #3e5c76;
-}
-
-.simMeta,
-.simProducts {
-  font-size: 15px;
-  font-weight: 300;
+/* center column */
+.colCenter {
   display: flex;
-  gap: 20px;
-  opacity: 0.7;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
-.simProducts {
-  opacity: 0.3;
+/* right column */
+.colRight {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 110px;
 }
 
-.simTime {
+/* TITLES */
+.titleLeft {
+  color: var(--White-Color, #fff);
+  text-align: left;
+
+  font-family: Rubik;
+  font-size: 25px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titleRight {
+  color: var(--Outline-Light-Color, #3e5c76);
+  text-align: left;
+
+  font-family: Rubik;
+  font-size: 25px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* META (energy + type) — in 1st column */
+.metaLeft,
+.metaType {
+  color: var(--White-Color, #fff);
+  text-align: left;
+
+  font-family: Rubik;
   font-size: 15px;
+  font-style: normal;
   font-weight: 300;
-  opacity: 0.15;
-  justify-self: end;
+  line-height: normal;
+
+  opacity: 0.7;
   white-space: nowrap;
 }
 
+/* PRODUCTS (under titleRight) */
+.metaProducts {
+  color: var(--White-Color, #fff);
+  text-align: left;
+
+  font-family: Rubik;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: normal;
+
+  opacity: 0.3;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* TIME — right column */
+.timeAgo {
+  color: var(--White-Color, #fff);
+  text-align: center;
+
+  font-family: Rubik;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: normal;
+
+  opacity: 0.15;
+  white-space: nowrap;
+}
+
+/* states */
 .stateText {
   width: 100%;
   height: 100%;
@@ -298,6 +372,7 @@
   color: #3e5c76;
 }
 
+/* modal */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -375,121 +450,7 @@
   text-align: center;
 }
 
-.simItem {
-  border-radius: 10px;
-  padding: 12px 14px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.topRow {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.titleLeft {
-  color: var(--White-Color, #FFF);
-  text-align: center;
-
-  /* SubTitle Font */
-  font-family: Rubik;
-  font-size: 25px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: normal;
-}
-
-.titleRight {
-  color: var(--Outline-Light-Color, #3E5C76);
-  text-align: center;
-
-  /* SubTitle Font */
-  font-family: Rubik;
-  font-size: 25px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: normal;
-}
-
-.bottomRow {
-  margin-top: 6px;
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  gap: 10px;
-  align-items: center;
-}
-
-.metaLeft,
-.metaCenter {
-  color: var(--White-Color, #FFF);
-  text-align: center;
-
-  /* Little Font */
-  font-family: Rubik;
-  font-size: 15px;
-  font-style: normal;
-  font-weight: 300;
-  line-height: normal;
-  white-space: nowrap;
-  opacity: 0.7;
-}
-
-.metaCenter {
-  text-align: center;
-}
-
-.metaRight {
-  color: var(--White-Color, #FFF);
-  opacity: 0.3;
-  text-align: right;
-
-  /* Little Font */
-  font-family: Rubik;
-  font-size: 15px;
-  font-style: normal;
-  font-weight: 300;
-  line-height: normal;
-}
-
-.rightBlock{
-  display:flex;
-  flex-direction:column;
-  align-items:flex-end;
-  gap:2px;
-  min-width: 140px;
-}
-
-.timeAgo{
-  font-size:12px;
-  color: rgba(255,255,255,0.35);
-  line-height: 1;
-}
-
-.simItem{
-  position: relative;           /* важно для absolute */
-  border-radius: 10px;
-  padding: 12px 56px 12px 14px; /* справа больше, чтобы время не наезжало */
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-.timeAgoRight{
-  position: absolute;
-  right: 14px;                  /* как на скрине */
-  top: 50%;
-  transform: translateY(-50%);  /* центр по вертикали */
-  font-size: 12px;
-  color: rgba(255,255,255,0.35);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.titleRight{
-  padding-right: 18px; /* чуть воздуха */
-}
-
+/* responsive */
 @media (max-width: 1280px) {
   .content {
     width: 100%;
@@ -517,7 +478,6 @@
 }
 
 @media (max-width: 768px) {
-
   .profileCard,
   .historyCard {
     height: auto;
@@ -577,17 +537,14 @@
   }
 
   .simItem {
-    grid-template-columns: 1fr;
     height: auto;
+    grid-template-columns: 1fr;
+    row-gap: 10px;
   }
 
-  .simRight {
-    margin-top: 6px;
-  }
-
-  .simTime {
-    justify-self: start;
-    margin-top: 8px;
+  .colRight {
+    justify-content: flex-start;
+    min-width: 0;
   }
 
   .modal {
