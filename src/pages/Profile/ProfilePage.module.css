@@ -376,10 +376,10 @@
 }
 
 .simItem {
-  border-radius: 7px;
-  border: 3px solid #19242B;
-  background: linear-gradient(90deg, #001214 0%, #080C0E 100%);
-  box-shadow: 9px 9px 7.5px 0 rgba(0, 0, 0, 0.25) inset, 6px 9px 4px 0 rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .topRow {
@@ -433,6 +433,7 @@
   font-weight: 300;
   line-height: normal;
   white-space: nowrap;
+  opacity: 0.7;
 }
 
 .metaCenter {
@@ -441,7 +442,8 @@
 
 .metaRight {
   color: var(--White-Color, #FFF);
-  text-align: center;
+  opacity: 0.3;
+  text-align: right;
 
   /* Little Font */
   font-family: Rubik;
