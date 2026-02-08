@@ -457,8 +457,10 @@ const ProfilePage = () => {
                   <div key={sim.id} className={styles.simItem}>
                     <div className={styles.colLeft}>
                       <div className={styles.titleLeft}>{sim.inTitle}</div>
-                      <div className={styles.metaLeft}>{sim.energyLabel}</div>
-                      <div className={styles.metaType}>{sim.typeLabel}</div>
+                      <div className={styles.metaL}>
+                        <div className={styles.metaLeft}>{sim.energyLabel}</div>
+                        <div className={styles.metaType}>{sim.typeLabel}</div>
+                      </div>
                     </div>
 
 
