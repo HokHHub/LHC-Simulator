@@ -4,7 +4,7 @@ import Layout from "./Layout";
 import About from "./Components/About/About";
 import Theory from "./Components/Theory/Theory";
 import Simulation from "./Components/Simulation/Simulation";
-import Dashboard from "./pages/Dashboard";
+import ProfilePage from "./pages/Profile/ProfilePage";
 import ProtectedRoute from "./Components/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -36,7 +36,7 @@ const router = createBrowserRouter([
         path: "profile",
         element: (
           <ProtectedRoute>
-            <Dashboard />
+            <ProfilePage />
           </ProtectedRoute>
         ),
       }

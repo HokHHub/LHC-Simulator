@@ -59,6 +59,7 @@ export default function Header() {
               <a href="#" onClick={(e) => { e.preventDefault(); go("/theory"); }} className={s.header__link}>Теория</a>
               <a href="#" onClick={(e) => { e.preventDefault(); go("/"); }} className={s.header__link}>О проекте</a>
               <a href="#" onClick={(e) => { e.preventDefault(); go("/simulation"); }} className={s.header__link}>Симуляции</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); go("/profile"); }} className={s.header__link}>FA</a>
             </nav>
             <div className={s.header__actions}>
               {supported && (
@@ -119,6 +120,9 @@ export default function Header() {
             </button>
             <button type="button" className={s.mobileMenu__link} onClick={() => go("/simulation")}>
               Симуляции
+            </button>
+            <button type="button" className={s.mobileMenu__link} onClick={() => go("/profile")}>
+              Профиль
             </button>
           </div>
         </div>

@@ -1,0 +1,484 @@
+.page {
+  min-height: 100vh;
+  background-image: linear-gradient(155.308deg, #000000 13.487%, #090909 87.462%);
+  padding-bottom: 40px;
+  color: #ffffff;
+  font-family: "Rubik", sans-serif;
+}
+
+.content {
+  width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 360px 810px;
+  gap: 30px;
+  padding: 80px 40px 60px;
+  position: relative;
+}
+
+.profileCard,
+.historyCard {
+  border: 3px solid #11181d;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  height: 725px;
+}
+
+.profileCard {
+  background-image: linear-gradient(165.812deg, #050505 43.635%, #080c0e 97.186%);
+}
+
+.historyCard {
+  background-image: linear-gradient(173.589deg, #050505 43.635%, #080c0e 97.186%);
+}
+
+.devBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #3e5c76;
+  text-transform: uppercase;
+}
+
+.userBlock {
+  position: absolute;
+  top: 22px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #00a2ff 0%, #0069a6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.userName {
+  margin-top: 16px;
+  font-size: 40px;
+  font-weight: 500;
+}
+
+.userEmail {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 300;
+  color: #3e5c76;
+}
+
+.rankTitle {
+  position: absolute;
+  top: 238px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 30px;
+  font-weight: 400;
+}
+
+.statsCard {
+  position: absolute;
+  top: 306px;
+  left: 45px;
+  width: 270px;
+  height: 100px;
+  background-color: #080c0e;
+  border: 1px solid #19242b;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.statsValue {
+  font-size: 40px;
+  font-weight: 500;
+  color: #008dd8;
+}
+
+.statsLabel {
+  font-size: 25px;
+  font-weight: 400;
+}
+
+.statsPoints {
+  font-size: 15px;
+  font-weight: 300;
+  color: #3e5c76;
+}
+
+.leaderboardLabel {
+  position: absolute;
+  top: 418px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 300;
+  opacity: 0.7;
+}
+
+.buttonsBlock {
+  position: absolute;
+  top: 487px;
+  left: 0;
+  width: 100%;
+  height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.buttonsInner {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.actionButton {
+  width: 250px;
+  height: 40px;
+  border: none;
+  border-radius: 5px;
+  background-image: linear-gradient(-0.642364deg, rgba(25, 36, 43, 0.5) 3.2705%, rgba(62, 92, 118, 0.5) 96.73%);
+  box-shadow: 3px 4px 7.4px 0px #000000;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 400;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.actionButton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 6px 6px 4px 0px rgba(169, 146, 146, 0.03);
+  pointer-events: none;
+}
+
+.actionButton:hover {
+  filter: brightness(1.08);
+}
+
+.actionButton:active {
+  transform: translateY(1px);
+}
+
+.actionButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.helpText {
+  margin-top: 70px;
+  font-size: 15px;
+  font-weight: 300;
+  opacity: 0.7;
+}
+
+.historyTitle {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 40px;
+  font-weight: 500;
+}
+
+.simList {
+  position: absolute;
+  top: 112px;
+  left: 37px;
+  width: 729px;
+  height: 533px;
+  border: 3px solid #001214;
+  border-radius: 9px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.simListInner {
+  padding: 19px 42px 0 37px;
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+}
+
+.simItem {
+  height: 75px;
+  width: 650px;
+  border-radius: 7px;
+  border: 3px solid #19242b;
+  background-image: linear-gradient(90deg, #001214 0%, #080c0e 100%);
+  box-shadow: 6px 9px 4px 0px rgba(0, 0, 0, 0.25);
+  position: relative;
+  padding: 10px 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.simItem::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 9px 9px 7.5px 0px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.simLeft,
+.simRight {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.simTitle {
+  font-size: 25px;
+  font-weight: 400;
+}
+
+.simTitleSecondary {
+  font-size: 25px;
+  font-weight: 400;
+  color: #3e5c76;
+}
+
+.simMeta,
+.simProducts {
+  font-size: 15px;
+  font-weight: 300;
+  display: flex;
+  gap: 20px;
+  opacity: 0.7;
+}
+
+.simProducts {
+  opacity: 0.3;
+}
+
+.simTime {
+  font-size: 15px;
+  font-weight: 300;
+  opacity: 0.15;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.stateText {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #3e5c76;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.modal {
+  width: 520px;
+  background-image: linear-gradient(165.812deg, #050505 43.635%, #080c0e 97.186%);
+  border: 3px solid #11181d;
+  border-radius: 10px;
+  padding: 28px 30px 30px;
+  color: #ffffff;
+}
+
+.modalTitle {
+  font-size: 30px;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inputLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 300;
+  color: #3e5c76;
+}
+
+.inputField {
+  height: 40px;
+  border-radius: 6px;
+  border: 1px solid #19242b;
+  background-color: #080c0e;
+  color: #ffffff;
+  padding: 0 12px;
+  font-size: 15px;
+  font-family: "Rubik", sans-serif;
+}
+
+.inputField:focus {
+  outline: none;
+  border-color: #3e5c76;
+  box-shadow: 0 0 0 2px rgba(62, 92, 118, 0.3);
+}
+
+.modalRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.formError {
+  font-size: 14px;
+  color: #008dd8;
+  text-align: center;
+}
+
+@media (max-width: 1280px) {
+  .content {
+    width: 100%;
+    grid-template-columns: 1fr;
+    padding: 60px 20px 40px;
+    justify-items: center;
+  }
+
+  .profileCard,
+  .historyCard {
+    width: min(810px, 100%);
+  }
+
+  .historyCard {
+    margin-top: 24px;
+  }
+
+  .simList {
+    width: calc(100% - 74px);
+  }
+
+  .simItem {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .profileCard,
+  .historyCard {
+    height: auto;
+    padding: 32px 20px 40px;
+  }
+
+  .userBlock,
+  .rankTitle,
+  .statsCard,
+  .leaderboardLabel,
+  .buttonsBlock,
+  .historyTitle,
+  .simList {
+    position: static;
+  }
+
+  .userBlock {
+    margin-bottom: 24px;
+  }
+
+  .rankTitle {
+    margin-bottom: 20px;
+  }
+
+  .statsCard {
+    margin: 0 auto 16px;
+  }
+
+  .leaderboardLabel {
+    margin-bottom: 24px;
+  }
+
+  .buttonsBlock {
+    height: auto;
+  }
+
+  .buttonsInner {
+    margin-top: 0;
+  }
+
+  .helpText {
+    margin-top: 24px;
+  }
+
+  .historyTitle {
+    margin-bottom: 16px;
+  }
+
+  .simList {
+    width: 100%;
+    height: auto;
+    padding-bottom: 20px;
+  }
+
+  .simListInner {
+    padding: 16px;
+  }
+
+  .simItem {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .simRight {
+    margin-top: 6px;
+  }
+
+  .simTime {
+    justify-self: start;
+    margin-top: 8px;
+  }
+
+  .modal {
+    width: calc(100% - 40px);
+  }
+
+  .modalRow {
+    grid-template-columns: 1fr;
+  }
+}
