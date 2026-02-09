@@ -29,6 +29,22 @@ const devLeaderboard = [
     simulation_count: 18,
     created_at: "2026-02-07T09:10:00.000000Z",
   },
+  {
+    rank: 4,
+    id: 4,
+    username: "Photon",
+    rating_score: 85,
+    simulation_count: 15,
+    created_at: "2026-02-06T14:30:00.000000Z",
+  },
+  {
+    rank: 5,
+    id: 5,
+    username: "Neutrino",
+    rating_score: 72,
+    simulation_count: 12,
+    created_at: "2026-02-05T11:20:00.000000Z",
+  },
 ];
 
 export default function LeaderboardModal({
@@ -46,8 +62,13 @@ export default function LeaderboardModal({
   const closeBtnRef = useRef(null);
   const previouslyFocusedRef = useRef(null);
 
+  // Обработка открытия/закрытия модалки
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      hasLoadedRef.current = false;
+      return;
+    }
+
     previouslyFocusedRef.current = document.activeElement;
 
     const onKey = (event) => {
@@ -72,30 +93,51 @@ export default function LeaderboardModal({
     };
   }, [isOpen, onClose, triggerRef]);
 
+  // Загрузка данных
   useEffect(() => {
     if (!isOpen || hasLoadedRef.current) return;
+
     const load = async () => {
       setLoading(true);
       setError("");
+
       try {
-        const response = await authAPI.getLeaderboard();
-        const payload = response?.data || {};
-        const list = Array.isArray(payload.leaderboard)
-          ? payload.leaderboard
-          : [];
-        setRows(list);
-        onDataLoaded?.(list, payload.total_users ?? list.length);
-        hasLoadedRef.current = true;
-      } catch (err) {
         if (isDev) {
+          // В dev режиме используем моковые данные
           setRows(devLeaderboard);
           onDataLoaded?.(devLeaderboard, devLeaderboard.length);
           hasLoadedRef.current = true;
-        } else {
-          setError(
-            "Не удалось загрузить таблицу лидеров. Попробуйте ещё раз."
-          );
+          setLoading(false);
+          return;
         }
+
+        // Загружаем реальные данные
+        const response = await authAPI.getLeaderboard();
+        const payload = response?.data || response || {};
+        
+        let list = [];
+        if (Array.isArray(payload.leaderboard)) {
+          list = payload.leaderboard;
+        } else if (Array.isArray(payload)) {
+          list = payload;
+        } else if (Array.isArray(payload.users)) {
+          list = payload.users;
+        }
+
+        // Проверяем и добавляем ранги, если их нет
+        const processedList = list.map((item, index) => ({
+          ...item,
+          rank: item.rank ?? index + 1,
+          rating_score: item.rating_score ?? item.score ?? item.points ?? 0,
+          simulation_count: item.simulation_count ?? item.simulations ?? item.count ?? 0,
+        }));
+
+        setRows(processedList);
+        onDataLoaded?.(processedList, payload.total_users ?? processedList.length);
+        hasLoadedRef.current = true;
+      } catch (err) {
+        console.error("Ошибка загрузки таблицы лидеров:", err);
+        setError("Не удалось загрузить таблицу лидеров");
       } finally {
         setLoading(false);
       }
@@ -106,14 +148,20 @@ export default function LeaderboardModal({
 
   if (!isOpen) return null;
 
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose?.();
+    }
+  };
+
   return createPortal(
-    <div className={styles.overlay} onMouseDown={onClose}>
+    <div className={styles.overlay} onClick={handleOverlayClick}>
       <div
         className={styles.dialog}
         role="dialog"
         aria-modal="true"
         aria-labelledby="leaderboard-title"
-        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
@@ -142,17 +190,15 @@ export default function LeaderboardModal({
             {!loading && !error && rows.length > 0 && (
               <div className={styles.listInner}>
                 {rows.map((row) => {
-                  const letter =
-                    row?.username?.charAt(0)?.toUpperCase() || "?";
+                  const letter = row?.username?.charAt(0)?.toUpperCase() || "?";
                   return (
                     <div
                       key={`${row.id}-${row.rank}`}
                       className={styles.row}
-                      aria-label={`#${row.rank} ${row.username}`}
+                      aria-label={`Место ${row.rank}: ${row.username}`}
                     >
-                      <span className={styles.srOnly}>
-                        Место {row.rank}
-                      </span>
+                      <span className={styles.srOnly}>Место {row.rank}</span>
+                      
                       <div className={styles.avatar}>
                         <img
                           src={avatarBg}

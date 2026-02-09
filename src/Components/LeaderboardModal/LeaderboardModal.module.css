@@ -6,11 +6,14 @@
   align-items: center;
   justify-content: center;
   z-index: 50;
+  padding: 16px;
 }
 
 .dialog {
   width: 810px;
+  max-width: 100%;
   height: 725px;
+  max-height: calc(100vh - 32px);
   border: 3px solid #11181d;
   border-radius: 10px;
   background-image: linear-gradient(173.589deg, #050505 43.635%, #080c0e 97.186%);
@@ -24,51 +27,71 @@
   position: relative;
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .title {
-  position: absolute;
-  top: 48px;
-  left: 0;
-  width: 100%;
+  padding-top: 48px;
   text-align: center;
   font-size: 40px;
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.2;
+  flex-shrink: 0;
 }
 
 .list {
-  position: absolute;
-  top: 115px;
-  left: 40px;
-  width: 729px;
-  height: 533px;
+  margin: 19px 40px 77px;
+  flex: 1;
+  min-height: 0;
   border: 3px solid #001214;
   border-radius: 9px;
   overflow: hidden;
+  background: transparent;
 }
 
 .listInner {
-  padding: 19px 42px 0 37px;
+  padding: 19px 42px 19px 37px;
   display: flex;
   flex-direction: column;
   gap: 23px;
   height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Кастомный скроллбар */
+.listInner::-webkit-scrollbar {
+  width: 8px;
+}
+
+.listInner::-webkit-scrollbar-track {
+  background: rgba(0, 18, 20, 0.5);
+}
+
+.listInner::-webkit-scrollbar-thumb {
+  background: #19242b;
+  border-radius: 4px;
+}
+
+.listInner::-webkit-scrollbar-thumb:hover {
+  background: #2a3942;
 }
 
 .row {
-  width: 650px;
-  height: 75px;
+  width: 100%;
+  max-width: 650px;
+  min-height: 75px;
   border-radius: 7px;
   border: 3px solid #19242b;
   background-image: linear-gradient(90deg, #001214 0%, #080c0e 100%);
   box-shadow: 6px 9px 4px 0px rgba(0, 0, 0, 0.25);
   position: relative;
-  padding: 10px 16px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
   gap: 14px;
+  flex-shrink: 0;
 }
 
 .row::after {
@@ -101,12 +124,13 @@
   font-size: 25px;
   font-weight: 400;
   line-height: 1;
+  color: #ffffff;
 }
 
 .username {
   font-size: 30px;
   font-weight: 400;
-  line-height: 1;
+  line-height: 1.2;
   min-width: 0;
   flex: 1;
   white-space: nowrap;
@@ -119,6 +143,7 @@
   align-items: center;
   gap: 24px;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .metric {
@@ -131,24 +156,28 @@
 .metricValue {
   font-size: 30px;
   font-weight: 400;
-  line-height: 1;
+  line-height: 1.2;
 }
 
 .metricLabel {
   font-size: 15px;
   font-weight: 300;
-  line-height: 1;
+  line-height: 1.2;
   opacity: 0.5;
+  margin-top: 2px;
 }
 
 .stateText {
   width: 100%;
   height: 100%;
+  min-height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   color: #3e5c76;
+  padding: 20px;
+  text-align: center;
 }
 
 .close {
@@ -164,6 +193,17 @@
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.close:hover {
+  background: linear-gradient(90deg, #002428 0%, #0f1517 100%);
+  border-color: #2a3942;
 }
 
 .close:focus-visible {
@@ -182,62 +222,167 @@
   border: 0;
 }
 
-@media (max-width: 768px) {
+/* Адаптив для планшетов */
+@media (max-width: 900px) {
   .dialog {
     width: calc(100vw - 32px);
     height: auto;
     max-height: calc(100vh - 32px);
-    padding: 24px 20px 28px;
-  }
-
-  .inner {
-    position: static;
-    height: auto;
   }
 
   .title {
-    position: static;
-    margin-bottom: 16px;
-    font-size: 32px;
+    padding-top: 32px;
+    font-size: 36px;
   }
 
   .list {
-    position: static;
-    width: 100%;
-    height: auto;
-    max-height: calc(100vh - 240px);
+    margin: 16px 24px 32px;
   }
 
   .listInner {
-    padding: 16px;
+    padding: 16px 20px;
+    gap: 20px;
+  }
+
+  .row {
+    max-width: 100%;
+  }
+}
+
+/* Адаптив для мобилок */
+@media (max-width: 768px) {
+  .overlay {
+    padding: 8px;
+  }
+
+  .dialog {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .title {
+    padding-top: 24px;
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+
+  .list {
+    margin: 12px 16px 24px;
+    max-height: calc(100vh - 200px);
+  }
+
+  .listInner {
+    padding: 12px 16px;
     gap: 16px;
   }
 
   .row {
-    width: 100%;
-    height: auto;
-    padding: 12px 14px;
+    min-height: 65px;
+    padding: 10px 12px;
+    gap: 12px;
+  }
+
+  .avatar {
+    width: 45px;
+    height: 45px;
+  }
+
+  .avatarLetter {
+    font-size: 22px;
   }
 
   .username {
-    font-size: 22px;
+    font-size: 24px;
+  }
+
+  .metrics {
+    gap: 20px;
+  }
+
+  .metric {
+    min-width: 60px;
   }
 
   .metricValue {
-    font-size: 22px;
+    font-size: 24px;
   }
 
   .metricLabel {
     font-size: 13px;
   }
+
+  .close {
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+  }
 }
 
+/* Адаптив для маленьких мобилок */
 @media (max-width: 480px) {
   .title {
     font-size: 28px;
+    padding-top: 20px;
+  }
+
+  .list {
+    margin: 10px 12px 20px;
+  }
+
+  .listInner {
+    padding: 10px 12px;
+    gap: 12px;
+  }
+
+  .row {
+    min-height: 60px;
+    padding: 8px 10px;
+    gap: 10px;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .avatarLetter {
+    font-size: 20px;
+  }
+
+  .username {
+    font-size: 20px;
   }
 
   .metrics {
     gap: 16px;
+  }
+
+  .metric {
+    min-width: 50px;
+  }
+
+  .metricValue {
+    font-size: 20px;
+  }
+
+  .metricLabel {
+    font-size: 11px;
+  }
+}
+
+/* Очень узкие экраны */
+@media (max-width: 360px) {
+  .username {
+    font-size: 18px;
+  }
+
+  .metrics {
+    gap: 12px;
+  }
+
+  .metricValue {
+    font-size: 18px;
   }
 }

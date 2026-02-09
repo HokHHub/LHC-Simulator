@@ -142,10 +142,9 @@ const normalizeSimulation = (sim) => {
 
   const rawResults = Array.isArray(sim?.simulation_results) ? sim.simulation_results : [];
 
-  // ВАЖНО: у тебя в моках только 3 шага (0..2), поэтому step4 будет null — и это ок.
   const step1Obj = Array.isArray(rawResults?.[0]) ? rawResults[0]?.[0] : null; // productsText
   const step2Obj = Array.isArray(rawResults?.[1]) ? rawResults[1]?.[0] : null; // outTitle
-  const step4Obj = Array.isArray(rawResults?.[3]) ? rawResults[3]?.[0] : null; // inTitle (если есть)
+  const step4Obj = Array.isArray(rawResults?.[3]) ? rawResults[3]?.[0] : null; // inTitle
 
   const extractInitIds = (obj) => {
     if (!obj || typeof obj !== "object") return [];
@@ -153,7 +152,6 @@ const normalizeSimulation = (sim) => {
     if ("init_id1" in obj && obj.init_id1 !== null && obj.init_id1 !== undefined) {
       ids.push(obj.init_id1);
     }
-    // у тебя в коде было "init_id2:" с двоеточием — оставляю как было, но ещё проверяю нормальный вариант.
     if ("init_id2:" in obj && obj["init_id2:"] !== null && obj["init_id2:"] !== undefined) {
       ids.push(obj["init_id2:"]);
     }
@@ -234,10 +232,7 @@ const ProfilePage = () => {
           return;
         }
 
-        // ⚠️ ВОТ ТУТ возможны отличающиеся имена методов в authAPI.
-        // Подгони под свои реальные:
         const profileRes = await authAPI.getProfile();
-        // stats может быть в профиле — тогда просто используй profileRes.data
         const statsRes = authAPI.getStats ? await authAPI.getStats() : null;
         const simsRes = authAPI.getSimulations ? await authAPI.getSimulations() : null;
 
