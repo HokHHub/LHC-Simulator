@@ -291,7 +291,7 @@ export default function SupportChatModal({
         <div className={styles.chatBox}>
           <div className={styles.chatHeader}>
             <div className={styles.headerAvatar}>
-              <span className={styles.headerAvatarLetter}>K</span>
+              <span className={styles.headerAvatarLetter}>S</span>
             </div>
             <div className={styles.headerText}>
               <div className={styles.headerTitle}>Служба поддержки</div>
