@@ -125,6 +125,7 @@
 }
 
 .leaderboardLabel {
+  cursor: pointer;
   position: absolute;
   top: 418px;
   left: 0;
