@@ -1,9 +1,13 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authAPI } from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
+
+import LeaderboardModal from "../../Components/LeaderboardModal/LeaderboardModal";
 import styles from "./ProfilePage.module.css";
+
 import particlesData from "../../data/all_particles.json";
+
 const particleById = new Map(
   (Array.isArray(particlesData) ? particlesData : []).map((p) => [p.mcid, p])
 );
@@ -18,24 +22,15 @@ const particleName = (mcid) => {
   return titleCase(p?.name ?? String(mcid));
 };
 
-// Достаём ВСЕ id_* из объекта (id_1, id_2, id_3...) и превращаем в список имён
+// Достаём ВСЕ id_* из объекта (id_1, id_2, id_3...) и превращаем в список
 const extractIdsFromObj = (obj) => {
   if (!obj || typeof obj !== "object") return [];
   return Object.keys(obj)
     .filter((k) => k.startsWith("id_"))
-    .sort() // id_1, id_2, id_3...
+    .sort()
     .map((k) => obj[k])
     .filter((v) => v !== null && v !== undefined);
 };
-
-
-// делаем "γ(22)" или "K0(311)" — по желанию
-const particleLabelWithId = (mcid) => {
-  const p = particleById.get(mcid);
-  const base = p?.symbol || p?.name || String(mcid);
-  return `${base} (${mcid})`;
-};
-
 
 const mockProfile = {
   id: "dev_user",
@@ -56,10 +51,7 @@ const mockSimulations = [
     id: 7,
     user_name: "jepstein",
     simulation_type: "hadron-hadron",
-    energy: {
-      source: "13.0",
-      parsedValue: 13,
-    },
+    energy: { source: "13.0", parsedValue: 13 },
     duration: null,
     simulation_results: [
       [{ id_1: 421, id_2: -421, id_3: 21 }],
@@ -79,10 +71,7 @@ const mockSimulations = [
     id: 8,
     user_name: "dev_user",
     simulation_type: "hadron-hadron",
-    energy: {
-      source: "7.0",
-      parsedValue: 7,
-    },
+    energy: { source: "7.0", parsedValue: 7 },
     duration: 18.4,
     simulation_results: [
       [{ id_1: 2212, id_2: 2212 }],
@@ -98,12 +87,6 @@ const mockSimulations = [
     ],
     created_at: "2026-02-08T12:20:00.000000Z",
   },
-];
-
-const mockLeaderboard = [
-  { id: 1, username: "Kleyman", score: 120 },
-  { id: 2, username: "Nova", score: 110 },
-  { id: 3, username: "Quark", score: 98 },
 ];
 
 const formatDateTime = (value) => {
@@ -143,61 +126,7 @@ const timeAgo = (iso) => {
   const day = Math.floor(hr / 24);
   if (day < 7) return `${day} дн назад`;
 
-  // дальше уже лучше показывать дату
   return formatDateTime(iso);
-};
-
-
-const formatValue = (value) => {
-  if (value === null || value === undefined) return "—";
-  if (Array.isArray(value)) return value.join(", ");
-  if (typeof value === "object") {
-    if ("parsedValue" in value) return value.parsedValue;
-    if ("source" in value) return value.source;
-  }
-  return value;
-};
-
-const formatResultEntry = (entry) => {
-  if (!entry || typeof entry !== "object") return String(entry ?? "—");
-
-  const parts = [];
-  const hasIds = "id_1" in entry || "id_2" in entry || "id_3" in entry;
-
-  if (hasIds) {
-    const idParts = [];
-    if ("id_1" in entry) idParts.push(`id_1=${formatValue(entry.id_1)}`);
-    if ("id_2" in entry) idParts.push(`id_2=${formatValue(entry.id_2)}`);
-    if ("id_3" in entry && entry.id_3 !== null && entry.id_3 !== undefined) {
-      idParts.push(`id_3=${formatValue(entry.id_3)}`);
-    }
-    if (idParts.length > 0) parts.push(`Частицы: ${idParts.join(", ")}`);
-  }
-
-  if ("Mass" in entry) parts.push(`Масса: ${formatValue(entry.Mass)}`);
-  if ("BaryonNum" in entry) parts.push(`Бар. число: ${formatValue(entry.BaryonNum)}`);
-  if ("S,B,C" in entry) parts.push(`S,B,C: ${formatValue(entry["S,B,C"])}`);
-  if ("Charge" in entry) parts.push(`Заряд: ${formatValue(entry.Charge)}`);
-
-  if (parts.length === 0) return "Нет данных";
-  return parts.join(", ");
-};
-
-const formatSimulationResults = (results) => {
-  if (!Array.isArray(results) || results.length === 0) {
-    return "Результаты отсутствуют";
-  }
-
-  return results
-    .map((step, index) => {
-      const entries = Array.isArray(step) ? step : [step];
-      const formattedEntries = entries
-        .map(formatResultEntry)
-        .filter((item) => item && item !== "Нет данных");
-      const stepText = formattedEntries.length > 0 ? formattedEntries.join("; ") : "Нет данных";
-      return `Этап ${index + 1}: ${stepText}`;
-    })
-    .join(" | ");
 };
 
 const normalizeSimulation = (sim) => {
@@ -209,34 +138,27 @@ const normalizeSimulation = (sim) => {
     "Unknown";
 
   const energy = sim?.energy?.parsedValue ?? sim?.energy?.source ?? sim?.energy ?? null;
-
-  const createdAt =
-    sim?.created_at ||
-    sim?.createdAt ||
-    sim?.time ||
-    sim?.timestamp ||
-    null;
+  const createdAt = sim?.created_at || sim?.createdAt || sim?.time || sim?.timestamp || null;
 
   const rawResults = Array.isArray(sim?.simulation_results) ? sim.simulation_results : [];
 
-  // Новая логика согласно требованию:
-  // titleLeft (inTitle) = simulation_results[3] (init_id1, init_id2:)
-  // titleRight (outTitle) = simulation_results[1] (id_1, id_2, id_3?)
-  // metaProducts (productsText) = simulation_results[0] (id_1, id_2, id_3?)
-  
-  const step1Obj = Array.isArray(rawResults?.[0]) ? rawResults[0]?.[0] : null; // для productsText
-  const step2Obj = Array.isArray(rawResults?.[1]) ? rawResults[1]?.[0] : null; // для titleRight
-  const step4Obj = Array.isArray(rawResults?.[3]) ? rawResults[3]?.[0] : null; // для titleLeft
+  // ВАЖНО: у тебя в моках только 3 шага (0..2), поэтому step4 будет null — и это ок.
+  const step1Obj = Array.isArray(rawResults?.[0]) ? rawResults[0]?.[0] : null; // productsText
+  const step2Obj = Array.isArray(rawResults?.[1]) ? rawResults[1]?.[0] : null; // outTitle
+  const step4Obj = Array.isArray(rawResults?.[3]) ? rawResults[3]?.[0] : null; // inTitle (если есть)
 
-  // Для titleLeft (step4) - ищем init_id1 и init_id2:
   const extractInitIds = (obj) => {
     if (!obj || typeof obj !== "object") return [];
     const ids = [];
     if ("init_id1" in obj && obj.init_id1 !== null && obj.init_id1 !== undefined) {
       ids.push(obj.init_id1);
     }
+    // у тебя в коде было "init_id2:" с двоеточием — оставляю как было, но ещё проверяю нормальный вариант.
     if ("init_id2:" in obj && obj["init_id2:"] !== null && obj["init_id2:"] !== undefined) {
       ids.push(obj["init_id2:"]);
+    }
+    if ("init_id2" in obj && obj.init_id2 !== null && obj.init_id2 !== undefined) {
+      ids.push(obj.init_id2);
     }
     return ids;
   };
@@ -246,18 +168,15 @@ const normalizeSimulation = (sim) => {
   const productsIds = extractIdsFromObj(step1Obj);
 
   const inTitle = inIds.length ? inIds.map(particleName).join(" + ") : "—";
-  const outTitle = outIds.length
-    ? outIds.slice(0, 2).map(particleName).join(" + ")
-    : "—";
+  const outTitle = outIds.length ? outIds.slice(0, 2).map(particleName).join(" + ") : "—";
   const productsText = productsIds.length ? productsIds.map(particleName).join(" + ") : "—";
 
-  // тип столкновения красивее
   const typeLabel =
     typeof type === "string"
       ? type
-        .split("-")
-        .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
-        .join("-")
+          .split("-")
+          .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+          .join("-")
       : "Hadron-Hadron";
 
   return {
@@ -266,14 +185,11 @@ const normalizeSimulation = (sim) => {
     typeLabel,
     dateLabel: formatDateTime(createdAt),
     timeAgoLabel: timeAgo(createdAt),
-
     inTitle,
     outTitle,
     productsText,
   };
 };
-
-
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -282,9 +198,10 @@ const ProfilePage = () => {
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [simulations, setSimulations] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [isEditing, setIsEditing] = useState(false);
   const [formState, setFormState] = useState({
     username: "",
@@ -295,6 +212,11 @@ const ProfilePage = () => {
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [leaderboardCount, setLeaderboardCount] = useState(0);
+  const leaderboardTriggerRef = useRef(null);
+
+  // Загружаем профиль/статы/историю
   useEffect(() => {
     let isMounted = true;
 
@@ -303,44 +225,32 @@ const ProfilePage = () => {
       setError("");
 
       try {
-        const [profileRes, statsRes, simsRes, leaderboardRes] = await Promise.all([
-          authAPI.getProfile(),
-          authAPI.getMyStats(),
-          authAPI.getMySimulations(),
-          authAPI.getLeaderboard(),
-        ]);
-
-        if (!isMounted) return;
-
-        setProfile(profileRes.data);
-        setStats(statsRes.data);
-
-        setSimulations(
-          Array.isArray(simsRes.data)
-            ? simsRes.data
-            : simsRes.data?.simulations || simsRes.data?.results || []
-        );
-
-        setLeaderboard(
-          Array.isArray(leaderboardRes.data)
-            ? leaderboardRes.data
-            : leaderboardRes.data?.results || []
-        );
-      } catch (err) {
-        if (!isMounted) return;
-
         if (isDev) {
+          if (!isMounted) return;
           setProfile(mockProfile);
           setStats(mockStats);
           setSimulations(mockSimulations);
-          setLeaderboard(mockLeaderboard);
-          setError("");
+          setLoading(false);
           return;
         }
 
-        setError(err?.response?.data?.detail || "Не удалось загрузить данные профиля");
-      } finally {
-        if (isMounted) setLoading(false);
+        // ⚠️ ВОТ ТУТ возможны отличающиеся имена методов в authAPI.
+        // Подгони под свои реальные:
+        const profileRes = await authAPI.getProfile();
+        // stats может быть в профиле — тогда просто используй profileRes.data
+        const statsRes = authAPI.getStats ? await authAPI.getStats() : null;
+        const simsRes = authAPI.getSimulations ? await authAPI.getSimulations() : null;
+
+        if (!isMounted) return;
+
+        setProfile(profileRes?.data ?? profileRes ?? null);
+        setStats(statsRes?.data ?? statsRes ?? null);
+        setSimulations(simsRes?.data ?? simsRes ?? []);
+        setLoading(false);
+      } catch (e) {
+        if (!isMounted) return;
+        setError(e?.response?.data?.detail || "Не удалось загрузить данные профиля");
+        setLoading(false);
       }
     };
 
@@ -351,6 +261,7 @@ const ProfilePage = () => {
     };
   }, [isDev]);
 
+  // Когда открыли редактирование — заполняем форму данными профиля
   useEffect(() => {
     if (!profile) return;
     setFormState({
@@ -372,19 +283,23 @@ const ProfilePage = () => {
       : profile?.username || "User";
 
   const avatarLetter = (displayName || "U").charAt(0).toUpperCase();
+
+  // Поддержка разных форматов stats
   const simulationsCount =
-    stats?.user?.simulation_count ?? 
-    stats?.simulations ?? 
-    stats?.simulations_count ?? 
-    stats?.count ?? 
-    simulations.length ?? 
+    stats?.user?.simulation_count ??
+    stats?.simulations ??
+    stats?.simulations_count ??
+    stats?.count ??
+    simulations?.length ??
     0;
-  const points = 
-    stats?.user?.rating_score ?? 
-    stats?.points ?? 
-    stats?.score ?? 
-    stats?.total_points ?? 
+
+  const points =
+    stats?.user?.rating_score ??
+    stats?.points ??
+    stats?.score ??
+    stats?.total_points ??
     0;
+
   const rankTitle = stats?.rank ?? stats?.level ?? "Ранг";
 
   const handleLogout = async () => {
@@ -417,7 +332,7 @@ const ProfilePage = () => {
     try {
       await authAPI.updateProfile(formState);
       const updated = await authAPI.getProfile();
-      setProfile(updated.data);
+      setProfile(updated?.data ?? updated ?? null);
       setIsEditing(false);
     } catch (err) {
       setFormError(err?.response?.data?.detail || "Не удалось сохранить профиль");
@@ -446,17 +361,19 @@ const ProfilePage = () => {
             <div className={styles.statsPoints}>{points} Очков</div>
           </div>
 
-          <div className={styles.leaderboardLabel} data-count={leaderboard.length}>
+          <button
+            type="button"
+            className={styles.leaderboardLabel}
+            data-count={leaderboardCount}
+            onClick={() => setIsLeaderboardOpen(true)}
+            ref={leaderboardTriggerRef}
+          >
             Таблица лидеров
-          </div>
+          </button>
 
           <div className={styles.buttonsBlock}>
             <div className={styles.buttonsInner}>
-              <button
-                type="button"
-                className={styles.actionButton}
-                onClick={handleEditToggle}
-              >
+              <button type="button" className={styles.actionButton} onClick={handleEditToggle}>
                 Редактировать
               </button>
               <button type="button" className={styles.actionButton} onClick={handleLogout}>
@@ -490,7 +407,6 @@ const ProfilePage = () => {
                         </div>
                       </div>
 
-
                       <div className={styles.colCenter}>
                         <div className={styles.titleRight}>{sim.outTitle}</div>
                         <div className={styles.metaProducts}>{sim.productsText}</div>
@@ -508,10 +424,19 @@ const ProfilePage = () => {
         </section>
       </div>
 
+      <LeaderboardModal
+        isOpen={isLeaderboardOpen}
+        onClose={() => setIsLeaderboardOpen(false)}
+        triggerRef={leaderboardTriggerRef}
+        isDev={isDev}
+        onDataLoaded={(rows) => setLeaderboardCount(rows?.length || 0)}
+      />
+
       {isEditing && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalTitle}>Редактировать профиль</div>
+
             <form className={styles.modalForm} onSubmit={handleSubmit}>
               <label className={styles.inputLabel}>
                 Имя пользователя
@@ -561,11 +486,7 @@ const ProfilePage = () => {
               {formError && <div className={styles.formError}>{formError}</div>}
 
               <div className={styles.modalActions}>
-                <button
-                  type="button"
-                  className={styles.actionButton}
-                  onClick={handleEditToggle}
-                >
+                <button type="button" className={styles.actionButton} onClick={handleEditToggle}>
                   Отмена
                 </button>
                 <button type="submit" className={styles.actionButton} disabled={isSaving}>

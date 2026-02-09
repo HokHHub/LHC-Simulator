@@ -9,6 +9,6 @@ export const authAPI = {
   updateProfile: (payload) => axios.put("/auth/profile/update/", payload),
   getMySimulations: () => axios.get("/auth/allsimulations/"),
   getMyStats: () => axios.get("/auth/stats/"),
-  getLeaderboard: () => axios.get("/auth/leaderboard/"),
+  getLeaderboard: () => axios.get("/api/auth/leaderboard/"),
   refreshToken: (refreshToken) => axios.post("/auth/token/refresh/", { refresh: refreshToken }),
 };
