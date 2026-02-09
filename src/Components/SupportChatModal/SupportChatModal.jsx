@@ -145,20 +145,18 @@ export default function SupportChatModal({
       }
 
       if (parsed?.type === "message") {
-        const senderName = parsed?.user_name || parsed?.sender || "";
-        let from = "support";
-        if (senderName && userName && senderName === userName) {
-          from = "user";
-        } else if (!senderName && awaitingSupportRef.current) {
-          from = "support";
+        const text = String(parsed?.text ?? "");
+
+        // ❌ НЕ РИСУЕМ сообщения с сайта
+        if (text.startsWith("[WEB]")) {
+          return;
         }
 
-        awaitingSupportRef.current = false;
         handleIncomingMessage({
           id: `${Date.now()}-${Math.random()}`,
           type: "message",
-          from,
-          text: String(parsed?.text ?? ""),
+          from: "support",
+          text,
         });
       }
     };
