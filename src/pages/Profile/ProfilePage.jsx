@@ -227,8 +227,8 @@ const ProfilePage = () => {
 
       try {
         const profileRes = await authAPI.getProfile();
-        const statsRes = await authAPI.getStats();
-        const simsRes = await authAPI.getSimulations();
+        const statsRes = await authAPI.getMyStats();      // ← было getStats
+        const simsRes = await authAPI.getMySimulations(); // ← было getSimulations
 
         if (!isMounted) return;
 
