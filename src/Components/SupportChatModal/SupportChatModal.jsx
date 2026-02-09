@@ -134,6 +134,28 @@ export default function SupportChatModal({
         return;
       }
 
+      // ✅ ОБРАБОТКА ИСТОРИИ
+      if (parsed?.type === "history") {
+        const historyMessages = Array.isArray(parsed?.messages) ? parsed.messages : [];
+
+        const formatted = historyMessages
+          .filter(msg => msg?.text && !msg.text.startsWith("[WEB]")) // фильтруем [WEB] сообщения
+          .map(msg => ({
+            id: `history-${msg.timestamp || Date.now()}-${Math.random()}`,
+            type: "message",
+            from: msg.sender === "support" ? "support" : "user",
+            text: msg.text,
+          }));
+
+        setMessages(formatted);
+
+        // Прокрутка вниз после загрузки истории
+        requestAnimationFrame(() => {
+          scrollToBottom();
+        });
+        return;
+      }
+
       if (parsed?.type === "system") {
         awaitingSupportRef.current = false;
         handleIncomingMessage({
@@ -147,7 +169,6 @@ export default function SupportChatModal({
       if (parsed?.type === "message") {
         const text = String(parsed?.text ?? "");
 
-        // ❌ НЕ РИСУЕМ сообщения с сайта
         if (text.startsWith("[WEB]")) {
           return;
         }
