@@ -227,14 +227,21 @@ const ProfilePage = () => {
 
       try {
         const profileRes = await authAPI.getProfile();
-        const statsRes = await authAPI.getMyStats();      // ← было getStats
-        const simsRes = await authAPI.getMySimulations(); // ← было getSimulations
+        const statsRes = await authAPI.getMyStats();
+        const simsRes = await authAPI.getMySimulations();
 
         if (!isMounted) return;
 
         setProfile(profileRes?.data ?? profileRes ?? null);
         setStats(statsRes?.data ?? statsRes ?? null);
-        setSimulations(simsRes?.data ?? simsRes ?? []);
+
+        // ← ВОТ ИСПРАВЛЕНИЕ
+        setSimulations(
+          simsRes?.data?.simulations ??
+          simsRes?.simulations ??
+          []
+        );
+
         setLoading(false);
       } catch (e) {
         if (!isMounted) return;
