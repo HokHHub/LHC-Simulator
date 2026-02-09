@@ -102,16 +102,7 @@ export default function LeaderboardModal({
       setError("");
 
       try {
-        if (isDev) {
-          // В dev режиме используем моковые данные
-          setRows(devLeaderboard);
-          onDataLoaded?.(devLeaderboard, devLeaderboard.length);
-          hasLoadedRef.current = true;
-          setLoading(false);
-          return;
-        }
-
-        // Загружаем реальные данные
+        // Всегда пробуем загрузить данные с бэкенда
         const response = await authAPI.getLeaderboard();
         const payload = response?.data || response || {};
         
@@ -122,6 +113,8 @@ export default function LeaderboardModal({
           list = payload;
         } else if (Array.isArray(payload.users)) {
           list = payload.users;
+        } else if (Array.isArray(payload.results)) {
+          list = payload.results;
         }
 
         // Проверяем и добавляем ранги, если их нет
@@ -137,7 +130,17 @@ export default function LeaderboardModal({
         hasLoadedRef.current = true;
       } catch (err) {
         console.error("Ошибка загрузки таблицы лидеров:", err);
-        setError("Не удалось загрузить таблицу лидеров");
+        
+        // В случае ошибки показываем dev данные
+        setRows(devLeaderboard);
+        onDataLoaded?.(devLeaderboard, devLeaderboard.length);
+        hasLoadedRef.current = true;
+        
+        // Показываем ошибку только если это не 404 и не 401
+        const status = err?.response?.status;
+        if (status !== 404 && status !== 401) {
+          setError("Не удалось загрузить таблицу лидеров");
+        }
       } finally {
         setLoading(false);
       }
@@ -187,7 +190,7 @@ export default function LeaderboardModal({
               <div className={styles.stateText}>Пока нет участников</div>
             )}
 
-            {!loading && !error && rows.length > 0 && (
+            {!loading && rows.length > 0 && (
               <div className={styles.listInner}>
                 {rows.map((row) => {
                   const letter = row?.username?.charAt(0)?.toUpperCase() || "?";
