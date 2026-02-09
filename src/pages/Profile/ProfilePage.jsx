@@ -173,9 +173,9 @@ const normalizeSimulation = (sim) => {
   const typeLabel =
     typeof type === "string"
       ? type
-          .split("-")
-          .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
-          .join("-")
+        .split("-")
+        .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+        .join("-")
       : "Hadron-Hadron";
 
   return {
@@ -284,18 +284,16 @@ const ProfilePage = () => {
 
   // Поддержка разных форматов stats
   const simulationsCount =
+    profile?.simulation_count ??
+    stats?.simulation_count ??
     stats?.user?.simulation_count ??
-    stats?.simulations ??
-    stats?.simulations_count ??
-    stats?.count ??
     simulations?.length ??
     0;
 
   const points =
+    profile?.rating_score ??
+    stats?.rating_score ??
     stats?.user?.rating_score ??
-    stats?.points ??
-    stats?.score ??
-    stats?.total_points ??
     0;
 
   const rankTitle = stats?.rank ?? stats?.level ?? "Ранг";
