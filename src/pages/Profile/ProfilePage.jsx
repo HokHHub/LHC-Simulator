@@ -226,18 +226,9 @@ const ProfilePage = () => {
       setError("");
 
       try {
-        if (isDev) {
-          if (!isMounted) return;
-          setProfile(mockProfile);
-          setStats(mockStats);
-          setSimulations(mockSimulations);
-          setLoading(false);
-          return;
-        }
-
         const profileRes = await authAPI.getProfile();
-        const statsRes = authAPI.getStats ? await authAPI.getStats() : null;
-        const simsRes = authAPI.getSimulations ? await authAPI.getSimulations() : null;
+        const statsRes = await authAPI.getStats();
+        const simsRes = await authAPI.getSimulations();
 
         if (!isMounted) return;
 
@@ -247,7 +238,7 @@ const ProfilePage = () => {
         setLoading(false);
       } catch (e) {
         if (!isMounted) return;
-        setError(e?.response?.data?.detail || "Не удалось загрузить данные профиля");
+        setError(e?.response?.data?.detail || "Не удалось загрузить данные");
         setLoading(false);
       }
     };
