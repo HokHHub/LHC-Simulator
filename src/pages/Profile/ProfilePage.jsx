@@ -4,6 +4,7 @@ import { authAPI } from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
 
 import LeaderboardModal from "../../Components/LeaderboardModal/LeaderboardModal";
+import SupportChatModal from "../../Components/SupportChatModal/SupportChatModal";
 import styles from "./ProfilePage.module.css";
 
 import particlesData from "../../data/all_particles.json";
@@ -213,6 +214,8 @@ const ProfilePage = () => {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [leaderboardCount, setLeaderboardCount] = useState(0);
   const leaderboardTriggerRef = useRef(null);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const supportTriggerRef = useRef(null);
 
   // Загружаем профиль/статы/историю
   useEffect(() => {
@@ -376,6 +379,14 @@ const ProfilePage = () => {
               </button>
             </div>
             <div className={styles.helpText}>Нужна помощь?</div>
+            <button
+              type="button"
+              className={styles.supportButton}
+              onClick={() => setIsSupportOpen(true)}
+              ref={supportTriggerRef}
+            >
+              Поддержка
+            </button>
           </div>
         </section>
 
@@ -425,6 +436,13 @@ const ProfilePage = () => {
         triggerRef={leaderboardTriggerRef}
         isDev={isDev}
         onDataLoaded={(rows) => setLeaderboardCount(rows?.length || 0)}
+      />
+
+      <SupportChatModal
+        isOpen={isSupportOpen}
+        onClose={() => setIsSupportOpen(false)}
+        triggerRef={supportTriggerRef}
+        userName={profile?.username || displayName || "Пользователь"}
       />
 
       {isEditing && (

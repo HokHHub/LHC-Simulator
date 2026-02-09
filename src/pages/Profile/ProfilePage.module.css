@@ -198,6 +198,43 @@
   opacity: 0.7;
 }
 
+.supportButton {
+  margin-top: 12px;
+  width: 250px;
+  height: 40px;
+  border: none;
+  border-radius: 5px;
+  background: linear-gradient(
+    356deg,
+    rgba(25, 36, 43, 0.5) 3.27%,
+    rgba(62, 92, 118, 0.5) 96.73%
+  );
+  box-shadow: 6px 6px 4px 0 rgba(169, 146, 146, 0.03) inset, 3px 4px 7.4px 0 #000;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 400;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.supportButton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 6px 6px 4px 0px rgba(169, 146, 146, 0.03);
+  pointer-events: none;
+}
+
+.supportButton:hover {
+  filter: brightness(1.08);
+}
+
+.supportButton:active {
+  transform: translateY(1px);
+}
+
 .historyTitle {
   position: absolute;
   top: 52px;
@@ -551,6 +588,11 @@
 
   .helpText {
     margin-top: 24px;
+  }
+
+  .supportButton {
+    width: 100%;
+    max-width: 250px;
   }
 
   .historyTitle {
