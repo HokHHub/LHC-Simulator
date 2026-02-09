@@ -509,6 +509,7 @@
   }
 
   .leaderboardLabel {
+    cursor: pointer;
     color: var(--White-Color, #FFF);
     text-align: center;
 
