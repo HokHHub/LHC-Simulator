@@ -140,7 +140,6 @@
 }
 
 .messageRowRight {
-  justify-content: flex-end;
   flex-direction: row-reverse;
 }
 
@@ -171,7 +170,7 @@
   max-width: 225px;
   border-radius: 7px;
   padding: 10px 8px;
-  font-size: 10px;
+  font-size: 18px;
   font-weight: 300;
   line-height: 1.2;
   word-break: break-word;
