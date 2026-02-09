@@ -378,15 +378,8 @@ const ProfilePage = () => {
                 Выйти
               </button>
             </div>
-            <div className={styles.helpText}>Нужна помощь?</div>
-            <button
-              type="button"
-              className={styles.supportButton}
-              onClick={() => setIsSupportOpen(true)}
-              ref={supportTriggerRef}
-            >
-              Поддержка
-            </button>
+            <div className={styles.helpText} onClick={() => setIsSupportOpen(true)}
+              ref={supportTriggerRef}>Нужна помощь?</div>
           </div>
         </section>
 
