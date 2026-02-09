@@ -356,7 +356,7 @@ const ProfilePage = () => {
             <div className={styles.statsPoints}>{points} Очков</div>
           </div>
 
-          <button
+          <a
             type="button"
             className={styles.leaderboardLabel}
             data-count={leaderboardCount}
@@ -364,7 +364,7 @@ const ProfilePage = () => {
             ref={leaderboardTriggerRef}
           >
             Таблица лидеров
-          </button>
+          </a>
 
           <div className={styles.buttonsBlock}>
             <div className={styles.buttonsInner}>

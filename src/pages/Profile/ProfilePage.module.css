@@ -508,6 +508,18 @@
     position: static;
   }
 
+  .leaderboardLabel {
+    color: var(--White-Color, #FFF);
+    text-align: center;
+
+    /* Little Font */
+    font-family: Rubik;
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: normal;
+  }
+
   .userBlock {
     margin-bottom: 24px;
   }
