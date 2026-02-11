@@ -26,7 +26,9 @@ const router = createBrowserRouter([
       {
         path: "simulation",
         element: (
-          <Simulation />
+          <ProtectedRoute>
+            <Simulation />
+          </ProtectedRoute>
         ),
       },
 
@@ -38,7 +40,7 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       }
-
+    
     ],
   },
 

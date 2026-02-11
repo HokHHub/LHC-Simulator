@@ -48,7 +48,7 @@ function createLhcSimulation(mountEl) {
   let disposed = false;
   let rafId = null;
 
-  let currentDetector = 'ATLAS';
+  let currentDetector = "ATLAS";
   let detectorGeometry = [];
   let labelElements = [];
   let showDetectorLabels = false;
@@ -69,22 +69,47 @@ function createLhcSimulation(mountEl) {
     energy: 0,
     momentum: 0,
     trackCount: 0,
-    eventType: '—'
+    eventType: "—",
   };
 
   const MAGNETIC_FIELD = {
-    'ATLAS': 2.0,
-    'CMS': 3.8,
-    'ALICE': 0.5,
-    'LHCb': 1.1
+    ATLAS: 2.0,
+    CMS: 3.8,
+    ALICE: 0.5,
+    LHCb: 1.1,
   };
 
   function getEl(id) {
-    return mountEl.querySelector('#' + id) || document.getElementById(id);
+    return mountEl.querySelector("#" + id) || document.getElementById(id);
+  }
+
+  // ───────────────────────────────────────────
+  // 🔥 ВАЖНО: правильная уборка объектов Three.js
+  // ───────────────────────────────────────────
+  function disposeMaterial(mat) {
+    if (!mat) return;
+    if (Array.isArray(mat)) mat.forEach(disposeMaterial);
+    else mat.dispose?.();
+  }
+
+  function disposeObject3D(obj) {
+    if (!obj) return;
+
+    obj.traverse((child) => {
+      if (child.geometry) child.geometry.dispose?.();
+      if (child.material) disposeMaterial(child.material);
+      if (child.texture) child.texture.dispose?.();
+    });
+
+    if (obj.parent) obj.parent.remove(obj);
+  }
+
+  function clearMeshes(arr) {
+    arr.forEach((m) => disposeObject3D(m));
+    arr.length = 0;
   }
 
   // ───── detector geometry helpers ─────
-
   function createCutawayRing(radius, height, color, opacity, layerName) {
     const shape = new THREE.Shape();
     const innerRadius = radius * 0.92;
@@ -115,7 +140,7 @@ function createLhcSimulation(mountEl) {
       transparent: true,
       opacity: opacity * 0.12,
       wireframe: true,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
     });
 
     const mesh = new THREE.Mesh(geometry, material);
@@ -127,7 +152,7 @@ function createLhcSimulation(mountEl) {
     const lineMaterial = new THREE.LineBasicMaterial({
       color,
       transparent: true,
-      opacity: opacity * 1.5
+      opacity: opacity * 1.5,
     });
     const wireframe = new THREE.LineSegments(edges, lineMaterial);
     wireframe.rotation.y = Math.PI / 2;
@@ -142,7 +167,11 @@ function createLhcSimulation(mountEl) {
   function createEndCap(radius, height, position, color, opacity) {
     const geometry = new THREE.RingGeometry(radius * 0.3, radius, 28);
     const material = new THREE.MeshBasicMaterial({
-      color, transparent: true, opacity: opacity * 0.18, wireframe: true, side: THREE.DoubleSide
+      color,
+      transparent: true,
+      opacity: opacity * 0.18,
+      wireframe: true,
+      side: THREE.DoubleSide,
     });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.x = position;
@@ -150,7 +179,11 @@ function createLhcSimulation(mountEl) {
     mesh.userData.baseOpacity = opacity * 0.18;
 
     const edges = new THREE.EdgesGeometry(geometry);
-    const lineMaterial = new THREE.LineBasicMaterial({ color, transparent: true, opacity: opacity * 1.1 });
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color,
+      transparent: true,
+      opacity: opacity * 1.1,
+    });
     const wireframe = new THREE.LineSegments(edges, lineMaterial);
     wireframe.position.x = position;
     wireframe.rotation.y = Math.PI / 2;
@@ -186,7 +219,7 @@ function createLhcSimulation(mountEl) {
       }
     }
 
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
     const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity: opacity * 1.2 });
     const lineSegments = new THREE.LineSegments(geometry, material);
     lineSegments.userData.baseOpacity = opacity * 1.2;
@@ -215,7 +248,11 @@ function createLhcSimulation(mountEl) {
 
     const pointGeometry = new THREE.SphereGeometry(0.2, 12, 12);
     const pointMaterial = new THREE.MeshStandardMaterial({
-      color, emissive: color, emissiveIntensity: 0.5, metalness: 0.5, roughness: 0.3
+      color,
+      emissive: color,
+      emissiveIntensity: 0.5,
+      metalness: 0.5,
+      roughness: 0.3,
     });
     group.add(new THREE.Mesh(pointGeometry, pointMaterial));
 
@@ -227,7 +264,7 @@ function createLhcSimulation(mountEl) {
       linesVertices.push(0, 0, 0);
       linesVertices.push(Math.cos(angle) * length, Math.sin(angle) * length, 0);
     }
-    linesGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linesVertices, 3));
+    linesGeometry.setAttribute("position", new THREE.Float32BufferAttribute(linesVertices, 3));
     const linesMaterial = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.3 });
     group.add(new THREE.LineSegments(linesGeometry, linesMaterial));
 
@@ -235,17 +272,16 @@ function createLhcSimulation(mountEl) {
   }
 
   // ───── detector builders ─────
-
   function buildATLAS() {
-    const lbl = getEl('detectorLabel');
-    if (lbl) lbl.textContent = 'ATLAS';
+    const lbl = getEl("detectorLabel");
+    if (lbl) lbl.textContent = "ATLAS";
 
     const layers = [
-      { radius: 12, height: 48, color: 0x2a5a8a, opacity: 0.12, name: 'Muon System' },
-      { radius: 10, height: 40, color: 0x3a6a9a, opacity: 0.15, name: 'Calorimeter' },
-      { radius: 7, height: 32, color: 0x4a7aaa, opacity: 0.18, name: 'TRT' },
-      { radius: 4, height: 24, color: 0x5a8aba, opacity: 0.22, name: 'SCT' },
-      { radius: 1.8, height: 18, color: 0x6a9aca, opacity: 0.26, name: 'Pixel Detector' }
+      { radius: 12, height: 48, color: 0x2a5a8a, opacity: 0.12, name: "Muon System" },
+      { radius: 10, height: 40, color: 0x3a6a9a, opacity: 0.15, name: "Calorimeter" },
+      { radius: 7, height: 32, color: 0x4a7aaa, opacity: 0.18, name: "TRT" },
+      { radius: 4, height: 24, color: 0x5a8aba, opacity: 0.22, name: "SCT" },
+      { radius: 1.8, height: 18, color: 0x6a9aca, opacity: 0.26, name: "Pixel Detector" },
     ];
 
     layers.forEach((layer) => {
@@ -260,15 +296,15 @@ function createLhcSimulation(mountEl) {
   }
 
   function buildCMS() {
-    const lbl = getEl('detectorLabel');
-    if (lbl) lbl.textContent = 'CMS';
+    const lbl = getEl("detectorLabel");
+    if (lbl) lbl.textContent = "CMS";
 
     const layers = [
-      { radius: 11, height: 42, color: 0x8a2a3a, opacity: 0.12, name: 'Muon Chambers' },
-      { radius: 9, height: 36, color: 0x9a3a4a, opacity: 0.15, name: 'HCAL' },
-      { radius: 6.5, height: 30, color: 0xaa4a5a, opacity: 0.18, name: 'ECAL' },
-      { radius: 4, height: 24, color: 0xba5a6a, opacity: 0.22, name: 'Tracker' },
-      { radius: 1.8, height: 18, color: 0xca6a7a, opacity: 0.26, name: 'Silicon Tracker' }
+      { radius: 11, height: 42, color: 0x8a2a3a, opacity: 0.12, name: "Muon Chambers" },
+      { radius: 9, height: 36, color: 0x9a3a4a, opacity: 0.15, name: "HCAL" },
+      { radius: 6.5, height: 30, color: 0xaa4a5a, opacity: 0.18, name: "ECAL" },
+      { radius: 4, height: 24, color: 0xba5a6a, opacity: 0.22, name: "Tracker" },
+      { radius: 1.8, height: 18, color: 0xca6a7a, opacity: 0.26, name: "Silicon Tracker" },
     ];
 
     layers.forEach((layer) => {
@@ -283,14 +319,14 @@ function createLhcSimulation(mountEl) {
   }
 
   function buildALICE() {
-    const lbl = getEl('detectorLabel');
-    if (lbl) lbl.textContent = 'ALICE';
+    const lbl = getEl("detectorLabel");
+    if (lbl) lbl.textContent = "ALICE";
 
     const layers = [
-      { radius: 10, height: 50, color: 0x2a8a5a, opacity: 0.12, name: 'TPC' },
-      { radius: 7, height: 42, color: 0x3a9a6a, opacity: 0.15, name: 'TRD' },
-      { radius: 5, height: 35, color: 0x4aaa7a, opacity: 0.18, name: 'TOF' },
-      { radius: 3, height: 28, color: 0x5aba8a, opacity: 0.22, name: 'ITS' }
+      { radius: 10, height: 50, color: 0x2a8a5a, opacity: 0.12, name: "TPC" },
+      { radius: 7, height: 42, color: 0x3a9a6a, opacity: 0.15, name: "TRD" },
+      { radius: 5, height: 35, color: 0x4aaa7a, opacity: 0.18, name: "TOF" },
+      { radius: 3, height: 28, color: 0x5aba8a, opacity: 0.22, name: "ITS" },
     ];
 
     layers.forEach((layer) => {
@@ -305,16 +341,16 @@ function createLhcSimulation(mountEl) {
   }
 
   function buildLHCb() {
-    const lbl = getEl('detectorLabel');
-    if (lbl) lbl.textContent = 'LHCb';
+    const lbl = getEl("detectorLabel");
+    if (lbl) lbl.textContent = "LHCb";
 
     const components = [
-      { radius: 2, height: 4, z: 16, color: 0x9a6aca, opacity: 0.30, name: 'VELO' },
-      { radius: 4, height: 6, z: 8, color: 0x6a3a9a, opacity: 0.25, name: 'RICH1' },
-      { radius: 5, height: 8, z: 2, color: 0x7a4aaa, opacity: 0.20, name: 'Trackers' },
-      { radius: 6, height: 10, z: -6, color: 0x5a2a8a, opacity: 0.18, name: 'Magnet' },
-      { radius: 7, height: 10, z: -15, color: 0x6a3a9a, opacity: 0.15, name: 'RICH2' },
-      { radius: 8, height: 12, z: -26, color: 0x4a1a7a, opacity: 0.12, name: 'Calorimeters' }
+      { radius: 2, height: 4, z: 16, color: 0x9a6aca, opacity: 0.30, name: "VELO" },
+      { radius: 4, height: 6, z: 8, color: 0x6a3a9a, opacity: 0.25, name: "RICH1" },
+      { radius: 5, height: 8, z: 2, color: 0x7a4aaa, opacity: 0.20, name: "Trackers" },
+      { radius: 6, height: 10, z: -6, color: 0x5a2a8a, opacity: 0.18, name: "Magnet" },
+      { radius: 7, height: 10, z: -15, color: 0x6a3a9a, opacity: 0.15, name: "RICH2" },
+      { radius: 8, height: 12, z: -26, color: 0x4a1a7a, opacity: 0.12, name: "Calorimeters" },
     ];
 
     components.forEach((comp) => {
@@ -326,38 +362,40 @@ function createLhcSimulation(mountEl) {
   }
 
   function buildDetector(detectorType) {
-    detectorGeometry.forEach(obj => scene.remove(obj));
+    detectorGeometry.forEach((obj) => disposeObject3D(obj));
     detectorGeometry = [];
 
-    const labelsContainer = getEl('labelsContainer');
-    if (labelsContainer) labelsContainer.innerHTML = '';
+    const labelsContainer = getEl("labelsContainer");
+    if (labelsContainer) labelsContainer.innerHTML = "";
     labelElements = [];
 
-    if (detectorType === 'ATLAS') buildATLAS();
-    else if (detectorType === 'CMS') buildCMS();
-    else if (detectorType === 'ALICE') buildALICE();
-    else if (detectorType === 'LHCb') buildLHCb();
+    if (detectorType === "ATLAS") buildATLAS();
+    else if (detectorType === "CMS") buildCMS();
+    else if (detectorType === "ALICE") buildALICE();
+    else if (detectorType === "LHCb") buildLHCb();
 
     createLabels();
 
     const mf = MAGNETIC_FIELD[currentDetector] || 2.0;
-    const hudMf = getEl('magneticField');
-    if (hudMf) hudMf.textContent = mf + ' T';
+    const hudMf = getEl("magneticField");
+    if (hudMf) hudMf.textContent = mf + " T";
   }
 
   function createLabels() {
-    const labelsContainer = getEl('labelsContainer');
+    const labelsContainer = getEl("labelsContainer");
     if (!labelsContainer) return;
 
     detectorGeometry.forEach((obj) => {
       if (obj.userData.layerName) {
-        const d = document.createElement('div');
-        d.className = 'detector-label';
+        const d = document.createElement("div");
+        d.className = "detector-label";
         d.textContent = obj.userData.layerName;
         d.addEventListener("click", () => {
-          window.dispatchEvent(new CustomEvent("lhc:labelClick", {
-            detail: { layerName: obj.userData.layerName, detector: currentDetector }
-          }));
+          window.dispatchEvent(
+            new CustomEvent("lhc:labelClick", {
+              detail: { layerName: obj.userData.layerName, detector: currentDetector },
+            })
+          );
         });
         labelsContainer.appendChild(d);
         labelElements.push({ element: d, object: obj });
@@ -367,11 +405,11 @@ function createLhcSimulation(mountEl) {
 
   function updateLabels() {
     if (!showDetectorLabels) {
-      labelElements.forEach(label => label.element.classList.remove('visible'));
+      labelElements.forEach((label) => label.element.classList.remove("visible"));
       return;
     }
 
-    const canvasEl = getEl('canvas');
+    const canvasEl = getEl("canvas");
     const rect = canvasEl
       ? canvasEl.getBoundingClientRect()
       : { width: window.innerWidth, height: window.innerHeight, left: 0, top: 0 };
@@ -389,28 +427,30 @@ function createLhcSimulation(mountEl) {
       const screenPos = labelPos.clone().project(camera);
 
       if (screenPos.z > 1 || screenPos.z < -1) {
-        label.element.classList.remove('visible');
+        label.element.classList.remove("visible");
         return;
       }
 
       const x = (screenPos.x * 0.5 + 0.5) * rect.width + rect.left;
       const y = (screenPos.y * -0.5 + 0.5) * rect.height + rect.top;
 
-      label.element.style.left = x + 'px';
-      label.element.style.top = y + 'px';
-      label.element.classList.add('visible');
+      label.element.style.left = x + "px";
+      label.element.style.top = y + "px";
+      label.element.classList.add("visible");
 
-      if (hoveredObject && hoveredObject === obj) label.element.classList.add('highlighted');
-      else label.element.classList.remove('highlighted');
+      if (hoveredObject && hoveredObject === obj) label.element.classList.add("highlighted");
+      else label.element.classList.remove("highlighted");
     });
   }
 
   // ───── particles / tracks ─────
-
   function createParticle(position, color, size) {
     const geometry = new THREE.SphereGeometry(size, 12, 12);
     const material = new THREE.MeshPhongMaterial({
-      color, emissive: color, emissiveIntensity: 0.8, shininess: 100
+      color,
+      emissive: color,
+      emissiveIntensity: 0.8,
+      shininess: 100,
     });
     const particle = new THREE.Mesh(geometry, material);
     particle.position.copy(position);
@@ -423,9 +463,15 @@ function createLhcSimulation(mountEl) {
     coneGeometry.translate(0, -length / 2, 0);
 
     const coneMaterial = new THREE.MeshPhongMaterial({
-      color, emissive: color, emissiveIntensity: 0.8,
-      transparent: true, opacity: 0.65, side: THREE.DoubleSide,
-      shininess: 120, specular: 0x444444, depthWrite: false
+      color,
+      emissive: color,
+      emissiveIntensity: 0.8,
+      transparent: true,
+      opacity: 0.65,
+      side: THREE.DoubleSide,
+      shininess: 120,
+      specular: 0x444444,
+      depthWrite: false,
     });
 
     const cone = new THREE.Mesh(coneGeometry, coneMaterial);
@@ -437,7 +483,11 @@ function createLhcSimulation(mountEl) {
     cone.quaternion.copy(quaternion);
 
     cone.userData = {
-      age: 0, maxAge: 120, growthProgress: 0, spawnDelay: 0, initialOpacity: 0.65
+      age: 0,
+      maxAge: 120,
+      growthProgress: 0,
+      spawnDelay: 0,
+      initialOpacity: 0.65,
     };
     cone.scale.set(0, 0, 0);
 
@@ -476,47 +526,56 @@ function createLhcSimulation(mountEl) {
     }
 
     const curvePath = new THREE.CatmullRomCurve3(points);
-    const tubeRadius = isMuon ? 0.06 : (hasTrail ? 0.055 : 0.045);
+    const tubeRadius = isMuon ? 0.06 : hasTrail ? 0.055 : 0.045;
     const tubeGeometry = new THREE.TubeGeometry(curvePath, 56, tubeRadius, 7, false);
     const tubeMaterial = new THREE.MeshPhongMaterial({
-      color, emissive: color,
-      emissiveIntensity: isMuon ? 1.2 : (hasTrail ? 0.9 : 0.7),
-      transparent: true, opacity: 0.98, shininess: 120, specular: 0x222222
+      color,
+      emissive: color,
+      emissiveIntensity: isMuon ? 1.2 : hasTrail ? 0.9 : 0.7,
+      transparent: true,
+      opacity: 0.98,
+      shininess: 120,
+      specular: 0x222222,
     });
 
     const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
     tube.userData = {
-      age: 0, maxAge: isMuon ? 180 : 150, direction: direction.clone(),
-      initialOpacity: 0.98, isMuon, charge, momentum
+      age: 0,
+      maxAge: isMuon ? 180 : 150,
+      direction: direction.clone(),
+      initialOpacity: 0.98,
+      isMuon,
+      charge,
+      momentum,
+      spawnDelay: 0,
+      growthProgress: 0,
     };
     return tube;
   }
 
   function updateHUD() {
     const el = (id) => getEl(id);
-    const energy = el('simEnergy');
-    const momentum = el('simMomentum');
-    const trackCount = el('simTrackCount');
-    const eventType = el('simEventType');
-    if (energy) energy.textContent = eventData.energy + ' TeV';
-    if (momentum) momentum.textContent = eventData.momentum + ' GeV/c';
+    const energy = el("simEnergy");
+    const momentum = el("simMomentum");
+    const trackCount = el("simTrackCount");
+    const eventType = el("simEventType");
+    if (energy) energy.textContent = eventData.energy + " TeV";
+    if (momentum) momentum.textContent = eventData.momentum + " GeV/c";
     if (trackCount) trackCount.textContent = eventData.trackCount;
     if (eventType) eventType.textContent = eventData.eventType;
   }
 
   function clearAnimation() {
-    particles.forEach(p => scene.remove(p));
-    tracks.forEach(t => scene.remove(t));
-    particles = [];
-    tracks = [];
+    clearMeshes(particles);
+    clearMeshes(tracks);
     isAnimating = false;
     animationFrame = 0;
-    eventData = { energy: 0, momentum: 0, trackCount: 0, eventType: '—' };
+    eventData = { energy: 0, momentum: 0, trackCount: 0, eventType: "—" };
     updateHUD();
   }
 
   function createExplosion() {
-    let numTracks = eventData.trackCount || 50;
+    const numTracks = eventData.trackCount || 50;
     const collisionPoint = new THREE.Vector3(0, 0, 0);
 
     // flash
@@ -527,7 +586,7 @@ function createLhcSimulation(mountEl) {
       { radius: 1.2, color: 0x00ffff, opacity: 0.4 },
     ];
 
-    flashConfigs.forEach(cfg => {
+    flashConfigs.forEach((cfg) => {
       const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(cfg.radius, 12, 12),
         new THREE.MeshBasicMaterial({ color: cfg.color, transparent: true, opacity: cfg.opacity })
@@ -539,7 +598,11 @@ function createLhcSimulation(mountEl) {
 
     let flashFrame = 0;
     const flashInterval = setInterval(() => {
-      if (disposed) { clearInterval(flashInterval); return; }
+      if (disposed) {
+        clearInterval(flashInterval);
+        flashLayers.forEach((m) => disposeObject3D(m));
+        return;
+      }
       flashFrame++;
       flashLayers.forEach((flash, index) => {
         const speed = 1 + index * 0.2;
@@ -548,20 +611,16 @@ function createLhcSimulation(mountEl) {
       });
       if (flashFrame > 15) {
         clearInterval(flashInterval);
-        flashLayers.forEach(flash => scene.remove(flash));
+        flashLayers.forEach((m) => disposeObject3D(m));
       }
     }, 20);
 
     // jets
-    const numJets = Math.random() < 0.4 ? 2 : (Math.random() < 0.7 ? 3 : 4);
+    const numJets = Math.random() < 0.4 ? 2 : Math.random() < 0.7 ? 3 : 4;
     for (let j = 0; j < numJets; j++) {
       const jetAngle = (j / numJets) * Math.PI * 2 + Math.random() * 0.5;
       const jetColor = j % 2 === 0 ? 0xffaa00 : 0x00ff88;
-      const jetDirection = new THREE.Vector3(
-        Math.cos(jetAngle * 0.3),
-        Math.sin(jetAngle) * 0.4,
-        Math.cos(jetAngle) * 0.4
-      ).normalize();
+      const jetDirection = new THREE.Vector3(Math.cos(jetAngle * 0.3), Math.sin(jetAngle) * 0.4, Math.cos(jetAngle) * 0.4).normalize();
       createJetCone(collisionPoint, jetDirection, jetColor, 8 + Math.random() * 4);
     }
 
@@ -593,33 +652,32 @@ function createLhcSimulation(mountEl) {
       track.userData.spawnDelay = Math.random() * 10;
       track.userData.growthProgress = 0;
       track.scale.set(0, 0, 0);
+
       tracks.push(track);
       scene.add(track);
     }
   }
 
   function runSimulation(config) {
+    // если уже анимируем — лучше сначала чистить, а не отказываться
     if (isAnimating) {
-      console.warn('Симуляция уже запущена.');
-      return;
+      clearAnimation();
     }
 
     if (config && config.detector && config.detector !== currentDetector) {
       currentDetector = config.detector;
       buildDetector(currentDetector);
 
-      // update UI buttons
-      mountEl.querySelectorAll('.detector-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.detector === currentDetector);
+      mountEl.querySelectorAll(".detector-btn").forEach((b) => {
+        b.classList.toggle("active", b.dataset.detector === currentDetector);
       });
     }
 
-    particles.forEach(p => scene.remove(p));
-    tracks.forEach(t => scene.remove(t));
-    particles = [];
-    tracks = [];
+    // 🔥 чистим и DISPOSE старые меши
+    clearMeshes(particles);
+    clearMeshes(tracks);
 
-    eventData.eventType = config?.eventType || 'Standard';
+    eventData.eventType = config?.eventType || "Standard";
     eventData.energy = Number(config?.energy || 13.0).toFixed(2);
     eventData.momentum = Math.floor(config?.momentum || 1000);
     eventData.trackCount = config?.trackCount || 50;
@@ -638,44 +696,48 @@ function createLhcSimulation(mountEl) {
   }
 
   // ───── animation loop ─────
-
   function animate() {
-    if (disposed) return;          // ← KEY: stop loop if disposed
+    if (disposed) return;
     rafId = requestAnimationFrame(animate);
 
     if (isAnimating && !isPaused) {
       animationFrame++;
 
       if (animationFrame < 25) {
-        particles.forEach(p => {
+        particles.forEach((p) => {
           if (p.userData.velocity) p.position.add(p.userData.velocity);
         });
       }
 
       if (animationFrame === 25) {
-        particles.forEach(p => scene.remove(p));
-        particles = [];
+        clearMeshes(particles);
         createExplosion();
       }
 
       if (animationFrame > 25) {
-        let allGrown = true;
-        tracks.forEach((track) => {
-          if (track.userData && track.userData.spawnDelay !== undefined) {
-            if (track.userData.spawnDelay > 0) {
-              track.userData.spawnDelay--;
-              allGrown = false;
-            } else if (track.userData.growthProgress < 1) {
-              track.userData.growthProgress += 0.12;
-              const progress = Math.min(1, track.userData.growthProgress);
-              const easeProgress = progress < 1 ? 1 - Math.pow(1 - progress, 3) : 1;
-              track.scale.set(easeProgress, easeProgress, easeProgress);
-              allGrown = false;
-            }
+        // 🔥 ВАЖНО: старые треки должны умирать и освобождать память
+        for (let i = tracks.length - 1; i >= 0; i--) {
+          const t = tracks[i];
+          const ud = t.userData || {};
+          ud.age = (ud.age || 0) + 1;
+
+          if (ud.spawnDelay > 0) ud.spawnDelay--;
+
+          if (ud.spawnDelay <= 0 && ud.growthProgress < 1) {
+            ud.growthProgress += 0.12;
+            const progress = Math.min(1, ud.growthProgress);
+            const ease = progress < 1 ? 1 - Math.pow(1 - progress, 3) : 1;
+            t.scale.set(ease, ease, ease);
           }
-          if (track.userData) track.userData.age = (track.userData.age || 0) + 1;
-        });
-        if (allGrown && animationFrame > 50) isAnimating = false;
+
+          // if expired -> remove & dispose
+          if (ud.maxAge && ud.age > ud.maxAge) {
+            disposeObject3D(t);
+            tracks.splice(i, 1);
+          }
+        }
+
+        if (tracks.length === 0 && animationFrame > 50) isAnimating = false;
       }
     }
 
@@ -684,8 +746,7 @@ function createLhcSimulation(mountEl) {
     if (renderer && scene && camera) renderer.render(scene, camera);
   }
 
-  // ───── event handlers (scoped to mountEl) ─────
-
+  // ───── event handlers ─────
   function onMouseDown(e) {
     if (e.button === 0) {
       isDragging = true;
@@ -695,7 +756,7 @@ function createLhcSimulation(mountEl) {
   }
 
   function onMouseMove(e) {
-    const canvasEl = getEl('canvas');
+    const canvasEl = getEl("canvas");
     const rect = canvasEl
       ? canvasEl.getBoundingClientRect()
       : { width: window.innerWidth, height: window.innerHeight, left: 0, top: 0 };
@@ -711,37 +772,31 @@ function createLhcSimulation(mountEl) {
       const intersects = raycaster.intersectObjects(detectorGeometry, true);
 
       if (hoveredObject) {
-        const layerGroup = hoveredObject.parent && hoveredObject.parent.userData.layerName
-          ? hoveredObject.parent : hoveredObject;
+        const layerGroup = hoveredObject.parent && hoveredObject.parent.userData.layerName ? hoveredObject.parent : hoveredObject;
         layerGroup.traverse((child) => {
-          if (child.material && child.userData.baseOpacity !== undefined) {
-            child.material.opacity = child.userData.baseOpacity;
-          }
+          if (child.material && child.userData.baseOpacity !== undefined) child.material.opacity = child.userData.baseOpacity;
         });
         hoveredObject = null;
       }
 
       if (intersects.length > 0) {
         let layerGroup = intersects[0].object;
-        while (layerGroup.parent && !layerGroup.userData.layerName) {
-          layerGroup = layerGroup.parent;
-        }
+        while (layerGroup.parent && !layerGroup.userData.layerName) layerGroup = layerGroup.parent;
+
         if (layerGroup.userData.layerName) {
           hoveredObject = layerGroup;
           layerGroup.traverse((child) => {
-            if (child.material && child.userData.baseOpacity !== undefined) {
-              child.material.opacity = child.userData.baseOpacity * 2.0;
-            }
+            if (child.material && child.userData.baseOpacity !== undefined) child.material.opacity = child.userData.baseOpacity * 2.0;
           });
-          if (renderer?.domElement) renderer.domElement.style.cursor = 'pointer';
+          if (renderer?.domElement) renderer.domElement.style.cursor = "pointer";
         } else {
-          if (renderer?.domElement) renderer.domElement.style.cursor = 'default';
+          if (renderer?.domElement) renderer.domElement.style.cursor = "default";
         }
       } else {
-        if (renderer?.domElement) renderer.domElement.style.cursor = 'default';
+        if (renderer?.domElement) renderer.domElement.style.cursor = "default";
       }
     } else {
-      if (renderer?.domElement) renderer.domElement.style.cursor = 'default';
+      if (renderer?.domElement) renderer.domElement.style.cursor = "default";
     }
 
     if (isDragging) {
@@ -759,9 +814,7 @@ function createLhcSimulation(mountEl) {
   }
 
   function onMouseClick(e) {
-    const dragDistance = Math.sqrt(
-      Math.pow(e.clientX - clickStartPos.x, 2) + Math.pow(e.clientY - clickStartPos.y, 2)
-    );
+    const dragDistance = Math.sqrt(Math.pow(e.clientX - clickStartPos.x, 2) + Math.pow(e.clientY - clickStartPos.y, 2));
     if (!showDetectorLabels || dragDistance >= 5) return;
 
     raycaster.setFromCamera(mouse, camera);
@@ -769,19 +822,18 @@ function createLhcSimulation(mountEl) {
     if (!intersects.length) return;
 
     let layerGroup = intersects[0].object;
-    while (layerGroup.parent && !layerGroup.userData.layerName) {
-      layerGroup = layerGroup.parent;
-    }
+    while (layerGroup.parent && !layerGroup.userData.layerName) layerGroup = layerGroup.parent;
     if (!layerGroup.userData.layerName) return;
 
-    window.dispatchEvent(new CustomEvent("lhc:labelClick", {
-      detail: { layerName: layerGroup.userData.layerName, detector: currentDetector }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("lhc:labelClick", {
+        detail: { layerName: layerGroup.userData.layerName, detector: currentDetector },
+      })
+    );
   }
 
   function onMouseWheel(e) {
-    // only handle if the event is inside the canvas
-    const canvasEl = getEl('canvas');
+    const canvasEl = getEl("canvas");
     if (canvasEl && !canvasEl.contains(e.target)) return;
     e.preventDefault();
     cameraDistance += e.deltaY * 0.05;
@@ -789,9 +841,8 @@ function createLhcSimulation(mountEl) {
   }
 
   function onKeyDown(e) {
-    if (e.code === 'Space') {
-      // only if canvas is focused-ish (not in an input)
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.code === "Space") {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
       e.preventDefault();
       isPaused = !isPaused;
     }
@@ -806,7 +857,7 @@ function createLhcSimulation(mountEl) {
   }
 
   function onWindowResize() {
-    const canvasEl = getEl('canvas');
+    const canvasEl = getEl("canvas");
     if (!canvasEl || !camera || !renderer) return;
     const w = canvasEl.clientWidth || window.innerWidth;
     const h = canvasEl.clientHeight || window.innerHeight;
@@ -816,9 +867,8 @@ function createLhcSimulation(mountEl) {
   }
 
   // ───── init ─────
-
   function init() {
-    const canvasEl = getEl('canvas');
+    const canvasEl = getEl("canvas");
     if (!canvasEl) return;
 
     scene = new THREE.Scene();
@@ -849,53 +899,54 @@ function createLhcSimulation(mountEl) {
 
     buildDetector(currentDetector);
 
-    // scoped event listeners
-    window.addEventListener('resize', onWindowResize);
-    document.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-    document.addEventListener('click', onMouseClick);
-    document.addEventListener('wheel', onMouseWheel, { passive: false });
-    document.addEventListener('keydown', onKeyDown);
+    window.addEventListener("resize", onWindowResize);
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("click", onMouseClick);
+    document.addEventListener("wheel", onMouseWheel, { passive: false });
+    document.addEventListener("keydown", onKeyDown);
 
-    // UI hooks inside mountEl
-    const clearBtn = getEl('clearBtn');
-    clearBtn && clearBtn.addEventListener('click', clearAnimation);
+    const clearBtn = getEl("clearBtn");
+    clearBtn && clearBtn.addEventListener("click", clearAnimation);
 
-    const showLabelsEl = getEl('showLabels');
-    showLabelsEl && showLabelsEl.addEventListener('change', function (e) {
-      showDetectorLabels = e.target.checked;
-      if (showDetectorLabels) updateLabels();
-      else labelElements.forEach(label => label.element.classList.remove('visible'));
-    });
+    const showLabelsEl = getEl("showLabels");
+    showLabelsEl &&
+      showLabelsEl.addEventListener("change", function (e) {
+        showDetectorLabels = e.target.checked;
+        if (showDetectorLabels) updateLabels();
+        else labelElements.forEach((label) => label.element.classList.remove("visible"));
+      });
 
-    const legendToggle = getEl('legendToggle');
-    legendToggle && legendToggle.addEventListener('click', function () {
-      showLegend = !showLegend;
-      const legend = getEl('legend');
-      if (!legend || !legendToggle) return;
-      if (showLegend) {
-        legend.classList.remove('hidden');
-        legendToggle.style.display = 'none';
-      } else {
-        legend.classList.add('hidden');
-        legendToggle.style.display = 'block';
-      }
-    });
+    const legendToggle = getEl("legendToggle");
+    legendToggle &&
+      legendToggle.addEventListener("click", function () {
+        showLegend = !showLegend;
+        const legend = getEl("legend");
+        if (!legend || !legendToggle) return;
+        if (showLegend) {
+          legend.classList.remove("hidden");
+          legendToggle.style.display = "none";
+        } else {
+          legend.classList.add("hidden");
+          legendToggle.style.display = "block";
+        }
+      });
 
-    const legend = getEl('legend');
-    legend && legend.addEventListener('click', function () {
-      showLegend = false;
-      this.classList.add('hidden');
-      const t = getEl('legendToggle');
-      if (t) t.style.display = 'block';
-    });
+    const legend = getEl("legend");
+    legend &&
+      legend.addEventListener("click", function () {
+        showLegend = false;
+        this.classList.add("hidden");
+        const t = getEl("legendToggle");
+        if (t) t.style.display = "block";
+      });
 
-    mountEl.querySelectorAll('.detector-btn').forEach(btn => {
-      btn.addEventListener('click', function () {
+    mountEl.querySelectorAll(".detector-btn").forEach((btn) => {
+      btn.addEventListener("click", function () {
         if (currentDetector === this.dataset.detector) return;
-        mountEl.querySelectorAll('.detector-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
+        mountEl.querySelectorAll(".detector-btn").forEach((b) => b.classList.remove("active"));
+        this.classList.add("active");
         currentDetector = this.dataset.detector;
         buildDetector(currentDetector);
       });
@@ -904,8 +955,7 @@ function createLhcSimulation(mountEl) {
     animate();
   }
 
-  // ───── dispose (cleanup!) ─────
-
+  // ───── dispose ─────
   function dispose() {
     disposed = true;
 
@@ -914,19 +964,24 @@ function createLhcSimulation(mountEl) {
       rafId = null;
     }
 
-    // remove event listeners
-    window.removeEventListener('resize', onWindowResize);
-    document.removeEventListener('mousedown', onMouseDown);
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-    document.removeEventListener('click', onMouseClick);
-    document.removeEventListener('wheel', onMouseWheel);
-    document.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener("resize", onWindowResize);
+    document.removeEventListener("mousedown", onMouseDown);
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+    document.removeEventListener("click", onMouseClick);
+    document.removeEventListener("wheel", onMouseWheel);
+    document.removeEventListener("keydown", onKeyDown);
 
-    // dispose Three.js resources
+    clearMeshes(particles);
+    clearMeshes(tracks);
+
+    detectorGeometry.forEach((o) => disposeObject3D(o));
+    detectorGeometry = [];
+    labelElements = [];
+
     if (renderer) {
       renderer.dispose();
-      renderer.forceContextLoss();
+      renderer.forceContextLoss?.();
       const domEl = renderer.domElement;
       if (domEl && domEl.parentNode) domEl.parentNode.removeChild(domEl);
       renderer = null;
@@ -934,42 +989,23 @@ function createLhcSimulation(mountEl) {
 
     if (scene) {
       scene.traverse((obj) => {
-        if (obj.geometry) obj.geometry.dispose();
-        if (obj.material) {
-          if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
-          else obj.material.dispose();
-        }
+        if (obj.geometry) obj.geometry.dispose?.();
+        if (obj.material) disposeMaterial(obj.material);
       });
       scene = null;
     }
 
     camera = null;
-    particles = [];
-    tracks = [];
-    detectorGeometry = [];
-    labelElements = [];
   }
 
   init();
-
   return { runSimulation, clearAnimation, dispose };
 }
 
-
 // ───────────────────────────────────────────
-// SearchableSelect (unchanged)
+// SearchableSelect (как было)
 // ───────────────────────────────────────────
-
-function SearchableSelect({
-  id,
-  name,
-  label,
-  options,
-  value,
-  onChange,
-  placeholder = "Выберите...",
-  error,
-}) {
+function SearchableSelect({ id, name, label, options, value, onChange, placeholder = "Выберите...", error }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -978,10 +1014,7 @@ function SearchableSelect({
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  const selected = useMemo(
-    () => options.find((o) => o.value === value) || null,
-    [options, value]
-  );
+  const selected = useMemo(() => options.find((o) => o.value === value) || null, [options, value]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -1025,15 +1058,33 @@ function SearchableSelect({
   }
 
   function onSearchKeyDown(e) {
-    if (e.key === "Escape") { e.preventDefault(); setOpen(false); return; }
-    if (e.key === "ArrowDown") { e.preventDefault(); setActiveIndex((i) => Math.min(i + 1, filtered.length - 1)); return; }
-    if (e.key === "ArrowUp") { e.preventDefault(); setActiveIndex((i) => Math.max(i - 1, 0)); return; }
-    if (e.key === "Enter") { e.preventDefault(); const opt = filtered[activeIndex]; if (opt) choose(opt); }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const opt = filtered[activeIndex];
+      if (opt) choose(opt);
+    }
   }
 
   return (
     <div className={s.simulation__selectWrap} ref={wrapRef}>
-      <label htmlFor={id} className={s.simulation__parameters_text}>{label}</label>
+      <label htmlFor={id} className={s.simulation__parameters_text}>
+        {label}
+      </label>
 
       <button
         id={id}
@@ -1090,13 +1141,10 @@ function SearchableSelect({
   );
 }
 
-
 // ───────────────────────────────────────────
 // Main component
 // ───────────────────────────────────────────
-
 export default function Simulation() {
-
   const particleOptions = useMemo(() => {
     const arr = Array.isArray(particlesData) ? particlesData : [];
     return arr
@@ -1181,7 +1229,6 @@ export default function Simulation() {
 
   const [showViz, setShowViz] = useState(false);
 
-  // ref to hold the simulation instance
   const simRef = useRef(null);
   const vizWrapRef = useRef(null);
 
@@ -1281,24 +1328,25 @@ export default function Simulation() {
 
       if (cancelled) return;
 
-      // Wait a tick for the DOM to render the #canvas element
       requestAnimationFrame(() => {
         if (cancelled) return;
 
         const mountEl = vizWrapRef.current;
         if (!mountEl) return;
 
-        // Create a fresh simulation instance
-        const sim = createLhcSimulation(mountEl);
-        if (sim) {
-          simRef.current = sim;
+        // если вдруг уже есть инстанс — убьём
+        if (simRef.current) {
+          simRef.current.dispose();
+          simRef.current = null;
         }
+
+        const sim = createLhcSimulation(mountEl);
+        if (sim) simRef.current = sim;
       });
     })();
 
     return () => {
       cancelled = true;
-      // Dispose on unmount or when showViz goes false
       if (simRef.current) {
         simRef.current.dispose();
         simRef.current = null;
@@ -1324,7 +1372,11 @@ export default function Simulation() {
 
   function safeJsonParse(maybeString) {
     if (typeof maybeString !== "string") return maybeString;
-    try { return JSON.parse(maybeString); } catch { return maybeString; }
+    try {
+      return JSON.parse(maybeString);
+    } catch {
+      return maybeString;
+    }
   }
 
   async function handleStart() {
@@ -1406,6 +1458,7 @@ export default function Simulation() {
       updateOutputsFromValues(vals ?? null);
       setHasOutputs(true);
       setRawStages({ first: first_finals ?? null, finals: finals ?? null });
+
       setShowViz(true);
 
       log("Симуляция завершена успешно ✅");
@@ -1428,12 +1481,11 @@ export default function Simulation() {
 
     const t = setTimeout(() => {
       startVizAutoRun();
-    }, 300); // slightly longer to ensure Three.js init is done
+    }, 300);
 
     return () => clearTimeout(t);
   }, [showViz, stage1, decay, startVizAutoRun]);
 
-  // Cleanup simulation on unmount (navigation away)
   useEffect(() => {
     return () => {
       if (simRef.current) {
@@ -1564,50 +1616,66 @@ export default function Simulation() {
               {!showViz ? (
                 <div className={s.simulation__vizPlaceholder}>
                   <div className={s.simulation__vizPlaceholderTitle}>Visualization</div>
-                  <div className={s.simulation__vizPlaceholderText}>
-                    Появится после успешной симуляции
-                  </div>
+                  <div className={s.simulation__vizPlaceholderText}>Появится после успешной симуляции</div>
                 </div>
               ) : (
                 <div className={s.simulation__vizWrap} ref={vizWrapRef}>
-                  {/* mount for WebGL */}
                   <div id="canvas" className={s.simulation__vizCanvas} />
 
-                  {/* label + controls */}
                   <div id="detectorLabel">ATLAS</div>
 
                   <div id="detectorSelection">
-                    <button className="detector-btn active" data-detector="ATLAS">ATLAS</button>
-                    <button className="detector-btn" data-detector="CMS">CMS</button>
-                    <button className="detector-btn" data-detector="ALICE">ALICE</button>
-                    <button className="detector-btn" data-detector="LHCb">LHCb</button>
+                    <button className="detector-btn active" data-detector="ATLAS">
+                      ATLAS
+                    </button>
+                    <button className="detector-btn" data-detector="CMS">
+                      CMS
+                    </button>
+                    <button className="detector-btn" data-detector="ALICE">
+                      ALICE
+                    </button>
+                    <button className="detector-btn" data-detector="LHCb">
+                      LHCb
+                    </button>
                   </div>
 
                   <div id="controls">
-                    <button id="startBtn" style={{ display: "none" }}>Запустить коллайдер</button>
+                    <button id="startBtn" style={{ display: "none" }}>
+                      Запустить коллайдер
+                    </button>
                     <button id="clearBtn">Очистить</button>
                   </div>
 
                   <div id="hud">
                     <div>
                       <span className="label">Энергия:</span>
-                      <span className="value" id="simEnergy">0 TeV</span>
+                      <span className="value" id="simEnergy">
+                        0 TeV
+                      </span>
                     </div>
                     <div>
                       <span className="label">Импульс:</span>
-                      <span className="value" id="simMomentum">0 GeV/c</span>
+                      <span className="value" id="simMomentum">
+                        0 GeV/c
+                      </span>
                     </div>
                     <div>
                       <span className="label">Треки:</span>
-                      <span className="value" id="simTrackCount">0</span>
+                      <span className="value" id="simTrackCount">
+                        0
+                      </span>
                     </div>
                     <div>
                       <span className="label">Событие:</span>
-                      <span className="value" id="simEventType">—</span>
+                      <span className="value" id="simEventType">
+                        —
+                      </span>
                     </div>
                     <div>
                       <span className="label">🧲 Магн. поле:</span>
-                      <span className="value" id="magneticField">2.0 T</span>
+                      <span className="value" id="magneticField">
+                        2.0 T
+                      </span>
                     </div>
                   </div>
 
@@ -1686,34 +1754,25 @@ export default function Simulation() {
         />
 
         {detectorModalOpen && (
-          <div
-            className={s.detectorModalBackdrop}
-            onMouseDown={() => setDetectorModalOpen(false)}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div
-              className={s.detectorModal}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
+          <div className={s.detectorModalBackdrop} onMouseDown={() => setDetectorModalOpen(false)} role="dialog" aria-modal="true">
+            <div className={s.detectorModal} onMouseDown={(e) => e.stopPropagation()}>
               <div className={s.detectorModalHeader}>
                 <div className={s.detectorModalTitle}>Слой детектора</div>
-                <button
-                  className={s.detectorModalClose}
-                  onClick={() => setDetectorModalOpen(false)}
-                  type="button"
-                >
+                <button className={s.detectorModalClose} onClick={() => setDetectorModalOpen(false)} type="button">
                   ✕
                 </button>
               </div>
               <div className={s.detectorModalBody}>
-                <div><b>Детектор:</b> {detectorLayer?.detector}</div>
-                <div><b>Слой:</b> {detectorLayer?.layerName}</div>
+                <div>
+                  <b>Детектор:</b> {detectorLayer?.detector}
+                </div>
+                <div>
+                  <b>Слой:</b> {detectorLayer?.layerName}
+                </div>
               </div>
             </div>
           </div>
         )}
-
       </Container>
     </main>
   );
