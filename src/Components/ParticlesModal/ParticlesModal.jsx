@@ -1,5 +1,5 @@
 import Container from "../Container/Container";
-import s from "./Simulation.module.css";
+import s from "./ParticlesModal.module.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import particlesData from "../../data/all_particles.json";
