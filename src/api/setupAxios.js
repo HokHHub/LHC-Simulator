@@ -70,7 +70,7 @@ const setupAxios = () => {
     (error) => Promise.reject(error)
   );
 
-  // RESPONSE: token_not_valid => чистим токены; CSRF 403 => пробуем получить куку и повторить
+  // RESPONSE: token_not_valid => пробуем обновить токен; CSRF 403 => пробуем получить куку и повторить
   axios.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -78,14 +78,57 @@ const setupAxios = () => {
       const status = error?.response?.status;
       const data = error?.response?.data;
 
-      // 1) JWT невалиден/истек => чистим токены
+      // 1) JWT невалиден/истек => пробуем обновить access токен
       if (
         status === 401 &&
         (data?.code === "token_not_valid" ||
           (typeof data?.detail === "string" && data.detail.toLowerCase().includes("token")))
       ) {
-        clearTokens();
-        return Promise.reject(error);
+        // Проверяем, что это не повторная попытка обновления токена
+        if (!originalRequest._retry) {
+          originalRequest._retry = true;
+
+          try {
+            const refreshToken = localStorage.getItem('refresh_token');
+
+            // Если refresh токена нет - очищаем все и выходим
+            if (!refreshToken || refreshToken === "undefined" || refreshToken === "null") {
+              clearTokens();
+              return Promise.reject(error);
+            }
+
+            // Пытаемся обновить access токен
+            const response = await axios.post('/auth/token/refresh/', {
+              refresh: refreshToken
+            });
+
+            const newAccessToken = response.data?.access;
+
+            if (newAccessToken) {
+              // Сохраняем новый access токен
+              localStorage.setItem('access_token', newAccessToken);
+
+              // Обновляем заголовок Authorization в оригинальном запросе
+              originalRequest.headers = originalRequest.headers || {};
+              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+              // Повторяем оригинальный запрос с новым токеном
+              return axios(originalRequest);
+            } else {
+              // Если новый токен не получен - чистим все
+              clearTokens();
+              return Promise.reject(error);
+            }
+          } catch (refreshError) {
+            // Если обновление токена не удалось - чистим все
+            clearTokens();
+            return Promise.reject(refreshError);
+          }
+        } else {
+          // Это уже повторная попытка - чистим токены
+          clearTokens();
+          return Promise.reject(error);
+        }
       }
 
       // 2) CSRF ошибка => пробуем подтянуть csrftoken и повторить запрос 1 раз

@@ -51,7 +51,6 @@ export default function LeaderboardModal({
   isOpen,
   onClose,
   triggerRef,
-  isDev,
   onDataLoaded,
 }) {
   const [rows, setRows] = useState([]);
@@ -147,7 +146,7 @@ export default function LeaderboardModal({
     };
 
     load();
-  }, [isOpen, isDev, onDataLoaded]);
+  }, [isOpen, onDataLoaded]);
 
   if (!isOpen) return null;
 

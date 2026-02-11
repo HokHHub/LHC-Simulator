@@ -33,62 +33,6 @@ const extractIdsFromObj = (obj) => {
     .filter((v) => v !== null && v !== undefined);
 };
 
-const mockProfile = {
-  id: "dev_user",
-  username: "Kleyman",
-  email: "lhc-simulator@yandex.ru",
-  first_name: "Kleyman",
-  last_name: "",
-};
-
-const mockStats = {
-  simulations: 25,
-  points: 120,
-  rank: "Новичок",
-};
-
-const mockSimulations = [
-  {
-    id: 7,
-    user_name: "jepstein",
-    simulation_type: "hadron-hadron",
-    energy: { source: "13.0", parsedValue: 13 },
-    duration: null,
-    simulation_results: [
-      [{ id_1: 421, id_2: -421, id_3: 21 }],
-      [{ id_1: 21, id_2: -511 }],
-      [
-        {
-          Mass: 25.35581499892298,
-          BaryonNum: { source: "0.0", parsedValue: 0 },
-          "S,B,C": [0, 0, 0],
-          Charge: { source: "0.0", parsedValue: 0 },
-        },
-      ],
-    ],
-    created_at: "2026-02-08T15:47:03.192167Z",
-  },
-  {
-    id: 8,
-    user_name: "dev_user",
-    simulation_type: "hadron-hadron",
-    energy: { source: "7.0", parsedValue: 7 },
-    duration: 18.4,
-    simulation_results: [
-      [{ id_1: 2212, id_2: 2212 }],
-      [{ id_1: 211, id_2: -211, id_3: 111 }],
-      [
-        {
-          Mass: 9.12,
-          BaryonNum: { source: "0.0", parsedValue: 0 },
-          "S,B,C": [0, 0, 0],
-          Charge: { source: "0.0", parsedValue: 0 },
-        },
-      ],
-    ],
-    created_at: "2026-02-08T12:20:00.000000Z",
-  },
-];
 
 const formatDateTime = (value) => {
   if (!value) return "Дата неизвестна";
@@ -192,7 +136,7 @@ const normalizeSimulation = (sim) => {
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { logout, isDev } = useAuth();
+  const { logout } = useAuth();
 
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
@@ -255,7 +199,7 @@ const ProfilePage = () => {
     return () => {
       isMounted = false;
     };
-  }, [isDev]);
+  }, []);
 
   // Когда открыли редактирование — заполняем форму данными профиля
   useEffect(() => {
@@ -316,13 +260,6 @@ const ProfilePage = () => {
     setIsSaving(true);
     setFormError("");
 
-    if (isDev) {
-      setProfile((prev) => ({ ...prev, ...formState }));
-      setIsSaving(false);
-      setIsEditing(false);
-      return;
-    }
-
     try {
       await authAPI.updateProfile(formState);
       const updated = await authAPI.getProfile();
@@ -339,8 +276,6 @@ const ProfilePage = () => {
     <div className={styles.page}>
       <div className={styles.content}>
         <section className={styles.profileCard}>
-          {isDev && <div className={styles.devBadge}>DEV MODE</div>}
-
           <div className={styles.userBlock}>
             <div className={styles.avatar}>{avatarLetter}</div>
             <div className={styles.userName}>{displayName}</div>
@@ -423,7 +358,6 @@ const ProfilePage = () => {
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
         triggerRef={leaderboardTriggerRef}
-        isDev={isDev}
         onDataLoaded={(rows) => setLeaderboardCount(rows?.length || 0)}
       />
 
