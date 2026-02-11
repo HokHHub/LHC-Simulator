@@ -91,6 +91,26 @@ export default function SupportChatModal({
 
   const scheduleReconnect = () => {
     clearReconnectTimer();
+    
+    // ✅ ОГРАНИЧИВАЕМ КОЛИЧЕСТВО ПОПЫТОК
+    const MAX_RECONNECT_ATTEMPTS = 3;
+    if (reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
+      console.warn('WebSocket: максимальное количество попыток переподключения достигнуто');
+      setStatus("offline");
+      shouldReconnectRef.current = false;
+      
+      // Показываем системное сообщение пользователю
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-${Math.random()}`,
+          type: "system",
+          text: "Не удалось подключиться к серверу поддержки. Пожалуйста, попробуйте позже.",
+        },
+      ]);
+      return;
+    }
+    
     const delays = [1000, 2000, 5000, 10000];
     const attempt = reconnectAttemptRef.current;
     const delay = delays[Math.min(attempt, delays.length - 1)];
@@ -117,8 +137,18 @@ export default function SupportChatModal({
     if (!url) return;
 
     setStatus("connecting");
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
+    
+    // ✅ ОБРАБОТКА ОШИБОК СОЗДАНИЯ WEBSOCKET
+    let ws;
+    try {
+      ws = new WebSocket(url);
+      wsRef.current = ws;
+    } catch (error) {
+      console.error('WebSocket: ошибка создания подключения', error);
+      setStatus("offline");
+      scheduleReconnect();
+      return;
+    }
 
     ws.onopen = () => {
       setStatus("online");
@@ -182,11 +212,14 @@ export default function SupportChatModal({
       }
     };
 
-    ws.onerror = () => {
+    // ✅ УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК
+    ws.onerror = (error) => {
+      console.error('WebSocket: ошибка подключения', error);
       setStatus("offline");
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
+      console.log('WebSocket: соединение закрыто', event.code, event.reason);
       setStatus("offline");
       if (shouldReconnectRef.current) {
         scheduleReconnect();
@@ -198,6 +231,7 @@ export default function SupportChatModal({
     if (!isOpen) return undefined;
 
     shouldReconnectRef.current = true;
+    reconnectAttemptRef.current = 0; // ✅ СБРОС СЧЕТЧИКА ПРИ ОТКРЫТИИ
     previouslyFocusedRef.current = document.activeElement;
 
     const onKey = (event) => {
@@ -232,6 +266,7 @@ export default function SupportChatModal({
     setMessages([]);
     setInputValue("");
     setStatus("connecting");
+    reconnectAttemptRef.current = 0; // ✅ СБРОС СЧЕТЧИКА ПРИ ЗАКРЫТИИ
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -272,6 +307,16 @@ export default function SupportChatModal({
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(outbound));
+    } else {
+      // ✅ УВЕДОМЛЕНИЕ ЕСЛИ WEBSOCKET НЕ ПОДКЛЮЧЕН
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-${Math.random()}`,
+          type: "system",
+          text: "Сообщение не отправлено: нет подключения к серверу",
+        },
+      ]);
     }
   };
 
