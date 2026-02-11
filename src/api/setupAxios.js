@@ -54,15 +54,18 @@ const setupAxios = () => {
       }
 
       const token = localStorage.getItem("access_token");
+      console.log('[Axios Request] URL:', url, 'Token:', token ? `${token.substring(0, 20)}...` : 'NONE');
 
       // защита от мусора
       if (token && token !== "undefined" && token !== "null") {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('[Axios Request] Added Authorization header');
       } else {
         // если мусор — подчистим
         if (token) localStorage.removeItem("access_token");
         if (config.headers?.Authorization) delete config.headers.Authorization;
+        console.log('[Axios Request] NO TOKEN - skipping Authorization header');
       }
 
       return config;

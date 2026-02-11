@@ -166,6 +166,14 @@ const ProfilePage = () => {
     let isMounted = true;
 
     const loadData = async () => {
+      // Проверяем наличие токена перед загрузкой
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        setLoading(false);
+        setError("Необходима авторизация");
+        return;
+      }
+
       setLoading(true);
       setError("");
 
