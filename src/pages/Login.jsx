@@ -30,15 +30,11 @@ const Login = () => {
     setIsLoading(true);
     setErrors({});
 
-    console.log('Submitting login with:', formData);
     const result = await login(formData);
-    console.log('Login result:', result);
 
     if (result.success) {
-      console.log('Login successful, navigating to:', from);
       navigate(from, { replace: true });
     } else {
-      console.log('Login failed:', result.error);
       setErrors({ general: result.error });
     }
 
