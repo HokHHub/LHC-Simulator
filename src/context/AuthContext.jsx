@@ -91,15 +91,32 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       const response = await authAPI.login(credentials);
+      console.log('Login response:', response);
+
       const { user, access, refresh } = response.data;
+      console.log('Extracted:', { user, access, refresh });
 
-      if (access) localStorage.setItem('access_token', access);
-      if (refresh) localStorage.setItem('refresh_token', refresh);
+      if (access) {
+        localStorage.setItem('access_token', access);
+        console.log('Access token saved');
+      }
+      if (refresh) {
+        localStorage.setItem('refresh_token', refresh);
+        console.log('Refresh token saved');
+      }
 
-      localStorage.setItem("user", JSON.stringify(user));
-      setUser(user);
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+        setUser(user);
+        console.log('User saved:', user);
+      } else {
+        console.error('No user in response!');
+        return { success: false, error: 'Нет данных пользователя в ответе' };
+      }
+
       return { success: true, data: response.data };
     } catch (err) {
+      console.error('Login error:', err);
       const errorMessage = err.response?.data?.detail || "Ошибка входа";
       setError(errorMessage);
       return { success: false, error: errorMessage };
