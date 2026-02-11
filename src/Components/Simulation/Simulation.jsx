@@ -1206,7 +1206,7 @@ export default function Simulation() {
       .map((row) => {
         if (!row || typeof row !== "object") return String(row);
         const ids = Object.keys(row)
-          .filter((k) => /^id_d+$/.test(k))
+          .filter((k) => /^id_\d+$/.test(k))
           .sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)))
           .map((k) => Number(row[k]))
           .filter((n) => Number.isFinite(n));
@@ -1224,7 +1224,7 @@ export default function Simulation() {
     for (const row of arr) {
       if (!row || typeof row !== "object") continue;
       const ids = Object.keys(row)
-        .filter((k) => /^id_d+$/.test(k))
+        .filter((k) => /^id_\d+$/.test(k))
         .sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)))
         .map((k) => Number(row[k]))
         .filter((n) => Number.isFinite(n));
