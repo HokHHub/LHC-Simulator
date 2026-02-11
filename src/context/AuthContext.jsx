@@ -31,33 +31,29 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       await initCSRF();
 
-      // Проверяем сохраненного пользователя и токен
+      // Просто загружаем сохраненного пользователя из localStorage
+      // Валидность токена проверится при первом реальном запросе
       const savedUser = localStorage.getItem("user");
       const accessToken = localStorage.getItem("access_token");
+      const refreshToken = localStorage.getItem("refresh_token");
 
-      if (savedUser && accessToken) {
-        const parsedUser = JSON.parse(savedUser);
-
-        // Если это не гость, проверяем валидность токена
-        if (!parsedUser.isGuest) {
-          try {
-            // Пробуем получить профиль, чтобы проверить токен
-            const response = await authAPI.getProfile();
-            // Токен валидный, используем данные с сервера
-            setUser(response?.data ?? parsedUser);
+      if (savedUser && accessToken && refreshToken) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          // Если это не гость, загружаем пользователя
+          if (!parsedUser.isGuest) {
+            setUser(parsedUser);
             setLoading(false);
             return;
-          } catch (err) {
-            // Токен невалиден, очищаем все и создаем гостя
-            console.log('Токен невалиден, очищаем данные');
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('user');
           }
+        } catch (err) {
+          // Если не удалось распарсить - очищаем
+          console.error('Ошибка парсинга user:', err);
+          localStorage.removeItem('user');
         }
       }
 
-      // Если пользователя нет или токен невалиден - создаем гостя
+      // Если пользователя нет или токены отсутствуют - создаем гостя
       const guestUser = {
         id: 'guest_' + Date.now(),
         username: 'Гость',
