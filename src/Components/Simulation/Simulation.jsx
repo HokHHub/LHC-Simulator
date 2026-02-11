@@ -1474,6 +1474,9 @@ export default function Simulation() {
       updateOutputsFromValues(vals ?? null);
       setHasOutputs(true);
       setRawStages({ first: first_finals ?? null, finals: finals ?? null });
+
+
+      // ✅ теперь показываем визуализацию (после результатов)
       setShowViz(true);
 
       log("Симуляция завершена успешно ✅");
