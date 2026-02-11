@@ -31,21 +31,41 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       await initCSRF();
 
-      // Проверяем сохраненного пользователя
+      // Проверяем сохраненного пользователя и токен
       const savedUser = localStorage.getItem("user");
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
-      } else {
-        // Если пользователя нет - создаем гостя
-        const guestUser = {
-          id: 'guest_' + Date.now(),
-          username: 'Гость',
-          email: null,
-          isGuest: true,
-        };
-        localStorage.setItem("user", JSON.stringify(guestUser));
-        setUser(guestUser);
+      const accessToken = localStorage.getItem("access_token");
+
+      if (savedUser && accessToken) {
+        const parsedUser = JSON.parse(savedUser);
+
+        // Если это не гость, проверяем валидность токена
+        if (!parsedUser.isGuest) {
+          try {
+            // Пробуем получить профиль, чтобы проверить токен
+            const response = await authAPI.getProfile();
+            // Токен валидный, используем данные с сервера
+            setUser(response?.data ?? parsedUser);
+            setLoading(false);
+            return;
+          } catch (err) {
+            // Токен невалиден, очищаем все и создаем гостя
+            console.log('Токен невалиден, очищаем данные');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+          }
+        }
       }
+
+      // Если пользователя нет или токен невалиден - создаем гостя
+      const guestUser = {
+        id: 'guest_' + Date.now(),
+        username: 'Гость',
+        email: null,
+        isGuest: true,
+      };
+      localStorage.setItem("user", JSON.stringify(guestUser));
+      setUser(guestUser);
       setLoading(false);
     };
 
