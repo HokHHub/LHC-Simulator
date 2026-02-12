@@ -2004,10 +2004,37 @@ export default function Simulation() {
           <div className={s.simulation__big}>
             <div className={s.simulation__bigMain}>
               {!showViz ? (
-                <div className={s.simulation__vizPlaceholder}>
-                  <div className={s.simulation__vizPlaceholderTitle}>Visualization</div>
-                  <div className={s.simulation__vizPlaceholderText}>Появится после успешной симуляции</div>
-                </div>
+                loading ? (
+                  <div className={s.simulation__vizLoading}>
+                    <div className="scene">
+                      <div className="wrapper">
+                        <div className="containerRings">
+                          {Array.from({ length: 258 }, (_, i) => {
+                            const hue = (i / 258) * 360;
+                            const r = Math.round(Math.cos((hue * Math.PI) / 180 + 0) * 127.5 + 127.5);
+                            const g = Math.round(Math.cos((hue * Math.PI) / 180 + (2 * Math.PI) / 3) * 127.5 + 127.5);
+                            const b = Math.round(Math.cos((hue * Math.PI) / 180 + (4 * Math.PI) / 3) * 127.5 + 127.5);
+                            return (
+                              <div
+                                key={i}
+                                className="ring"
+                                style={{
+                                  color: `rgb(${r}, ${g}, ${b})`,
+                                  transform: `rotateX(${i * 1.4}deg) translateY(-13.02vmax)`,
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={s.simulation__vizPlaceholder}>
+                    <div className={s.simulation__vizPlaceholderTitle}>Visualization</div>
+                    <div className={s.simulation__vizPlaceholderText}>Появится после успешной симуляции</div>
+                  </div>
+                )
               ) : (
                 <div className={s.simulation__vizWrap}>
                   <div id="canvas" className={s.simulation__vizCanvas} />
