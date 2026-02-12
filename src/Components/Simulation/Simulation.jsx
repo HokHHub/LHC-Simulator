@@ -2006,18 +2006,18 @@ export default function Simulation() {
               {!showViz ? (
                 loading ? (
                   <div className={s.simulation__vizLoading}>
-                    <div className="scene">
-                      <div className="wrapper">
-                        <div className="containerRings">
+                    <div className={s.vizScene}>
+                      <div className={s.vizWrapper}>
+                        <div className={s.vizContainerRings}>
                           {Array.from({ length: 258 }, (_, i) => {
                             const hue = (i / 258) * 360;
-                            const r = Math.round(Math.cos((hue * Math.PI) / 180 + 0) * 127.5 + 127.5);
+                            const r = Math.round(Math.cos((hue * Math.PI) / 180) * 127.5 + 127.5);
                             const g = Math.round(Math.cos((hue * Math.PI) / 180 + (2 * Math.PI) / 3) * 127.5 + 127.5);
                             const b = Math.round(Math.cos((hue * Math.PI) / 180 + (4 * Math.PI) / 3) * 127.5 + 127.5);
                             return (
                               <div
                                 key={i}
-                                className="ring"
+                                className={s.vizRing}
                                 style={{
                                   color: `rgb(${r}, ${g}, ${b})`,
                                   transform: `rotateX(${i * 1.4}deg) translateY(-13.02vmax)`,
