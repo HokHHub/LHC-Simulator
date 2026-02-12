@@ -2011,6 +2011,7 @@ export default function Simulation() {
           background-color: #212121;
           width: 100%;
           min-height: 500px;
+          height: 100%;
           display: flex;
           flex-wrap: wrap;
           place-content: center;
