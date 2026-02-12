@@ -88,6 +88,319 @@ function injectLhcScriptOnce() {
       'LHCb': 1.1
     };
 
+    // =====================================================================
+    // ANIMATION PROFILES per eventType
+    // Each profile defines: flash colors, track palette, jet config,
+    // track generation logic, and special effects.
+    // =====================================================================
+    const ANIMATION_PROFILES = {
+      'Muon Event': {
+        flash: [
+          { radius: 0.25, color: 0x00ffff, opacity: 0.6 },
+          { radius: 0.6, color: 0x0088ff, opacity: 0.4 },
+        ],
+        numJets: 0,
+        // Muons: few long straight tracks penetrating all layers
+        generateTracks: function(collisionPoint, numTracks, B) {
+          var result = [];
+          // 2-4 prominent muon tracks
+          var numMuons = 2 + Math.floor(Math.random() * 3);
+          for (var i = 0; i < numMuons; i++) {
+            var theta = Math.random() * Math.PI * 2;
+            var phi = 0.3 + Math.random() * 2.5;
+            var direction = new THREE.Vector3(
+              Math.cos(phi),
+              Math.sin(phi) * Math.sin(theta),
+              Math.sin(phi) * Math.cos(theta)
+            );
+            result.push({
+              direction: direction,
+              color: 0x00ffff,
+              charge: (Math.random() > 0.5 ? 1 : -1),
+              momentum: 40 + Math.random() * 60,
+              length: 25 + Math.random() * 15,
+              isMuon: true
+            });
+          }
+          // A few soft hadronic tracks
+          var numSoft = Math.min(numTracks - numMuons, 6 + Math.floor(Math.random() * 6));
+          for (var j = 0; j < numSoft; j++) {
+            var theta2 = Math.random() * Math.PI * 2;
+            var phi2 = Math.random() * Math.PI;
+            var dir = new THREE.Vector3(
+              Math.cos(phi2),
+              Math.sin(phi2) * Math.sin(theta2),
+              Math.sin(phi2) * Math.cos(theta2)
+            );
+            result.push({
+              direction: dir,
+              color: (Math.random() > 0.5 ? 0xff8800 : 0xffaa00),
+              charge: (Math.random() > 0.5 ? 1 : -1),
+              momentum: 2 + Math.random() * 10,
+              length: 5 + Math.random() * 10,
+              isMuon: false
+            });
+          }
+          return result;
+        }
+      },
+
+      'Higgs Boson': {
+        flash: [
+          { radius: 0.4, color: 0xffffff, opacity: 0.9 },
+          { radius: 1.0, color: 0xffdd44, opacity: 0.7 },
+          { radius: 1.8, color: 0xff8800, opacity: 0.5 },
+          { radius: 2.5, color: 0xff4400, opacity: 0.3 },
+        ],
+        numJets: 2,
+        jetColors: [0xffcc00, 0xffaa00],
+        jetLength: [10, 14],
+        // H -> ZZ -> 4 leptons: 4 bright tracks + hadronic activity
+        generateTracks: function(collisionPoint, numTracks, B) {
+          var result = [];
+          // 4 prominent lepton tracks (H -> ZZ -> 4l signature)
+          var leptonColors = [0xff00ff, 0xff44ff, 0x00ffff, 0x44ffff];
+          for (var i = 0; i < 4; i++) {
+            var spread = (Math.PI / 3) + Math.random() * (Math.PI / 4);
+            var azimuth = (i / 4) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+            var direction = new THREE.Vector3(
+              Math.cos(spread) * 0.6,
+              Math.sin(azimuth) * Math.sin(spread),
+              Math.cos(azimuth) * Math.sin(spread)
+            ).normalize();
+            result.push({
+              direction: direction,
+              color: leptonColors[i],
+              charge: (i < 2 ? 1 : -1),
+              momentum: 20 + Math.random() * 30,
+              length: 18 + Math.random() * 12,
+              isMuon: (i < 2) // first pair are muons
+            });
+          }
+          // Hadronic activity
+          var numHadronic = Math.min(numTracks - 4, 20 + Math.floor(Math.random() * 15));
+          for (var j = 0; j < numHadronic; j++) {
+            var theta = Math.random() * Math.PI * 2;
+            var phi = Math.random() * Math.PI;
+            var dir = new THREE.Vector3(
+              Math.cos(phi),
+              Math.sin(phi) * Math.sin(theta),
+              Math.sin(phi) * Math.cos(theta)
+            );
+            var rand = Math.random();
+            var color, charge, mom;
+            if (rand < 0.5) {
+              color = 0xffaa00;
+              charge = (Math.random() > 0.5 ? 1 : -1);
+              mom = 2 + Math.random() * 12;
+            } else if (rand < 0.8) {
+              color = 0x00ff88;
+              charge = (Math.random() > 0.5 ? 1 : -1);
+              mom = 5 + Math.random() * 15;
+            } else {
+              color = 0xff3300;
+              charge = 0;
+              mom = 8 + Math.random() * 15;
+            }
+            result.push({
+              direction: dir,
+              color: color,
+              charge: charge,
+              momentum: mom,
+              length: 8 + Math.random() * 12,
+              isMuon: false
+            });
+          }
+          return result;
+        }
+      },
+
+      'W/Z Boson': {
+        flash: [
+          { radius: 0.3, color: 0xffffff, opacity: 0.7 },
+          { radius: 0.8, color: 0xcc44ff, opacity: 0.5 },
+          { radius: 1.4, color: 0x8844ff, opacity: 0.35 },
+        ],
+        numJets: 1,
+        jetColors: [0xcc66ff],
+        jetLength: [8, 11],
+        // W/Z: 1-2 high-pT leptons + missing energy (dashed neutrino) + jets
+        generateTracks: function(collisionPoint, numTracks, B) {
+          var result = [];
+          // 1-2 high-pT lepton tracks
+          var numLeptons = 1 + Math.floor(Math.random() * 2);
+          for (var i = 0; i < numLeptons; i++) {
+            var theta = Math.random() * Math.PI * 2;
+            var phi = 0.4 + Math.random() * 2.3;
+            var direction = new THREE.Vector3(
+              Math.cos(phi),
+              Math.sin(phi) * Math.sin(theta),
+              Math.sin(phi) * Math.cos(theta)
+            );
+            result.push({
+              direction: direction,
+              color: 0xff00ff,
+              charge: (Math.random() > 0.5 ? 1 : -1),
+              momentum: 25 + Math.random() * 35,
+              length: 20 + Math.random() * 10,
+              isMuon: true
+            });
+          }
+          // "Missing energy" track — neutrino (dashed visual, neutral)
+          var nuTheta = Math.random() * Math.PI * 2;
+          var nuPhi = 0.5 + Math.random() * 2.0;
+          result.push({
+            direction: new THREE.Vector3(
+              Math.cos(nuPhi),
+              Math.sin(nuPhi) * Math.sin(nuTheta),
+              Math.sin(nuPhi) * Math.cos(nuTheta)
+            ),
+            color: 0x666688,
+            charge: 0,
+            momentum: 30 + Math.random() * 30,
+            length: 22 + Math.random() * 8,
+            isMuon: false,
+            isDashed: true
+          });
+          // Hadronic tracks
+          var numHadronic = Math.min(numTracks - numLeptons - 1, 15 + Math.floor(Math.random() * 10));
+          for (var j = 0; j < numHadronic; j++) {
+            var t2 = Math.random() * Math.PI * 2;
+            var p2 = Math.random() * Math.PI;
+            var dir = new THREE.Vector3(
+              Math.cos(p2),
+              Math.sin(p2) * Math.sin(t2),
+              Math.sin(p2) * Math.cos(t2)
+            );
+            var rand = Math.random();
+            result.push({
+              direction: dir,
+              color: (rand < 0.6 ? 0xffaa00 : 0x00ff88),
+              charge: (Math.random() > 0.5 ? 1 : -1),
+              momentum: 2 + Math.random() * 12,
+              length: 6 + Math.random() * 12,
+              isMuon: false
+            });
+          }
+          return result;
+        }
+      },
+
+      'Jet Event': {
+        flash: [
+          { radius: 0.3, color: 0xffffff, opacity: 0.6 },
+          { radius: 0.7, color: 0xff8800, opacity: 0.5 },
+          { radius: 1.1, color: 0xff4400, opacity: 0.35 },
+        ],
+        numJets: null, // will be computed: 3-6 jets
+        jetColors: [0xffaa00, 0xff8800, 0xff6600, 0x00ff88, 0xffcc00, 0xff4400],
+        jetLength: [9, 15],
+        // Jet event: many collimated tracks in jet cones
+        generateTracks: function(collisionPoint, numTracks, B) {
+          var result = [];
+          // Generate jet axes (3-6)
+          var numJetAxes = 3 + Math.floor(Math.random() * 4);
+          var jetAxes = [];
+          for (var j = 0; j < numJetAxes; j++) {
+            var jTheta = Math.random() * Math.PI * 2;
+            var jPhi = 0.3 + Math.random() * 2.5;
+            jetAxes.push(new THREE.Vector3(
+              Math.cos(jPhi),
+              Math.sin(jPhi) * Math.sin(jTheta),
+              Math.sin(jPhi) * Math.cos(jTheta)
+            ).normalize());
+          }
+          // Distribute tracks among jets
+          var tracksPerJet = Math.floor(numTracks / numJetAxes);
+          for (var ji = 0; ji < numJetAxes; ji++) {
+            var axis = jetAxes[ji];
+            var jetColor = [0xffaa00, 0xff8800, 0xffcc00, 0x00ff88][ji % 4];
+            for (var ti = 0; ti < tracksPerJet; ti++) {
+              // Collimated: small angle from jet axis
+              var spread = (Math.random() - 0.5) * 0.4;
+              var spread2 = (Math.random() - 0.5) * 0.4;
+              var dir = new THREE.Vector3(
+                axis.x + spread,
+                axis.y + spread2,
+                axis.z + (Math.random() - 0.5) * 0.4
+              ).normalize();
+              result.push({
+                direction: dir,
+                color: jetColor,
+                charge: (Math.random() > 0.5 ? 1 : -1),
+                momentum: 3 + Math.random() * 18,
+                length: 10 + Math.random() * 15,
+                isMuon: false
+              });
+            }
+          }
+          // A few uncollimated soft tracks
+          for (var s = 0; s < 5; s++) {
+            var st = Math.random() * Math.PI * 2;
+            var sp = Math.random() * Math.PI;
+            result.push({
+              direction: new THREE.Vector3(
+                Math.cos(sp),
+                Math.sin(sp) * Math.sin(st),
+                Math.sin(sp) * Math.cos(st)
+              ),
+              color: 0xff3300,
+              charge: 0,
+              momentum: 5 + Math.random() * 10,
+              length: 5 + Math.random() * 8,
+              isMuon: false
+            });
+          }
+          return result;
+        }
+      },
+
+      'Standard': {
+        flash: [
+          { radius: 0.3, color: 0xffffff, opacity: 0.7 },
+          { radius: 0.8, color: 0xff66ff, opacity: 0.5 },
+          { radius: 1.2, color: 0x00ffff, opacity: 0.4 },
+        ],
+        numJets: null, // random 2-4
+        generateTracks: function(collisionPoint, numTracks, B) {
+          var result = [];
+          for (var i = 0; i < numTracks; i++) {
+            var theta = Math.random() * Math.PI * 2;
+            var phi = Math.random() * Math.PI;
+            var direction = new THREE.Vector3(
+              Math.cos(phi),
+              Math.sin(phi) * Math.sin(theta),
+              Math.sin(phi) * Math.cos(theta)
+            );
+            var color, charge, momentum;
+            var rand = Math.random();
+            if (rand < 0.6) {
+              color = Math.random() > 0.5 ? 0xffaa00 : 0xff8800;
+              charge = Math.random() > 0.5 ? 1 : -1;
+              momentum = 2 + Math.random() * 15;
+            } else if (rand < 0.85) {
+              color = 0x00ff88;
+              charge = Math.random() > 0.5 ? 1 : -1;
+              momentum = 5 + Math.random() * 20;
+            } else {
+              color = 0xff3300;
+              charge = 0;
+              momentum = 10 + Math.random() * 20;
+            }
+            result.push({
+              direction: direction,
+              color: color,
+              charge: charge,
+              momentum: momentum,
+              length: 15 + Math.random() * 15,
+              isMuon: false
+            });
+          }
+          return result;
+        }
+      }
+    };
+
     let rafId = null;
     let disposed = false;
 
@@ -97,7 +410,6 @@ function injectLhcScriptOnce() {
 
     function disposeObject(obj) {
       if (!obj) return;
-      // dispose meshes/lines recursively
       obj.traverse && obj.traverse((child) => {
         if (child.geometry) {
           child.geometry.dispose();
@@ -477,6 +789,35 @@ function injectLhcScriptOnce() {
       scene.add(cone);
     }
 
+    function createDashedTrack(startPos, direction, color, length) {
+      // Visual "missing energy" / neutrino — dashed line
+      const points = [];
+      const segments = 40;
+      for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        points.push(new THREE.Vector3(
+          startPos.x + direction.x * t * length,
+          startPos.y + direction.y * t * length,
+          startPos.z + direction.z * t * length
+        ));
+      }
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineDashedMaterial({
+        color: color,
+        dashSize: 0.8,
+        gapSize: 0.5,
+        transparent: true,
+        opacity: 0.5,
+        linewidth: 1
+      });
+      const line = new THREE.Line(geometry, material);
+      line.computeLineDistances();
+      line.userData = { age: 0, maxAge: 150, spawnDelay: Math.random() * 5, growthProgress: 0, initialOpacity: 0.5 };
+      line.scale.set(0, 0, 0);
+      tracks.push(line);
+      scene.add(line);
+    }
+
     function createTrack(startPos, direction, color, length = 20, isMuon = false, hasTrail = false, charge = 1, momentum = 1000) {
       const points = [];
       const segments = 70;
@@ -544,19 +885,23 @@ function injectLhcScriptOnce() {
       updateHUD();
     }
 
+    // =================================================================
+    // createExplosion — now uses ANIMATION_PROFILES based on eventType
+    // =================================================================
     function createExplosion() {
       let numTracks = eventData.trackCount || 50;
       const collisionPoint = new THREE.Vector3(0, 0, 0);
+      const evType = eventData.eventType || 'Standard';
+      const profile = ANIMATION_PROFILES[evType] || ANIMATION_PROFILES['Standard'];
+      const B = MAGNETIC_FIELD[currentDetector] || 2.0;
 
-      // flash
+      // --- Flash effect ---
       const flashLayers = [];
-      const flashConfigs = [
+      var flashConfigs = profile.flash || [
         { radius: 0.3, color: 0xffffff, opacity: 0.7 },
-        { radius: 0.8, color: 0xff66ff, opacity: 0.5 },
-        { radius: 1.2, color: 0x00ffff, opacity: 0.4 },
       ];
 
-      flashConfigs.forEach(cfg => {
+      flashConfigs.forEach(function(cfg) {
         const mesh = new THREE.Mesh(
           new THREE.SphereGeometry(cfg.radius, 12, 12),
           new THREE.MeshBasicMaterial({ color: cfg.color, transparent: true, opacity: cfg.opacity })
@@ -581,58 +926,55 @@ function injectLhcScriptOnce() {
         }
       }, 20);
 
-      // jets
-      const numJets = Math.random() < 0.4 ? 2 : (Math.random() < 0.7 ? 3 : 4);
-      for (let j = 0; j < numJets; j++) {
-        const jetAngle = (j / numJets) * Math.PI * 2 + Math.random() * 0.5;
-        const jetColor = j % 2 === 0 ? 0xffaa00 : 0x00ff88;
-
-        const jetDirection = new THREE.Vector3(
-          Math.cos(jetAngle * 0.3),
-          Math.sin(jetAngle) * 0.4,
-          Math.cos(jetAngle) * 0.4
-        ).normalize();
-
-        createJetCone(collisionPoint, jetDirection, jetColor, 8 + Math.random() * 4);
+      // --- Jets ---
+      var numJets = profile.numJets;
+      if (numJets === null || numJets === undefined) {
+        numJets = Math.random() < 0.4 ? 2 : (Math.random() < 0.7 ? 3 : 4);
       }
+      if (numJets > 0) {
+        var jetColors = profile.jetColors || [0xffaa00, 0x00ff88];
+        var jetLenRange = profile.jetLength || [8, 12];
+        for (var j = 0; j < numJets; j++) {
+          var jetAngle = (j / numJets) * Math.PI * 2 + Math.random() * 0.5;
+          var jetColor = jetColors[j % jetColors.length];
 
-      // tracks
-      for (let i = 0; i < numTracks; i++) {
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.random() * Math.PI;
+          var jetDirection = new THREE.Vector3(
+            Math.cos(jetAngle * 0.3),
+            Math.sin(jetAngle) * 0.4,
+            Math.cos(jetAngle) * 0.4
+          ).normalize();
 
-        const direction = new THREE.Vector3(
-          Math.cos(phi),
-          Math.sin(phi) * Math.sin(theta),
-          Math.sin(phi) * Math.cos(theta)
-        );
-
-        let color, charge, momentum;
-        const rand = Math.random();
-
-        if (rand < 0.6) {
-          color = Math.random() > 0.5 ? 0xffaa00 : 0xff8800;
-          charge = Math.random() > 0.5 ? 1 : -1;
-          momentum = 2 + Math.random() * 15;
-        } else if (rand < 0.85) {
-          color = 0x00ff88;
-          charge = Math.random() > 0.5 ? 1 : -1;
-          momentum = 5 + Math.random() * 20;
-        } else {
-          color = 0xff3300;
-          charge = 0;
-          momentum = 10 + Math.random() * 20;
+          var jetLen = jetLenRange[0] + Math.random() * (jetLenRange[1] - jetLenRange[0]);
+          createJetCone(collisionPoint, jetDirection, jetColor, jetLen);
         }
-
-        const length = 15 + Math.random() * 15;
-        const track = createTrack(collisionPoint, direction, color, length, false, false, charge, momentum);
-        track.userData.spawnDelay = Math.random() * 10;
-        track.userData.growthProgress = 0;
-        track.scale.set(0, 0, 0);
-
-        tracks.push(track);
-        scene.add(track);
       }
+
+      // --- Tracks (profile-specific) ---
+      var trackDefs = profile.generateTracks(collisionPoint, numTracks, B);
+
+      trackDefs.forEach(function(def) {
+        if (def.isDashed) {
+          // Dashed line for "missing energy" (neutrino)
+          createDashedTrack(collisionPoint, def.direction, def.color, def.length || 20);
+        } else {
+          var track = createTrack(
+            collisionPoint,
+            def.direction,
+            def.color,
+            def.length || 20,
+            def.isMuon || false,
+            false,
+            def.charge || 0,
+            def.momentum || 1000
+          );
+          track.userData.spawnDelay = Math.random() * 10;
+          track.userData.growthProgress = 0;
+          track.scale.set(0, 0, 0);
+
+          tracks.push(track);
+          scene.add(track);
+        }
+      });
     }
 
     function runSimulation(config) {
@@ -642,7 +984,7 @@ function injectLhcScriptOnce() {
       }
 
       if (isAnimating) {
-        console.warn('Симуляция уже запущена. Дождитесь завершения или используйте clearAnimation().');
+        console.warn('Simulation already running.');
         return;
       }
 
@@ -821,7 +1163,6 @@ function injectLhcScriptOnce() {
     }
 
     function onMouseWheel(e) {
-      // only if inside canvas
       const mount = getEl('canvas');
       if (mount && !mount.contains(e.target)) return;
 
@@ -866,7 +1207,6 @@ function injectLhcScriptOnce() {
       const mount = getEl('canvas');
       if (!mount) return;
 
-      // IMPORTANT: ensure no old canvas remains
       while (mount.firstChild) mount.removeChild(mount.firstChild);
 
       scene = new THREE.Scene();
@@ -978,13 +1318,11 @@ function injectLhcScriptOnce() {
       } catch {}
       detectorGeometry = [];
 
-      // cleanup labels DOM
       try {
         const labelsContainer = getEl('labelsContainer');
         if (labelsContainer) labelsContainer.innerHTML = '';
       } catch {}
 
-      // renderer cleanup (VRAM!)
       if (renderer) {
         try { renderer.dispose(); } catch {}
         try { renderer.forceContextLoss && renderer.forceContextLoss(); } catch {}
@@ -995,7 +1333,6 @@ function injectLhcScriptOnce() {
         renderer = null;
       }
 
-      // scene cleanup
       if (scene) {
         try {
           scene.traverse((obj) => disposeObject(obj));
@@ -1015,7 +1352,6 @@ function injectLhcScriptOnce() {
     window.clearAnimation = clearAnimation;
     window.__LHC_DISPOSE__ = disposeAll;
 
-    // init when mount exists
     init();
   })();
   `;
@@ -1261,6 +1597,9 @@ export default function Simulation() {
 
   const autoRanRef = useRef(false);
 
+  // Store eventType from backend for viz
+  const eventTypeRef = useRef("Standard");
+
   useEffect(() => {
     const onClick = (e) => {
       const { layerName, detector } = e.detail || {};
@@ -1272,13 +1611,11 @@ export default function Simulation() {
     return () => window.removeEventListener("lhc:labelClick", onClick);
   }, []);
 
-  // IMPORTANT: dispose Three.js when leaving page
   useEffect(() => {
     return () => {
       try {
         if (window.__LHC_DISPOSE__) window.__LHC_DISPOSE__();
       } catch {}
-      // allow re-init on next visit
       autoRanRef.current = false;
     };
   }, []);
@@ -1350,7 +1687,6 @@ export default function Simulation() {
     ].filter((x) => (x.ids?.length ?? 0) > 0);
   }, [rawStages]);
 
-  // Init visualization after canvas exists
   useEffect(() => {
     if (!showViz) return;
 
@@ -1360,7 +1696,6 @@ export default function Simulation() {
       try {
         await loadThreeFromCdn();
 
-        // wait for canvas mount
         const waitForCanvas = () =>
           new Promise((resolve) => {
             const check = () => {
@@ -1387,14 +1722,24 @@ export default function Simulation() {
     if (!window.runSimulation) return;
 
     const eNum = Number(String(energy).replace(",", ".")) || 13.0;
-    const massGuess = Number(outputs.mass);
-    const eventType = Number.isFinite(massGuess) && massGuess > 10 ? "Higgs Boson" : "Standard";
+
+    // Use the actual eventType from backend (stored in ref)
+    const evType = eventTypeRef.current || "Standard";
+
+    // Extract track_count and momentum from values if available
+    const row = Array.isArray(values) ? values[0] : values;
+    const trackCount = (row && Number.isFinite(Number(row.track_count)) && Number(row.track_count) > 0)
+      ? Number(row.track_count)
+      : 45;
+    const mom = (row && row.momentum != null)
+      ? (typeof row.momentum === 'object' ? Number(row.momentum.parsedValue) : Number(row.momentum))
+      : 1200;
 
     window.runSimulation({
-      eventType,
+      eventType: evType,
       energy: Math.max(10, Math.min(14, eNum / 10)) || 13.0,
-      momentum: 1200,
-      trackCount: 45,
+      momentum: Number.isFinite(mom) ? Math.floor(mom) : 1200,
+      trackCount: Math.max(10, trackCount),
       detector: "ATLAS",
     });
   }
@@ -1479,6 +1824,10 @@ export default function Simulation() {
       updateOutputsFromValues(vals ?? null);
       setRawStages({ first: first_finals ?? null, finals: finals ?? null });
 
+      // Extract eventType from backend values and store in ref
+      const valsRow = Array.isArray(vals) ? vals[0] : vals;
+      eventTypeRef.current = (valsRow && valsRow.type) ? String(valsRow.type) : "Standard";
+
       setShowViz(true);
 
       log("Симуляция завершена успешно ✅");
@@ -1495,7 +1844,6 @@ export default function Simulation() {
     }
   }
 
-  // Auto-run exactly once after showViz becomes true and runSimulation exists
   useEffect(() => {
     if (!showViz) return;
     if (autoRanRef.current) return;
@@ -1701,6 +2049,10 @@ export default function Simulation() {
                     <div className="legend-item">
                       <div className="legend-color" style={{ background: "#ff3300", boxShadow: "0 0 5px #ff3300" }}></div>
                       <span className="legend-label">Нейтральные частицы</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#666688", boxShadow: "0 0 5px #666688" }}></div>
+                      <span className="legend-label">Missing energy (ν)</span>
                     </div>
                   </div>
 
