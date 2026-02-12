@@ -2008,7 +2008,7 @@ export default function Simulation() {
                   <section className="am-container">
                     <style>{`
         .am-container {
-          background-color: #212121;
+          background: linear-gradient(173deg,#050505 43.63%,#080c0e 97.19%);
           width: 100%;
           min-height: 500px;
           height: 100%;
