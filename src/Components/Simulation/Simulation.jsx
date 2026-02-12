@@ -2005,30 +2005,327 @@ export default function Simulation() {
             <div className={s.simulation__bigMain}>
               {!showViz ? (
                 loading ? (
-                  <div className={s.simulation__vizLoading}>
-                    <div className={s.vizScene}>
-                      <div className={s.vizWrapper}>
-                        <div className={s.vizContainerRings}>
-                          {Array.from({ length: 258 }, (_, i) => {
-                            const hue = (i / 258) * 360;
-                            const r = Math.round(Math.cos((hue * Math.PI) / 180) * 127.5 + 127.5);
-                            const g = Math.round(Math.cos((hue * Math.PI) / 180 + (2 * Math.PI) / 3) * 127.5 + 127.5);
-                            const b = Math.round(Math.cos((hue * Math.PI) / 180 + (4 * Math.PI) / 3) * 127.5 + 127.5);
-                            return (
-                              <div
-                                key={i}
-                                className={s.vizRing}
-                                style={{
-                                  color: `rgb(${r}, ${g}, ${b})`,
-                                  transform: `rotateX(${i * 1.4}deg) translateY(-13.02vmax)`,
-                                }}
-                              />
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <section className="am-container">
+                    <style>{`
+        .am-container {
+          background-color: #212121;
+          width: 100%;
+          min-height: 500px;
+          display: flex;
+          flex-wrap: wrap;
+          place-content: center;
+          place-items: center;
+        }
+        .am-container .scene {
+          width: 100%;
+          perspective: 500vmax;
+          transform-style: preserve-3d;
+        }
+        .am-container .wrapper {
+          width: 100%;
+          height: 100%;
+          transform: rotateY(0) translateZ(0);
+          transform-style: preserve-3d;
+        }
+        .am-container .container-rings-2 {
+          width: 6.52vmax;
+          height: 6.52vmax;
+          position: relative;
+          margin-inline: auto;
+          animation: amMove 9s ease infinite alternate;
+          transform-style: preserve-3d;
+        }
+        .am-container .ring {
+          width: 100%;
+          height: 100%;
+          border: 0.13vmax dotted currentColor;
+          position: absolute;
+          left: 0;
+          top: 0;
+          transform-origin: 50% 50%;
+        }
+        @keyframes amMove {
+          from { transform: scale(0.7) rotateX(0deg) rotateY(0deg); }
+          to { transform: scale(0.7) rotateX(360deg) rotateY(360deg); }
+        }
+      `}</style>
+                    <aside className="scene">
+                      <section className="wrapper">
+                        <article className="container-rings-2">
+                          <div className="ring" style={{ color: 'rgb(255,0,0)', transform: 'rotateX(0deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,6,0)', transform: 'rotateX(1.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,12,0)', transform: 'rotateX(2.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,18,0)', transform: 'rotateX(4.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,24,0)', transform: 'rotateX(5.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,30,0)', transform: 'rotateX(7deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,36,0)', transform: 'rotateX(8.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,42,0)', transform: 'rotateX(9.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,48,0)', transform: 'rotateX(11.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,54,0)', transform: 'rotateX(12.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,59,0)', transform: 'rotateX(14deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,65,0)', transform: 'rotateX(15.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,71,0)', transform: 'rotateX(16.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,77,0)', transform: 'rotateX(18.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,83,0)', transform: 'rotateX(19.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,89,0)', transform: 'rotateX(21deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,95,0)', transform: 'rotateX(22.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,101,0)', transform: 'rotateX(23.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,107,0)', transform: 'rotateX(25.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,113,0)', transform: 'rotateX(26.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,119,0)', transform: 'rotateX(28deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,125,0)', transform: 'rotateX(29.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,131,0)', transform: 'rotateX(30.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,137,0)', transform: 'rotateX(32.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,143,0)', transform: 'rotateX(33.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,149,0)', transform: 'rotateX(35deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,155,0)', transform: 'rotateX(36.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,161,0)', transform: 'rotateX(37.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,167,0)', transform: 'rotateX(39.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,173,0)', transform: 'rotateX(40.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,178,0)', transform: 'rotateX(42deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,184,0)', transform: 'rotateX(43.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,190,0)', transform: 'rotateX(44.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,196,0)', transform: 'rotateX(46.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,202,0)', transform: 'rotateX(47.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,208,0)', transform: 'rotateX(49deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,214,0)', transform: 'rotateX(50.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,220,0)', transform: 'rotateX(51.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,226,0)', transform: 'rotateX(53.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,232,0)', transform: 'rotateX(54.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,238,0)', transform: 'rotateX(56deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,244,0)', transform: 'rotateX(57.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,250,0)', transform: 'rotateX(58.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(254,255,0)', transform: 'rotateX(60.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(248,255,0)', transform: 'rotateX(61.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(242,255,0)', transform: 'rotateX(63deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(236,255,0)', transform: 'rotateX(64.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(230,255,0)', transform: 'rotateX(65.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(224,255,0)', transform: 'rotateX(67.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(218,255,0)', transform: 'rotateX(68.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(213,255,0)', transform: 'rotateX(70deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(207,255,0)', transform: 'rotateX(71.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(201,255,0)', transform: 'rotateX(72.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(195,255,0)', transform: 'rotateX(74.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(189,255,0)', transform: 'rotateX(75.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(183,255,0)', transform: 'rotateX(77deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(177,255,0)', transform: 'rotateX(78.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(171,255,0)', transform: 'rotateX(79.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(165,255,0)', transform: 'rotateX(81.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(159,255,0)', transform: 'rotateX(82.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(153,255,0)', transform: 'rotateX(84deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(147,255,0)', transform: 'rotateX(85.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(141,255,0)', transform: 'rotateX(86.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(135,255,0)', transform: 'rotateX(88.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(129,255,0)', transform: 'rotateX(89.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(123,255,0)', transform: 'rotateX(91deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(117,255,0)', transform: 'rotateX(92.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(111,255,0)', transform: 'rotateX(93.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(105,255,0)', transform: 'rotateX(95.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(99,255,0)', transform: 'rotateX(96.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(94,255,0)', transform: 'rotateX(98deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(88,255,0)', transform: 'rotateX(99.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(82,255,0)', transform: 'rotateX(100.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(76,255,0)', transform: 'rotateX(102.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(70,255,0)', transform: 'rotateX(103.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(64,255,0)', transform: 'rotateX(105deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(58,255,0)', transform: 'rotateX(106.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(52,255,0)', transform: 'rotateX(107.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(46,255,0)', transform: 'rotateX(109.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(40,255,0)', transform: 'rotateX(110.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(34,255,0)', transform: 'rotateX(112deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(28,255,0)', transform: 'rotateX(113.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(22,255,0)', transform: 'rotateX(114.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(16,255,0)', transform: 'rotateX(116.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(10,255,0)', transform: 'rotateX(117.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(4,255,0)', transform: 'rotateX(119deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,2)', transform: 'rotateX(120.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,8)', transform: 'rotateX(121.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,14)', transform: 'rotateX(123.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,20)', transform: 'rotateX(124.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,26)', transform: 'rotateX(126deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,31)', transform: 'rotateX(127.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,37)', transform: 'rotateX(128.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,43)', transform: 'rotateX(130.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,49)', transform: 'rotateX(131.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,55)', transform: 'rotateX(133deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,61)', transform: 'rotateX(134.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,67)', transform: 'rotateX(135.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,73)', transform: 'rotateX(137.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,79)', transform: 'rotateX(138.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,85)', transform: 'rotateX(140deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,91)', transform: 'rotateX(141.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,97)', transform: 'rotateX(142.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,103)', transform: 'rotateX(144.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,109)', transform: 'rotateX(145.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,115)', transform: 'rotateX(147deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,121)', transform: 'rotateX(148.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,127)', transform: 'rotateX(149.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,133)', transform: 'rotateX(151.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,139)', transform: 'rotateX(152.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,145)', transform: 'rotateX(154deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,150)', transform: 'rotateX(155.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,156)', transform: 'rotateX(156.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,162)', transform: 'rotateX(158.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,168)', transform: 'rotateX(159.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,174)', transform: 'rotateX(161deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,180)', transform: 'rotateX(162.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,186)', transform: 'rotateX(163.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,192)', transform: 'rotateX(165.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,198)', transform: 'rotateX(166.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,204)', transform: 'rotateX(168deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,210)', transform: 'rotateX(169.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,216)', transform: 'rotateX(170.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,222)', transform: 'rotateX(172.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,228)', transform: 'rotateX(173.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,234)', transform: 'rotateX(175deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,240)', transform: 'rotateX(176.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,246)', transform: 'rotateX(177.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,255,252)', transform: 'rotateX(179.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,252,255)', transform: 'rotateX(180.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,247,255)', transform: 'rotateX(182deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,241,255)', transform: 'rotateX(183.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,235,255)', transform: 'rotateX(184.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,229,255)', transform: 'rotateX(186.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,223,255)', transform: 'rotateX(187.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,217,255)', transform: 'rotateX(189deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,211,255)', transform: 'rotateX(190.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,205,255)', transform: 'rotateX(191.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,199,255)', transform: 'rotateX(193.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,193,255)', transform: 'rotateX(194.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,187,255)', transform: 'rotateX(196deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,181,255)', transform: 'rotateX(197.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,175,255)', transform: 'rotateX(198.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,169,255)', transform: 'rotateX(200.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,163,255)', transform: 'rotateX(201.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,157,255)', transform: 'rotateX(203deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,151,255)', transform: 'rotateX(204.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,145,255)', transform: 'rotateX(205.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,139,255)', transform: 'rotateX(207.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,133,255)', transform: 'rotateX(208.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,128,255)', transform: 'rotateX(210deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,122,255)', transform: 'rotateX(211.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,116,255)', transform: 'rotateX(212.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,110,255)', transform: 'rotateX(214.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,104,255)', transform: 'rotateX(215.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,98,255)', transform: 'rotateX(217deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,92,255)', transform: 'rotateX(218.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,86,255)', transform: 'rotateX(219.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,80,255)', transform: 'rotateX(221.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,74,255)', transform: 'rotateX(222.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,68,255)', transform: 'rotateX(224deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,62,255)', transform: 'rotateX(225.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,56,255)', transform: 'rotateX(226.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,50,255)', transform: 'rotateX(228.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,44,255)', transform: 'rotateX(229.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,38,255)', transform: 'rotateX(231deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,32,255)', transform: 'rotateX(232.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,26,255)', transform: 'rotateX(233.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,20,255)', transform: 'rotateX(235.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,14,255)', transform: 'rotateX(236.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,9,255)', transform: 'rotateX(238deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(0,3,255)', transform: 'rotateX(239.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(3,0,255)', transform: 'rotateX(240.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(9,0,255)', transform: 'rotateX(242.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(15,0,255)', transform: 'rotateX(243.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(21,0,255)', transform: 'rotateX(245deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(27,0,255)', transform: 'rotateX(246.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(33,0,255)', transform: 'rotateX(247.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(39,0,255)', transform: 'rotateX(249.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(45,0,255)', transform: 'rotateX(250.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(51,0,255)', transform: 'rotateX(252deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(57,0,255)', transform: 'rotateX(253.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(63,0,255)', transform: 'rotateX(254.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(69,0,255)', transform: 'rotateX(256.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(75,0,255)', transform: 'rotateX(257.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(81,0,255)', transform: 'rotateX(259deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(87,0,255)', transform: 'rotateX(260.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(93,0,255)', transform: 'rotateX(261.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(99,0,255)', transform: 'rotateX(263.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(105,0,255)', transform: 'rotateX(264.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(111,0,255)', transform: 'rotateX(266deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(116,0,255)', transform: 'rotateX(267.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(122,0,255)', transform: 'rotateX(268.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(128,0,255)', transform: 'rotateX(270.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(134,0,255)', transform: 'rotateX(271.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(140,0,255)', transform: 'rotateX(273deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(146,0,255)', transform: 'rotateX(274.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(152,0,255)', transform: 'rotateX(275.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(158,0,255)', transform: 'rotateX(277.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(164,0,255)', transform: 'rotateX(278.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(170,0,255)', transform: 'rotateX(280deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(176,0,255)', transform: 'rotateX(281.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(182,0,255)', transform: 'rotateX(282.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(188,0,255)', transform: 'rotateX(284.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(194,0,255)', transform: 'rotateX(285.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(200,0,255)', transform: 'rotateX(287deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(206,0,255)', transform: 'rotateX(288.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(212,0,255)', transform: 'rotateX(289.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(218,0,255)', transform: 'rotateX(291.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(224,0,255)', transform: 'rotateX(292.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(230,0,255)', transform: 'rotateX(294deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(235,0,255)', transform: 'rotateX(295.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(241,0,255)', transform: 'rotateX(296.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(247,0,255)', transform: 'rotateX(298.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(253,0,255)', transform: 'rotateX(299.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,251)', transform: 'rotateX(301deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,245)', transform: 'rotateX(302.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,239)', transform: 'rotateX(303.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,233)', transform: 'rotateX(305.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,227)', transform: 'rotateX(306.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,221)', transform: 'rotateX(308deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,215)', transform: 'rotateX(309.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,209)', transform: 'rotateX(310.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,203)', transform: 'rotateX(312.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,197)', transform: 'rotateX(313.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,191)', transform: 'rotateX(315deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,185)', transform: 'rotateX(316.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,179)', transform: 'rotateX(317.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,173)', transform: 'rotateX(319.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,167)', transform: 'rotateX(320.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,162)', transform: 'rotateX(322deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,156)', transform: 'rotateX(323.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,150)', transform: 'rotateX(324.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,144)', transform: 'rotateX(326.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,138)', transform: 'rotateX(327.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,132)', transform: 'rotateX(329deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,126)', transform: 'rotateX(330.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,120)', transform: 'rotateX(331.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,114)', transform: 'rotateX(333.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,108)', transform: 'rotateX(334.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,102)', transform: 'rotateX(336deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,96)', transform: 'rotateX(337.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,90)', transform: 'rotateX(338.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,84)', transform: 'rotateX(340.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,78)', transform: 'rotateX(341.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,72)', transform: 'rotateX(343deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,66)', transform: 'rotateX(344.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,60)', transform: 'rotateX(345.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,54)', transform: 'rotateX(347.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,48)', transform: 'rotateX(348.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,42)', transform: 'rotateX(350deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,37)', transform: 'rotateX(351.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,31)', transform: 'rotateX(352.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,25)', transform: 'rotateX(354.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,19)', transform: 'rotateX(355.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,13)', transform: 'rotateX(357deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,7)', transform: 'rotateX(358.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,0,1)', transform: 'rotateX(359.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,5,0)', transform: 'rotateX(361.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,11,0)', transform: 'rotateX(362.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,17,0)', transform: 'rotateX(364deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,23,0)', transform: 'rotateX(365.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,29,0)', transform: 'rotateX(366.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,35,0)', transform: 'rotateX(368.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,41,0)', transform: 'rotateX(369.6deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,47,0)', transform: 'rotateX(371deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,53,0)', transform: 'rotateX(372.4deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,59,0)', transform: 'rotateX(373.8deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,65,0)', transform: 'rotateX(375.2deg) translateY(-13.02vmax)' }}></div>
+                          <div className="ring" style={{ color: 'rgb(255,71,0)', transform: 'rotateX(376.6deg) translateY(-13.02vmax)' }}></div>
+                        </article>
+                      </section>
+                    </aside>
+                  </section>
                 ) : (
                   <div className={s.simulation__vizPlaceholder}>
                     <div className={s.simulation__vizPlaceholderTitle}>Visualization</div>
