@@ -1280,16 +1280,39 @@ function injectLhcScriptOnce() {
       });
 
       document.querySelectorAll('.detector-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          if (currentDetector === this.dataset.detector) return;
+  btn.addEventListener('click', function() {
+    if (currentDetector === this.dataset.detector) return;
 
-          document.querySelectorAll('.detector-btn').forEach(b => b.classList.remove('active'));
-          this.classList.add('active');
+    document.querySelectorAll('.detector-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
 
-          currentDetector = this.dataset.detector;
-          buildDetector(currentDetector);
-        });
-      });
+    currentDetector = this.dataset.detector;
+    buildDetector(currentDetector);
+
+    // Перезапуск анимации с сохранёнными параметрами
+    var savedEvent = {
+      eventType: eventData.eventType,
+      energy: eventData.energy,
+      momentum: eventData.momentum,
+      trackCount: eventData.trackCount
+    };
+    if (savedEvent.eventType && savedEvent.eventType !== '—') {
+      clearAnimation();
+      eventData = savedEvent;
+      updateHUD();
+      isAnimating = true;
+      animationFrame = 0;
+
+      var particle1 = createParticle(new THREE.Vector3(-25, 0, 0), 0x888888, 0.4);
+      var particle2 = createParticle(new THREE.Vector3(25, 0, 0), 0xaaaaaa, 0.4);
+      particle1.userData = { velocity: new THREE.Vector3(1.0, 0, 0) };
+      particle2.userData = { velocity: new THREE.Vector3(-1.0, 0, 0) };
+      particles.push(particle1, particle2);
+      scene.add(particle1);
+      scene.add(particle2);
+    }
+  });
+});
 
       animate();
     }
@@ -1615,7 +1638,7 @@ export default function Simulation() {
     return () => {
       try {
         if (window.__LHC_DISPOSE__) window.__LHC_DISPOSE__();
-      } catch {}
+      } catch { }
       autoRanRef.current = false;
     };
   }, []);
