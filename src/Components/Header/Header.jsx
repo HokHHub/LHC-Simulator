@@ -111,6 +111,7 @@ export default function Header() {
                   aria-pressed={isSpeaking}
                   aria-label={isSpeaking ? "Остановить озвучку страницы" : "Озвучить страницу"}
                   title={isSpeaking ? "Остановить озвучку" : "Озвучить страницу"}
+                  style={{display: "none"}}
                 >
                   {isSpeaking ? "🔇" : "🔊"}
                 </button>

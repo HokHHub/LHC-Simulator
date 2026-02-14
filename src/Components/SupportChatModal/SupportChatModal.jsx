@@ -380,7 +380,7 @@ export default function SupportChatModal({
                 msg.from === "user" ? styles.bubbleUser : styles.bubbleSupport;
               const avatarClass =
                 msg.from === "user" ? styles.avatarUser : styles.avatarSupport;
-              const letter = msg.from === "user" ? userLetter : "K";
+              const letter = msg.from === "user" ? userLetter : "S";
 
               return (
                 <div key={msg.id} className={`${styles.messageRow} ${rowClass}`}>
