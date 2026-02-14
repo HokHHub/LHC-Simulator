@@ -2025,7 +2025,82 @@ export default function Simulation() {
           <div className={s.simulation__big}>
             <div className={s.simulation__bigMain}>
               
-              {loading ? (
+              
+                <div className={s.simulation__vizWrap}>
+                  <div id="canvas" className={s.simulation__vizCanvas} />
+
+                  <div id="detectorLabel">ATLAS</div>
+
+                  <div id="detectorSelection">
+                    <button className="detector-btn active" data-detector="ATLAS">ATLAS</button>
+                    <button className="detector-btn" data-detector="CMS">CMS</button>
+                    <button className="detector-btn" data-detector="ALICE">ALICE</button>
+                    <button className="detector-btn" data-detector="LHCb">LHCb</button>
+                  </div>
+
+                  <div id="controls">
+                    <button id="startBtn" style={{ display: "none" }}>Запустить коллайдер</button>
+                    <button id="clearBtn">Очистить</button>
+                  </div>
+
+                  <div id="hud">
+                    <div><span className="label">Энергия:</span> <span className="value" id="energy">0 TeV</span></div>
+                    <div><span className="label">Импульс:</span> <span className="value" id="momentum">0 GeV/c</span></div>
+                    <div><span className="label">Треки:</span> <span className="value" id="trackCount">0</span></div>
+                    <div><span className="label">Событие:</span> <span className="value" id="eventType">—</span></div>
+                    <div><span className="label">🧲 Магн. поле:</span> <span className="value" id="magneticField">2.0 T</span></div>
+                  </div>
+
+                  <div id="instructions">
+                    <div>🖱️ ЛКМ - вращение</div>
+                    <div>🔍 Колесико - зум</div>
+                    <div>⏸️ Space - пауза</div>
+                  </div>
+
+                  <label id="labelsToggle">
+                    <input type="checkbox" id="showLabels" />
+                    Подписи детектора
+                  </label>
+
+                  <div id="labelsContainer"></div>
+
+                  <div id="legend">
+                    <h3>🎨 Легенда треков</h3>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#ff8800", boxShadow: "0 0 5px #ff8800" }}></div>
+                      <span className="legend-label">Джеты (адроны)</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#ff00ff", boxShadow: "0 0 5px #ff00ff" }}></div>
+                      <span className="legend-label">Лептоны (e, μ)</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#00ff00", boxShadow: "0 0 5px #00ff00" }}></div>
+                      <span className="legend-label">Фотоны (γ)</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#00ffff", boxShadow: "0 0 5px #00ffff" }}></div>
+                      <span className="legend-label">Мюоны (μ)</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#00ff88", boxShadow: "0 0 5px #00ff88" }}></div>
+                      <span className="legend-label">Заряженные частицы</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#ff3300", boxShadow: "0 0 5px #ff3300" }}></div>
+                      <span className="legend-label">Нейтральные частицы</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color" style={{ background: "#666688", boxShadow: "0 0 5px #666688" }}></div>
+                      <span className="legend-label">Missing energy (ν)</span>
+                    </div>
+                  </div>
+
+                  <button id="legendToggle">📊 Легенда</button>
+                
+                  {loading ? (
+                    <div className={s.simulation__vizOverlay}>
+
                 <section className="am-container">
                     <style>{`
         .am-container {
@@ -2348,80 +2423,10 @@ export default function Simulation() {
                       </section>
                     </aside>
                   </section>
-                ) : (
-                <div className={s.simulation__vizWrap}>
-                  <div id="canvas" className={s.simulation__vizCanvas} />
-
-                  <div id="detectorLabel">ATLAS</div>
-
-                  <div id="detectorSelection">
-                    <button className="detector-btn active" data-detector="ATLAS">ATLAS</button>
-                    <button className="detector-btn" data-detector="CMS">CMS</button>
-                    <button className="detector-btn" data-detector="ALICE">ALICE</button>
-                    <button className="detector-btn" data-detector="LHCb">LHCb</button>
-                  </div>
-
-                  <div id="controls">
-                    <button id="startBtn" style={{ display: "none" }}>Запустить коллайдер</button>
-                    <button id="clearBtn">Очистить</button>
-                  </div>
-
-                  <div id="hud">
-                    <div><span className="label">Энергия:</span> <span className="value" id="energy">0 TeV</span></div>
-                    <div><span className="label">Импульс:</span> <span className="value" id="momentum">0 GeV/c</span></div>
-                    <div><span className="label">Треки:</span> <span className="value" id="trackCount">0</span></div>
-                    <div><span className="label">Событие:</span> <span className="value" id="eventType">—</span></div>
-                    <div><span className="label">🧲 Магн. поле:</span> <span className="value" id="magneticField">2.0 T</span></div>
-                  </div>
-
-                  <div id="instructions">
-                    <div>🖱️ ЛКМ - вращение</div>
-                    <div>🔍 Колесико - зум</div>
-                    <div>⏸️ Space - пауза</div>
-                  </div>
-
-                  <label id="labelsToggle">
-                    <input type="checkbox" id="showLabels" />
-                    Подписи детектора
-                  </label>
-
-                  <div id="labelsContainer"></div>
-
-                  <div id="legend">
-                    <h3>🎨 Легенда треков</h3>
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ background: "#ff8800", boxShadow: "0 0 5px #ff8800" }}></div>
-                      <span className="legend-label">Джеты (адроны)</span>
                     </div>
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ background: "#ff00ff", boxShadow: "0 0 5px #ff00ff" }}></div>
-                      <span className="legend-label">Лептоны (e, μ)</span>
-                    </div>
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ background: "#00ff00", boxShadow: "0 0 5px #00ff00" }}></div>
-                      <span className="legend-label">Фотоны (γ)</span>
-                    </div>
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ background: "#00ffff", boxShadow: "0 0 5px #00ffff" }}></div>
-                      <span className="legend-label">Мюоны (μ)</span>
-                    </div>
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ background: "#00ff88", boxShadow: "0 0 5px #00ff88" }}></div>
-                      <span className="legend-label">Заряженные частицы</span>
-                    </div>
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ background: "#ff3300", boxShadow: "0 0 5px #ff3300" }}></div>
-                      <span className="legend-label">Нейтральные частицы</span>
-                    </div>
-                    <div className="legend-item">
-                      <div className="legend-color" style={{ background: "#666688", boxShadow: "0 0 5px #666688" }}></div>
-                      <span className="legend-label">Missing energy (ν)</span>
-                    </div>
-                  </div>
-
-                  <button id="legendToggle">📊 Легенда</button>
-                </div>
-              )}
+                  ) : null}
+</div>
+              
             </div>
 
             <div className={s.simulation__console}>

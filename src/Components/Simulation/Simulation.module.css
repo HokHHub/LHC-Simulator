@@ -895,3 +895,9 @@ h2 {
         display: none;
     }
 }
+
+.simulation__vizOverlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+}
