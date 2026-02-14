@@ -197,6 +197,19 @@ const ProfilePage = () => {
         setLoading(false);
       } catch (e) {
         if (!isMounted) return;
+
+        // Если ошибка 401 или token_not_valid - перенаправляем на авторизацию
+        const status = e?.response?.status;
+        const isAuthError =
+          status === 401 ||
+          e?.response?.data?.code === "token_not_valid" ||
+          !localStorage.getItem("access_token");
+
+        if (isAuthError) {
+          navigate("/login", { state: { from: { pathname: "/profile" } } });
+          return;
+        }
+
         setError(e?.response?.data?.detail || "Не удалось загрузить данные");
         setLoading(false);
       }

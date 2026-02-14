@@ -20,6 +20,9 @@ const NO_AUTH_URLS = [
 const clearTokens = () => {
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
+  localStorage.removeItem("user");
+  // Отправляем событие для AuthContext
+  window.dispatchEvent(new Event("auth:logout"));
 };
 
 const setupAxios = () => {

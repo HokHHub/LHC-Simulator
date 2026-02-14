@@ -57,6 +57,17 @@ export const AuthProvider = ({ children }) => {
     };
 
     loadUser();
+
+    // Слушаем событие очистки токенов от axios interceptor
+    const handleAuthLogout = () => {
+      setUser(null);
+    };
+
+    window.addEventListener('auth:logout', handleAuthLogout);
+
+    return () => {
+      window.removeEventListener('auth:logout', handleAuthLogout);
+    };
   }, []);
 
   const register = async (userData) => {
