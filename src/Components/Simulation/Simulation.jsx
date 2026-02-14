@@ -1286,7 +1286,6 @@ function injectLhcScriptOnce() {
     currentDetector = this.dataset.detector;
     buildDetector(currentDetector);
 
-    // ✅ просто очищаем сцену, без автозапуска
     clearAnimation();
   });
 });
@@ -1588,8 +1587,8 @@ export default function Simulation() {
   const [hasOutputs, setHasOutputs] = useState(false);
   const [outputs, setOutputs] = useState({ mass: "", baryon: "", sbc: "", charge: "" });
 
-  const [showViz] = useState(true); // Всегда показываем canvas
-  const [simTrigger, setSimTrigger] = useState(0); // Счетчик для триггера симуляции
+  const [showViz] = useState(true);
+  const [simTrigger, setSimTrigger] = useState(0);
 
   const abortRef = useRef(null);
 
@@ -2060,23 +2059,12 @@ export default function Simulation() {
                   <button className="detector-btn" data-detector="LHCb">LHCb</button>
                 </div>
 
-                <div id="controls">
-                  <button id="startBtn" style={{ display: "none" }}>Запустить коллайдер</button>
-                  <button id="clearBtn">Очистить</button>
-                </div>
-
                 <div id="hud">
                   <div><span className="label">Энергия:</span> <span className="value" id="energy">0 TeV</span></div>
                   <div><span className="label">Импульс:</span> <span className="value" id="momentum">0 GeV/c</span></div>
                   <div><span className="label">Треки:</span> <span className="value" id="trackCount">0</span></div>
                   <div><span className="label">Событие:</span> <span className="value" id="eventType">—</span></div>
                   <div><span className="label">🧲 Магн. поле:</span> <span className="value" id="magneticField">2.0 T</span></div>
-                </div>
-
-                <div id="instructions">
-                  <div>🖱️ ЛКМ - вращение</div>
-                  <div>🔍 Колесико - зум</div>
-                  <div>⏸️ Space - пауза</div>
                 </div>
 
                 <label id="labelsToggle">
