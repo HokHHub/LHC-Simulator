@@ -988,17 +988,9 @@ function injectLhcScriptOnce() {
         return;
       }
 
-      // Если передан детектор, проверяем нужно ли его перестроить
-      const requestedDetector = config && config.detector;
-      if (requestedDetector && requestedDetector !== currentDetector) {
-        console.log('Switching detector from', currentDetector, 'to', requestedDetector);
-        currentDetector = requestedDetector;
-        buildDetector(currentDetector);
-
-        // Обновляем активную кнопку
-        document.querySelectorAll('.detector-btn').forEach(b => b.classList.remove('active'));
-        const detectorBtn = document.querySelector('[data-detector="' + currentDetector + '"]');
-        if (detectorBtn) detectorBtn.classList.add('active');
+      if (config && config.detector && config.detector !== currentDetector) {
+        const detectorBtn = document.querySelector('[data-detector="' + config.detector + '"]');
+        if (detectorBtn) detectorBtn.click();
       }
 
       clearAnimation();
@@ -1297,8 +1289,28 @@ function injectLhcScriptOnce() {
     currentDetector = this.dataset.detector;
     buildDetector(currentDetector);
 
-    // Просто очищаем анимацию, без перезапуска
-    clearAnimation();
+    // Перезапуск анимации с сохранёнными параметрами
+    var savedEvent = {
+      eventType: eventData.eventType,
+      energy: eventData.energy,
+      momentum: eventData.momentum,
+      trackCount: eventData.trackCount
+    };
+    if (savedEvent.eventType && savedEvent.eventType !== '—') {
+      clearAnimation();
+      eventData = savedEvent;
+      updateHUD();
+      isAnimating = true;
+      animationFrame = 0;
+
+      var particle1 = createParticle(new THREE.Vector3(-25, 0, 0), 0x888888, 0.4);
+      var particle2 = createParticle(new THREE.Vector3(25, 0, 0), 0xaaaaaa, 0.4);
+      particle1.userData = { velocity: new THREE.Vector3(1.0, 0, 0) };
+      particle2.userData = { velocity: new THREE.Vector3(-1.0, 0, 0) };
+      particles.push(particle1, particle2);
+      scene.add(particle1);
+      scene.add(particle2);
+    }
   });
 });
 
