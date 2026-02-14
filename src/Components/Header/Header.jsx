@@ -1,15 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageTTS } from "../../utils/usePagesTTS";
+import { useAuth } from "../../context/AuthContext";
 import Container from "../Container/Container";
 import s from "./Header.module.css";
 
 export default function Header() {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const panelRef = useRef(null);
 
   const go = (path) => {
+    // Проверяем авторизацию для защищенных страниц
+    if ((path === "/profile" || path === "/simulation") && !isAuthenticated) {
+      navigate("/login", { state: { from: { pathname: path } } });
+      setIsMenuOpen(false);
+      return;
+    }
     navigate(path);
     setIsMenuOpen(false);
   };
@@ -43,6 +51,17 @@ export default function Header() {
     rate: 1,
   });
 
+  // Получаем первую букву имени пользователя для аватара
+  const getAvatarLetter = () => {
+    if (user?.first_name) {
+      return user.first_name.charAt(0).toUpperCase();
+    }
+    if (user?.username) {
+      return user.username.charAt(0).toUpperCase();
+    }
+    return "👤"; // Иконка человека по умолчанию
+  };
+
 
   return (
     <header className={s.header}>
@@ -59,7 +78,27 @@ export default function Header() {
               <a href="#" onClick={(e) => { e.preventDefault(); go("/theory"); }} className={s.header__link}>Теория</a>
               <a href="#" onClick={(e) => { e.preventDefault(); go("/"); }} className={s.header__link}>О проекте</a>
               <a href="#" onClick={(e) => { e.preventDefault(); go("/simulation"); }} className={s.header__link}>Симуляции</a>
-              <a href="#" onClick={(e) => { e.preventDefault(); go("/profile"); }} className={s.header__link}>FA</a>
+              <div
+                onClick={() => go("/profile")}
+                style={{
+                  width: '31px',
+                  height: '31px',
+                  borderRadius: '50%',
+                  backgroundColor: '#023E8A',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  userSelect: 'none'
+                }}
+                role="button"
+                aria-label="Перейти в профиль"
+              >
+                {getAvatarLetter()}
+              </div>
             </nav>
             <div className={s.header__actions}>
               {supported && (
