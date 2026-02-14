@@ -1277,6 +1277,7 @@ function injectLhcScriptOnce() {
 
       document.querySelectorAll('.detector-btn').forEach(btn => {
   btn.addEventListener('click', function() {
+
     if (currentDetector === this.dataset.detector) return;
 
     document.querySelectorAll('.detector-btn').forEach(b => b.classList.remove('active'));
@@ -1285,28 +1286,8 @@ function injectLhcScriptOnce() {
     currentDetector = this.dataset.detector;
     buildDetector(currentDetector);
 
-    // Перезапуск анимации с сохранёнными параметрами
-    var savedEvent = {
-      eventType: eventData.eventType,
-      energy: eventData.energy,
-      momentum: eventData.momentum,
-      trackCount: eventData.trackCount
-    };
-    if (savedEvent.eventType && savedEvent.eventType !== '—') {
-      clearAnimation();
-      eventData = savedEvent;
-      updateHUD();
-      isAnimating = true;
-      animationFrame = 0;
-
-      var particle1 = createParticle(new THREE.Vector3(-25, 0, 0), 0x888888, 0.4);
-      var particle2 = createParticle(new THREE.Vector3(25, 0, 0), 0xaaaaaa, 0.4);
-      particle1.userData = { velocity: new THREE.Vector3(1.0, 0, 0) };
-      particle2.userData = { velocity: new THREE.Vector3(-1.0, 0, 0) };
-      particles.push(particle1, particle2);
-      scene.add(particle1);
-      scene.add(particle2);
-    }
+    // ✅ просто очищаем сцену, без автозапуска
+    clearAnimation();
   });
 });
 
@@ -1621,41 +1602,41 @@ export default function Simulation() {
   const [particleInfoData, setParticleInfoData] = useState(null);
 
   function buildParticleModalData(raw, card) {
-  const name = raw?.name ?? card?.name ?? "Particle";
-  const symbol = raw?.symbol ?? card?.symbol ?? name?.[0] ?? "?";
+    const name = raw?.name ?? card?.name ?? "Particle";
+    const symbol = raw?.symbol ?? card?.symbol ?? name?.[0] ?? "?";
 
-  const massVal = raw?.mass ?? raw?.mass_GeV ?? card?.mass ?? null;
-  const massText = Number.isFinite(Number(massVal)) ? `${Number(massVal).toFixed(3)} GeV` : "—";
+    const massVal = raw?.mass ?? raw?.mass_GeV ?? card?.mass ?? null;
+    const massText = Number.isFinite(Number(massVal)) ? `${Number(massVal).toFixed(3)} GeV` : "—";
 
-  const chargeVal = raw?.charge ?? card?.charge ?? null;
-  const chargeText = chargeVal == null ? "—" : String(chargeVal);
+    const chargeVal = raw?.charge ?? card?.charge ?? null;
+    const chargeText = chargeVal == null ? "—" : String(chargeVal);
 
-  const spinVal = raw?.spin ?? raw?.J ?? card?.spin ?? null;
-  const spinText = spinVal == null ? "—" : String(spinVal);
+    const spinVal = raw?.spin ?? raw?.J ?? card?.spin ?? null;
+    const spinText = spinVal == null ? "—" : String(spinVal);
 
-  const family = raw?.type ?? raw?.family ?? "—";
-  const stable = raw?.stable ?? raw?.stability ?? null;
+    const family = raw?.type ?? raw?.family ?? "—";
+    const stable = raw?.stable ?? raw?.stability ?? null;
 
-  const descr =
-    raw?.descr ||
-    raw?.description ||
-    `${name} (PDG: ${raw?.mcid ?? "—"})`;
+    const descr =
+      raw?.descr ||
+      raw?.description ||
+      `${name} (PDG: ${raw?.mcid ?? "—"})`;
 
-  return {
-    title: name,
-    descr,
-    iconText: symbol,
-    color: raw?.color ?? card?.color ?? "#4E3F8F",
-    stats: [
-      { label: "Семья", value: String(family) },
-      { label: "PDG id", value: String(raw?.mcid ?? "—") },
-      { label: "Масса", value: massText },
-      { label: "Спин", value: spinText },
-      { label: "Заряд", value: chargeText },
-      { label: "Стабильность", value: stable == null ? "—" : String(stable) },
-    ],
-  };
-}
+    return {
+      title: name,
+      descr,
+      iconText: symbol,
+      color: raw?.color ?? card?.color ?? "#4E3F8F",
+      stats: [
+        { label: "Семья", value: String(family) },
+        { label: "PDG id", value: String(raw?.mcid ?? "—") },
+        { label: "Масса", value: massText },
+        { label: "Спин", value: spinText },
+        { label: "Заряд", value: chargeText },
+        { label: "Стабильность", value: stable == null ? "—" : String(stable) },
+      ],
+    };
+  }
 
   // Store eventType from backend for viz
   const eventTypeRef = useRef("Standard");
