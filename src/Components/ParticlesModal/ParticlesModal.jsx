@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import s from "./ParticlesModal.module.css";
 import ParticleCard from "../ParticleCard/ParticleCard";
+import Modal from "../Modal/Modal";
 
 /**
  * stages: Array<{ key: string, label: string, ids: number[] }>
@@ -13,6 +14,7 @@ export default function ParticlesModal({
   particlesById,
   initialStageKey,
   title = "Частицы",
+  onParticleClick,
 }) {
   const [stageKey, setStageKey] = useState(initialStageKey || stages?.[0]?.key || "");
   const dialogRef = useRef(null);
@@ -175,8 +177,7 @@ export default function ParticlesModal({
                     key={`${id}-${idx}`}
                     particle={particleForCard}
                     onClick={() => {
-                      // опционально: клик по частице
-                      console.log("Particle clicked:", particleForCard);
+                      onParticleClick?.({ id, raw, card: particleForCard });
                     }}
                   />
                 );
