@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import s from "./ParticlesModal.module.css";
 import ParticleCard from "../ParticleCard/ParticleCard";
+import Modal from "../Modal/Modal";
 
 /**
  * stages: Array<{ key: string, label: string, ids: number[] }>
@@ -15,6 +16,8 @@ export default function ParticlesModal({
   title = "Частицы",
 }) {
   const [stageKey, setStageKey] = useState(initialStageKey || stages?.[0]?.key || "");
+  const [selectedParticle, setSelectedParticle] = useState(null);
+  const [particleModalOpen, setParticleModalOpen] = useState(false);
   const dialogRef = useRef(null);
 
   // sync when reopened
@@ -27,11 +30,11 @@ export default function ParticlesModal({
   useEffect(() => {
     if (!isOpen) return;
     const onKeyDown = (e) => {
-      if (e.key === "Escape") onClose?.();
+      if (e.key === "Escape") closeAll();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, closeAll]);
 
   // lock body scroll while open
   useEffect(() => {
@@ -95,14 +98,62 @@ export default function ParticlesModal({
     return raw.name?.[0]?.toUpperCase?.() || "?";
   }
 
+  function buildModalData(raw, id) {
+    const name = raw?.name ?? `PDG ${id}`;
+    const symbol = raw?.symbol ?? name?.[0] ?? "?";
+    const massVal = raw?.mass ?? raw?.mass_GeV ?? raw?.Mass ?? null;
+    const chargeVal = raw?.charge ?? raw?.Charge ?? 0;
+    const spinVal = raw?.spin ?? raw?.J ?? raw?.Spin ?? "—";
+
+    const stats = [];
+
+    const family = raw?.family ?? raw?.type ?? raw?.class ?? raw?.particle_class;
+    if (family) stats.push({ label: "Семья", value: String(family) });
+
+    if (massVal !== null && massVal !== undefined && massVal !== "") {
+      const m = Number(massVal);
+      stats.push({ label: "Масса", value: Number.isFinite(m) ? `${m} GeV` : String(massVal) });
+    }
+
+    stats.push({ label: "Заряд", value: formatCharge(chargeVal) });
+    stats.push({ label: "Спин", value: String(spinVal) });
+
+    // Часто встречающиеся доп. поля в базах частиц
+    const stable = raw?.stable ?? raw?.stability ?? raw?.isStable;
+    if (stable !== undefined) stats.push({ label: "Стабильность", value: String(stable) });
+
+    const quarks = raw?.quarkContent ?? raw?.quarks ?? raw?.composition;
+    if (quarks) stats.push({ label: "Состав", value: String(quarks) });
+
+    const scbl = raw?.["S,C,B,L"] ?? raw?.SCBL ?? raw?.quantum_numbers;
+    if (scbl) stats.push({ label: "S, C, B, L", value: String(scbl) });
+
+    const descr = raw?.descr ?? raw?.description ?? raw?.desc ?? raw?.info ?? "";
+
+    return {
+      title: name,
+      descr: descr || "Описание отсутствует.",
+      iconText: symbol,
+      stats,
+      color: raw?.color ?? "#4E3F8F",
+    };
+  }
+
   function stop(e) {
     e.stopPropagation();
+  }
+
+  function closeAll() {
+    setStageMenuOpen(false);
+    setParticleModalOpen(false);
+    setSelectedParticle(null);
+    onClose?.();
   }
 
   if (!isOpen) return null;
 
   return (
-    <div className={s.overlay} role="presentation" onMouseDown={onClose}>
+    <div className={s.overlay} role="presentation" onMouseDown={closeAll}>
       <div
         className={s.modal}
         role="dialog"
@@ -148,7 +199,7 @@ export default function ParticlesModal({
 
           <div className={s.title}>{title}</div>
 
-          <button type="button" className={s.close} onClick={onClose} aria-label="Закрыть">
+          <button type="button" className={s.close} onClick={closeAll} aria-label="Закрыть">
             ✕
           </button>
         </div>
@@ -175,8 +226,9 @@ export default function ParticlesModal({
                     key={`${id}-${idx}`}
                     particle={particleForCard}
                     onClick={() => {
-                      // опционально: клик по частице
-                      console.log("Particle clicked:", particleForCard);
+                      const data = buildModalData(raw, id);
+                      setSelectedParticle(data);
+                      setParticleModalOpen(true);
                     }}
                   />
                 );
@@ -185,6 +237,13 @@ export default function ParticlesModal({
           )}
         </div>
       </div>
+
+      {/* Модалка конкретной частицы (поверх списка) */}
+      <Modal
+        isOpen={particleModalOpen}
+        onClose={() => setParticleModalOpen(false)}
+        data={selectedParticle}
+      />
     </div>
   );
 }
