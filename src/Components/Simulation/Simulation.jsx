@@ -988,11 +988,6 @@ function injectLhcScriptOnce() {
         return;
       }
 
-      if (config && config.detector && config.detector !== currentDetector) {
-        const detectorBtn = document.querySelector('[data-detector="' + config.detector + '"]');
-        if (detectorBtn) detectorBtn.click();
-      }
-
       clearAnimation();
 
       eventData.eventType = (config && config.eventType) ? config.eventType : 'Standard';
