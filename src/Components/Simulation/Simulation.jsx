@@ -2050,7 +2050,7 @@ export default function Simulation() {
               <div className={s.simulation__vizWrap}>
                 <div id="canvas" className={s.simulation__vizCanvas} />
 
-                <div id="detectorLabel">ATLAS</div>
+                <div id="detectorLabel" style={{display: "none"}}>ATLAS</div>
 
                 <div id="detectorSelection">
                   <button className="detector-btn active" data-detector="ATLAS">ATLAS</button>
