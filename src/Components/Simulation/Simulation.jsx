@@ -1620,6 +1620,43 @@ export default function Simulation() {
   const [particleInfoOpen, setParticleInfoOpen] = useState(false);
   const [particleInfoData, setParticleInfoData] = useState(null);
 
+  function buildParticleModalData(raw, card) {
+  const name = raw?.name ?? card?.name ?? "Particle";
+  const symbol = raw?.symbol ?? card?.symbol ?? name?.[0] ?? "?";
+
+  const massVal = raw?.mass ?? raw?.mass_GeV ?? card?.mass ?? null;
+  const massText = Number.isFinite(Number(massVal)) ? `${Number(massVal).toFixed(3)} GeV` : "—";
+
+  const chargeVal = raw?.charge ?? card?.charge ?? null;
+  const chargeText = chargeVal == null ? "—" : String(chargeVal);
+
+  const spinVal = raw?.spin ?? raw?.J ?? card?.spin ?? null;
+  const spinText = spinVal == null ? "—" : String(spinVal);
+
+  const family = raw?.type ?? raw?.family ?? "—";
+  const stable = raw?.stable ?? raw?.stability ?? null;
+
+  const descr =
+    raw?.descr ||
+    raw?.description ||
+    `${name} (PDG: ${raw?.mcid ?? "—"})`;
+
+  return {
+    title: name,
+    descr,
+    iconText: symbol,
+    color: raw?.color ?? card?.color ?? "#4E3F8F",
+    stats: [
+      { label: "Семья", value: String(family) },
+      { label: "PDG id", value: String(raw?.mcid ?? "—") },
+      { label: "Масса", value: massText },
+      { label: "Спин", value: spinText },
+      { label: "Заряд", value: chargeText },
+      { label: "Стабильность", value: stable == null ? "—" : String(stable) },
+    ],
+  };
+}
+
   // Store eventType from backend for viz
   const eventTypeRef = useRef("Standard");
 
