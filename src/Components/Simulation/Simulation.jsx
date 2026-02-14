@@ -988,11 +988,6 @@ function injectLhcScriptOnce() {
         return;
       }
 
-      if (config && config.detector && config.detector !== currentDetector) {
-        const detectorBtn = document.querySelector('[data-detector="' + config.detector + '"]');
-        if (detectorBtn) detectorBtn.click();
-      }
-
       clearAnimation();
 
       eventData.eventType = (config && config.eventType) ? config.eventType : 'Standard';
@@ -1289,28 +1284,8 @@ function injectLhcScriptOnce() {
     currentDetector = this.dataset.detector;
     buildDetector(currentDetector);
 
-    // Перезапуск анимации с сохранёнными параметрами
-    var savedEvent = {
-      eventType: eventData.eventType,
-      energy: eventData.energy,
-      momentum: eventData.momentum,
-      trackCount: eventData.trackCount
-    };
-    if (savedEvent.eventType && savedEvent.eventType !== '—') {
-      clearAnimation();
-      eventData = savedEvent;
-      updateHUD();
-      isAnimating = true;
-      animationFrame = 0;
-
-      var particle1 = createParticle(new THREE.Vector3(-25, 0, 0), 0x888888, 0.4);
-      var particle2 = createParticle(new THREE.Vector3(25, 0, 0), 0xaaaaaa, 0.4);
-      particle1.userData = { velocity: new THREE.Vector3(1.0, 0, 0) };
-      particle2.userData = { velocity: new THREE.Vector3(-1.0, 0, 0) };
-      particles.push(particle1, particle2);
-      scene.add(particle1);
-      scene.add(particle2);
-    }
+    // Просто очищаем анимацию, без перезапуска
+    clearAnimation();
   });
 });
 
@@ -1611,7 +1586,8 @@ export default function Simulation() {
   const [hasOutputs, setHasOutputs] = useState(false);
   const [outputs, setOutputs] = useState({ mass: "", baryon: "", sbc: "", charge: "" });
 
-  const [showViz, setShowViz] = useState(false);
+  const [showViz] = useState(true); // Всегда показываем canvas
+  const [simTrigger, setSimTrigger] = useState(0); // Счетчик для триггера симуляции
 
   const abortRef = useRef(null);
 
@@ -1758,12 +1734,16 @@ export default function Simulation() {
       ? (typeof row.momentum === 'object' ? Number(row.momentum.parsedValue) : Number(row.momentum))
       : 1200;
 
+    // Получаем текущий выбранный детектор из активной кнопки
+    const activeDetectorBtn = document.querySelector('.detector-btn.active');
+    const currentDetector = activeDetectorBtn?.dataset.detector || "ATLAS";
+
     window.runSimulation({
       eventType: evType,
       energy: Math.max(10, Math.min(14, eNum / 10)) || 13.0,
       momentum: Number.isFinite(mom) ? Math.floor(mom) : 1200,
       trackCount: Math.max(10, trackCount),
-      detector: "ATLAS",
+      detector: currentDetector,
     });
   }
 
@@ -1851,7 +1831,7 @@ export default function Simulation() {
       const valsRow = Array.isArray(vals) ? vals[0] : vals;
       eventTypeRef.current = (valsRow && valsRow.type) ? String(valsRow.type) : "Standard";
 
-      setShowViz(true);
+      setSimTrigger(prev => prev + 1); // Триггерим useEffect для запуска симуляции
 
       log("Симуляция завершена успешно ✅");
     } catch (err) {
@@ -1869,6 +1849,7 @@ export default function Simulation() {
 
   useEffect(() => {
     if (!showViz) return;
+    if (simTrigger === 0) return; // Не запускаем при первом рендере
     if (autoRanRef.current) return;
 
     const wait = () => {
@@ -1882,20 +1863,20 @@ export default function Simulation() {
     };
     wait();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showViz]);
+  }, [simTrigger]);
 
-  // Оборачиваем window.clearAnimation для сброса React-состояния
+  // Оборачиваем window.clearAnimation для сброса состояния
   useEffect(() => {
     if (!showViz) return;
 
     const originalClearAnimation = window.clearAnimation;
     if (!originalClearAnimation) return;
 
-    // Переопределяем clearAnimation, добавляя сброс showViz
+    // Переопределяем clearAnimation, добавляя сброс флагов
     window.clearAnimation = () => {
       originalClearAnimation();
-      setShowViz(false);
       autoRanRef.current = false;
+      // canvas остается видимым, но пустым
     };
 
     return () => {
@@ -2023,9 +2004,8 @@ export default function Simulation() {
 
           <div className={s.simulation__big}>
             <div className={s.simulation__bigMain}>
-              {!showViz ? (
-                loading ? (
-                  <section className="am-container">
+              {loading ? (
+                <section className="am-container">
                     <style>{`
         .am-container {
           background: linear-gradient(173deg,#050505 43.63%,#080c0e 97.19%);
@@ -2348,12 +2328,6 @@ export default function Simulation() {
                     </aside>
                   </section>
                 ) : (
-                  <div className={s.simulation__vizPlaceholder}>
-                    <div className={s.simulation__vizPlaceholderTitle}>Visualization</div>
-                    <div className={s.simulation__vizPlaceholderText}>Появится после успешной симуляции</div>
-                  </div>
-                )
-              ) : (
                 <div className={s.simulation__vizWrap}>
                   <div id="canvas" className={s.simulation__vizCanvas} />
 
