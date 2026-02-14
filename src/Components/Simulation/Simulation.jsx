@@ -988,6 +988,19 @@ function injectLhcScriptOnce() {
         return;
       }
 
+      // Если передан детектор, проверяем нужно ли его перестроить
+      const requestedDetector = config && config.detector;
+      if (requestedDetector && requestedDetector !== currentDetector) {
+        console.log('Switching detector from', currentDetector, 'to', requestedDetector);
+        currentDetector = requestedDetector;
+        buildDetector(currentDetector);
+
+        // Обновляем активную кнопку
+        document.querySelectorAll('.detector-btn').forEach(b => b.classList.remove('active'));
+        const detectorBtn = document.querySelector('[data-detector="' + currentDetector + '"]');
+        if (detectorBtn) detectorBtn.classList.add('active');
+      }
+
       clearAnimation();
 
       eventData.eventType = (config && config.eventType) ? config.eventType : 'Standard';
