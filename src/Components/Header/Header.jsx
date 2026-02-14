@@ -92,7 +92,9 @@ export default function Header() {
                   fontSize: '14px',
                   fontWeight: '600',
                   cursor: 'pointer',
-                  userSelect: 'none'
+                  userSelect: 'none',
+                  color: 'transparent',
+                  textShadow: '0 0 0 white',
                 }}
                 role="button"
                 aria-label="Перейти в профиль"
