@@ -1884,6 +1884,26 @@ export default function Simulation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showViz]);
 
+  // Оборачиваем window.clearAnimation для сброса React-состояния
+  useEffect(() => {
+    if (!showViz) return;
+
+    const originalClearAnimation = window.clearAnimation;
+    if (!originalClearAnimation) return;
+
+    // Переопределяем clearAnimation, добавляя сброс showViz
+    window.clearAnimation = () => {
+      originalClearAnimation();
+      setShowViz(false);
+      autoRanRef.current = false;
+    };
+
+    return () => {
+      // Восстанавливаем оригинальную функцию при размонтировании
+      window.clearAnimation = originalClearAnimation;
+    };
+  }, [showViz]);
+
   return (
     <main>
       <Container>
