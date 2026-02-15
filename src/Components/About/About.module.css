@@ -47,12 +47,13 @@
   color: #FFF;
   font-family: Rubik;
   font-style: normal;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 120%;
   /* 16.8px */
   letter-spacing: -0.28px;
   align-items: center;
   font-size: 81px;
+  margin-left: -14px;
 }
 
 .about__text_span2 {
@@ -242,6 +243,7 @@
 
   .about__text_span1 {
     font-size: 44px;
+    margin-left: 0;
   }
 
   .about__text_span2 {

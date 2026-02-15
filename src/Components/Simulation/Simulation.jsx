@@ -2075,7 +2075,7 @@ export default function Simulation() {
                 <div id="labelsContainer"></div>
 
                 <div id="legend">
-                  <h3>🎨 Легенда треков</h3>
+                  <h3 className={s.legend__title}>Треки</h3>
                   <div className="legend-item">
                     <div className="legend-color" style={{ background: "#ff8800", boxShadow: "0 0 5px #ff8800" }}></div>
                     <span className="legend-label">Джеты (адроны)</span>
@@ -2100,10 +2100,10 @@ export default function Simulation() {
                     <div className="legend-color" style={{ background: "#ff3300", boxShadow: "0 0 5px #ff3300" }}></div>
                     <span className="legend-label">Нейтральные частицы</span>
                   </div>
-                  <div className="legend-item">
+                  {/* <div className="legend-item">
                     <div className="legend-color" style={{ background: "#666688", boxShadow: "0 0 5px #666688" }}></div>
                     <span className="legend-label">Missing energy (ν)</span>
-                  </div>
+                  </div> */}
                 </div>
 
                 <button id="legendToggle">📊 Легенда</button>
