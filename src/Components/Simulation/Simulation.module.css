@@ -730,7 +730,6 @@ h2 {
     font-size: 12px;
     min-width: 200px;
     z-index: 10;
-    cursor: pointer;
 }
 
 .legend__title {
