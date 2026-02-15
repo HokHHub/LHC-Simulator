@@ -1251,30 +1251,6 @@ function injectLhcScriptOnce() {
         if (!showDetectorLabels) labelElements.forEach(label => label.element.classList.remove('visible'));
       });
 
-      const legendToggle = getEl('legendToggle');
-      legendToggle && legendToggle.addEventListener('click', function() {
-        showLegend = !showLegend;
-        const legend = getEl('legend');
-        const t = getEl('legendToggle');
-        if (!legend || !t) return;
-
-        if (showLegend) {
-          legend.classList.remove('hidden');
-          t.style.display = 'none';
-        } else {
-          legend.classList.add('hidden');
-          t.style.display = 'block';
-        }
-      });
-
-      const legend = getEl('legend');
-      legend && legend.addEventListener('click', function() {
-        showLegend = false;
-        this.classList.add('hidden');
-        const t = getEl('legendToggle');
-        if (t) t.style.display = 'block';
-      });
-
       document.querySelectorAll('.detector-btn').forEach(btn => {
   btn.addEventListener('click', function() {
 
@@ -2104,8 +2080,6 @@ export default function Simulation() {
                     <span className="legend-label">Missing energy (ν)</span>
                   </div> */}
                 </div>
-
-                <button id="legendToggle">📊 Легенда</button>
 
                 {loading ? (
                   <div className={s.simulation__vizOverlay}>
