@@ -658,23 +658,25 @@ h2 {
 }
 
 :global(#labelsToggle input[type="checkbox"]) {
-    margin-right: 7px;
-    cursor: pointer;
     width: 23px;
     height: 23px;
+    margin-right: 7px;
+    cursor: pointer;
     border-radius: 3px;
     vertical-align: middle;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
 :global(#labelsToggle input[type="checkbox"]:not(:checked)) {
     border: 1px solid #19242B;
-    background: #001214 !important;
-    accent-color: #001214;
+    background: var(--Element-BG-Color, #001214);
 }
 
 :global(#labelsToggle input[type="checkbox"]:checked) {
     border: 1px solid #3E5C76;
-    accent-color: #3E5C76;
+    background: var(--Outline-Light-Color, #3E5C76);
 }
 
 :global(#labelsContainer) {
