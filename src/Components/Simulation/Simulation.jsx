@@ -1326,6 +1326,10 @@ function injectLhcScriptOnce() {
     window.runSimulation = runSimulation;
     window.clearAnimation = clearAnimation;
     window.__LHC_DISPOSE__ = disposeAll;
+    window.__LHC_REINIT__ = function() {
+      disposed = false;
+      init();
+    };
 
     init();
   })();
@@ -1726,6 +1730,11 @@ export default function Simulation() {
         if (cancelled) return;
 
         injectLhcScriptOnce();
+
+        // Переинициализируем сцену если скрипт уже был инжектирован ранее
+        if (window.__LHC_REINIT__) {
+          window.__LHC_REINIT__();
+        }
       } catch (e) {
         console.error("Failed to init visualization:", e);
       }
