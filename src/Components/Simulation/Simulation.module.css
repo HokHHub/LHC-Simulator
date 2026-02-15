@@ -640,8 +640,7 @@ h2 {
 :global(#labelsToggle) {
     position: absolute;
     top: 60px;
-    left: 4px;
-    padding: 10px 12px;
+    left: 14px;
     font-size: 15px;
     cursor: pointer;
     user-select: none;
