@@ -555,6 +555,7 @@ h2 {
     font-style: normal;
     font-weight: 400;
     line-height: normal;
+    border: 0;
 }
 
 :global(.detector-btn.active) {
@@ -638,24 +639,43 @@ h2 {
 
 :global(#labelsToggle) {
     position: absolute;
-    bottom: 14px;
-    left: 14px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 2px solid #667eea;
-    border-radius: 10px;
+    top: 60px;
+    left: 4px;
     padding: 10px 12px;
-    color: #667eea;
-    font-size: 12px;
+    font-size: 15px;
     cursor: pointer;
     user-select: none;
     z-index: 10;
+    color: #FFF;
+    text-align: center;
+
+    /* Little Font */
+    font-family: Rubik;
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: normal;
 }
 
 :global(#labelsToggle input[type="checkbox"]) {
-    margin-right: 8px;
+    margin-right: 0px;
     cursor: pointer;
-    width: 16px;
-    height: 16px;
+    width: 23px;
+    height: 23px;
+    border-radius: 3px;
+    border: 1px solid #3E5C76;
+    background: var(--Outline-Light-Color, #3E5C76);
+    vertical-align: middle;
+}
+
+:global(#labelsToggle input:disabled) {
+    margin-right: 0px;
+    cursor: pointer;
+    width: 23px;
+    height: 23px;
+    border-radius: 3px;
+    border: 1px solid #19242B;
+    background: var(--Element-BG-Color, #001214);
     vertical-align: middle;
 }
 
@@ -717,6 +737,7 @@ h2 {
     font-style: normal;
     font-weight: 300;
     line-height: normal;
+    margin-top: 0;
 }
 
 :global(#legend.hidden) {
