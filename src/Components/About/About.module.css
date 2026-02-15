@@ -33,13 +33,13 @@
 
 .about__text {
   color: #FFF;
+
+  /* Little Font */
   font-family: Rubik;
-  font-size: 14px;
+  font-size: 15px;
   font-style: normal;
-  font-weight: 400;
-  line-height: 120%;
-  /* 16.8px */
-  letter-spacing: -0.28px;
+  font-weight: 300;
+  line-height: normal;
 }
 
 .about__text_span1 {
