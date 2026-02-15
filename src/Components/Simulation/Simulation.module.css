@@ -595,7 +595,7 @@ h2 {
 :global(#hud) {
     position: absolute;
     top: 0px;
-    right: 14px;
+    right: 7px;
     display: inline-flex;
     padding: 5px 12px 5px 1px;
     flex-direction: column;
