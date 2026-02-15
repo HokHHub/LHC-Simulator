@@ -657,24 +657,38 @@ h2 {
     line-height: normal;
 }
 
+/* Прячем родной чекбокс */
 :global(#labelsToggle input[type="checkbox"]) {
-    margin-right: 7px;
+    opacity: 0;
+    position: absolute;
+    width: 23px;
+    height: 23px;
+    margin: 0;
+}
+
+/* Стилизуем кастомный чекбокс через label */
+:global(#labelsToggle) label {
+    display: inline-block;
+    padding-left: 30px;
+    position: relative;
     cursor: pointer;
+}
+
+:global(#labelsToggle) label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
     width: 23px;
     height: 23px;
     border-radius: 3px;
-    vertical-align: middle;
-}
-
-:global(#labelsToggle input[type="checkbox"]:not(:checked)) {
     border: 1px solid #19242B;
-    background: #001214 !important;
-    accent-color: #001214;
+    background: var(--Element-BG-Color, #001214);
 }
 
-:global(#labelsToggle input[type="checkbox"]:checked) {
+:global(#labelsToggle input[type="checkbox"]:checked + label::before) {
     border: 1px solid #3E5C76;
-    accent-color: #3E5C76;
+    background: var(--Outline-Light-Color, #3E5C76);
 }
 
 :global(#labelsContainer) {
