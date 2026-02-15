@@ -134,6 +134,13 @@ const normalizeSimulation = (sim) => {
   };
 };
 
+const getRankTitle = (rank) => {
+  if (rank === 1) return 'Ученик';
+  if (rank === 2) return 'Исследователь';
+  if (rank >= 3) return 'Профессор';
+  return 'Error';
+};
+
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -259,7 +266,7 @@ const ProfilePage = () => {
     stats?.user?.rating_score ??
     0;
 
-  const rankTitle = stats?.rank ?? stats?.level ?? "Ранг";
+  const rankTitle = getRankTitle(stats?.rank ?? stats?.level);
 
   const handleLogout = async () => {
     await logout();
