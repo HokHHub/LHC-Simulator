@@ -596,14 +596,12 @@ h2 {
     position: absolute;
     top: 14px;
     right: 14px;
-    background: rgba(0, 0, 0, 0.85);
-    border: 2px solid #667eea;
-    border-radius: 15px;
-    padding: 12px 16px;
-    color: #00ff88;
-    font-size: 12px;
-    min-width: 230px;
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+    display: inline-flex;
+    height: 98px;
+    padding: 5px 12px 5px 1px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
     z-index: 10;
 }
 
@@ -615,12 +613,22 @@ h2 {
 }
 
 :global(#hud .label) {
-    color: #888;
+    color: #FFF;
+    font-family: Rubik;
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: normal;
 }
 
 :global(#hud .value) {
-    color: #00ff88;
-    font-weight: bold;
+    color: var(--Light-Blue-Color, #008DD8);
+    text-align: right;
+    font-family: Rubik;
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
 }
 
 :global(#instructions) {
