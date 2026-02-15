@@ -657,7 +657,7 @@ h2 {
     line-height: normal;
 }
 
-:global(#labelsToggle input[type="checkbox"]) {
+:global(#labelsToggle input[type="checkbox"]:checked) {
     margin-right: 7px;
     cursor: pointer;
     width: 23px;
@@ -668,7 +668,8 @@ h2 {
     vertical-align: middle;
 }
 
-:global(#labelsToggle input[type="checkbox"]:disabled) {
+/* Стиль для неотмеченного чекбокса (не checked) */
+:global(#labelsToggle input[type="checkbox"]:not(:checked)) {
     margin-right: 7px;
     cursor: pointer;
     width: 23px;
