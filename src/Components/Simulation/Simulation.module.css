@@ -668,7 +668,7 @@ h2 {
     vertical-align: middle;
 }
 
-:global(#labelsToggle input[type="checkbox"]:disabled) {
+:global(#labelsToggle input[type="checkbox"]):disabled {
     margin-right: 7px;
     cursor: pointer;
     width: 23px;
