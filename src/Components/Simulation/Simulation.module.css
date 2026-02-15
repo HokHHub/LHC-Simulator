@@ -658,24 +658,25 @@ h2 {
 }
 
 :global(#labelsToggle input[type="checkbox"]) {
-    margin-right: 0px;
+    margin-right: 7px;
     cursor: pointer;
     width: 23px;
     height: 23px;
     border-radius: 3px;
     border: 1px solid #3E5C76;
-    background: var(--Outline-Light-Color, #3E5C76);
+    accent-color: var(--Outline-Light-Color, #3E5C76);
     vertical-align: middle;
 }
 
-:global(#labelsToggle input:disabled) {
-    margin-right: 0px;
+:global(#labelsToggle input[type="checkbox"]:disabled) {
+    margin-right: 7px;
     cursor: pointer;
     width: 23px;
     height: 23px;
     border-radius: 3px;
     border: 1px solid #19242B;
     background: var(--Element-BG-Color, #001214);
+    accent-color: var(--Element-BG-Color, #001214);
     vertical-align: middle;
 }
 
