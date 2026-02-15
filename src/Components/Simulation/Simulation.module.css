@@ -657,28 +657,24 @@ h2 {
     line-height: normal;
 }
 
-:global(#labelsToggle input[type="checkbox"]:checked) {
+:global(#labelsToggle input[type="checkbox"]) {
     margin-right: 7px;
     cursor: pointer;
     width: 23px;
     height: 23px;
     border-radius: 3px;
-    border: 1px solid #3E5C76;
-    accent-color: var(--Outline-Light-Color, #3E5C76);
     vertical-align: middle;
 }
 
-/* Стиль для неотмеченного чекбокса (не checked) */
 :global(#labelsToggle input[type="checkbox"]:not(:checked)) {
-    margin-right: 7px;
-    cursor: pointer;
-    width: 23px;
-    height: 23px;
-    border-radius: 3px;
     border: 1px solid #19242B;
-    background: var(--Element-BG-Color, #001214);
-    accent-color: var(--Element-BG-Color, #001214);
-    vertical-align: middle;
+    background: #001214 !important;
+    accent-color: #001214;
+}
+
+:global(#labelsToggle input[type="checkbox"]:checked) {
+    border: 1px solid #3E5C76;
+    accent-color: #3E5C76;
 }
 
 :global(#labelsContainer) {
