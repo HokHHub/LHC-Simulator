@@ -359,7 +359,7 @@ export default function SupportChatModal({
             </div>
             <div className={styles.headerText}>
               <div className={styles.headerTitle}>Служба поддержки</div>
-              <div className={styles.headerSubtitle}><a href="https://boosty.to/hokhh/donate">Поддержать проект {"(кликабельно)"}</a></div>
+              <div className={styles.headerSubtitle}>Мы всегда рядом!</div>
             </div>
             <div className={styles.status}>{triggerLabel}</div>
           </div>

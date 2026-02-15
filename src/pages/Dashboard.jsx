@@ -6,6 +6,13 @@ const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  const getRankTitle = (rank) => {
+    if (rank === 1) return 'Ученик';
+    if (rank === 2) return 'Исследователь';
+    if (rank >= 3) return 'Профессор';
+    return 'Error';
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
@@ -32,6 +39,7 @@ const Dashboard = () => {
                 <div className="user-name">
                   {user?.first_name} {user?.last_name} {!user?.first_name && user?.username}
                 </div>
+                <div className="user-rank">{getRankTitle(user?.rank)}</div>
                 <div className="user-email">{user?.email}</div>
               </div>
             </div>
