@@ -2063,8 +2063,7 @@ export default function Simulation() {
                   <div><span className="label">Энергия:</span> <span className="value" id="energy">0 TeV</span></div>
                   <div><span className="label">Импульс:</span> <span className="value" id="momentum">0 GeV/c</span></div>
                   <div><span className="label">Треки:</span> <span className="value" id="trackCount">0</span></div>
-                  <div><span className="label">Событие:</span> <span className="value" id="eventType">—</span></div>
-                  <div><span className="label">🧲 Магн. поле:</span> <span className="value" id="magneticField">2.0 T</span></div>
+                  <div><span className="label">Магн. поле:</span> <span className="value" id="magneticField">2.0 T</span></div>
                 </div>
 
                 <label id="labelsToggle">
