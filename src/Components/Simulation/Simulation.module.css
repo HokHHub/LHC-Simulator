@@ -4,7 +4,7 @@ h2 {
     font-family: Rubik;
     font-size: 40px;
     font-style: normal;
-    font-weight: 400;
+    font-weight: 500;
     line-height: 120%;
     /* 48px */
     letter-spacing: -0.8px;
@@ -41,7 +41,7 @@ h2 {
 .simulation__parameters_text {
     color: var(--Light-Blue-Color, #008DD8);
     font-family: Rubik;
-    font-size: 14px;
+    font-size: 15px;
     font-style: normal;
     font-weight: 400;
     line-height: 120%;
@@ -207,15 +207,15 @@ h2 {
 }
 
 .simulation__results_stageText {
-    color: #66BFFF;
+    color: var(--Light-Blue-Color, #008DD8);
     text-align: center;
+
+    /* Little Bold Font */
     font-family: Rubik;
-    font-size: 14px;
+    font-size: 15px;
     font-style: normal;
-    font-weight: 600;
-    line-height: 120%;
-    /* 16.8px */
-    margin: 0;
+    font-weight: 400;
+    line-height: normal;
 }
 
 .simulation__results_stageRes {
