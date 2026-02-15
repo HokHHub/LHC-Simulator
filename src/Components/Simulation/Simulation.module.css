@@ -216,6 +216,8 @@ h2 {
     font-style: normal;
     font-weight: 400;
     line-height: normal;
+    margin-top: 0;
+    margin-bottom: 5px;
 }
 
 .simulation__results_stageRes {
