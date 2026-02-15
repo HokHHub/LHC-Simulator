@@ -657,8 +657,7 @@ h2 {
     line-height: normal;
 }
 
-/* Стили для чекбокса, который находится рядом с label#labelsToggle */
-:global(#labelsToggle + input[type="checkbox"]) {
+:global(#labelsToggle input[type="checkbox"]) {
     margin-right: 7px;
     cursor: pointer;
     width: 23px;
@@ -667,13 +666,13 @@ h2 {
     vertical-align: middle;
 }
 
-:global(#labelsToggle + input[type="checkbox"]:not(:checked)) {
+:global(#labelsToggle input[type="checkbox"]:not(:checked)) {
     border: 1px solid #19242B;
     background: #001214 !important;
     accent-color: #001214;
 }
 
-:global(#labelsToggle + input[type="checkbox"]:checked) {
+:global(#labelsToggle input[type="checkbox"]:checked) {
     border: 1px solid #3E5C76;
     accent-color: #3E5C76;
 }
