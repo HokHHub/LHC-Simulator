@@ -31,7 +31,7 @@
   grid-template-columns: repeat(3, 275px);
   justify-content: center;
   gap: 58px;
-  margin: 30px auto 70px;
+  margin: 30px auto 368px;
 }
 
 .cardLink {
@@ -186,6 +186,7 @@
   font-size: 15px;
   font-weight: 300;
   color: #3e5c76;
+  white-space: nowrap;
 }
 
 .calcInput {
