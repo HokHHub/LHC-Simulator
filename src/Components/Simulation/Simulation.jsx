@@ -1049,11 +1049,18 @@ function injectLhcScriptOnce() {
       clearAnimation();
 
       eventData.eventType = (config && config.eventType) ? config.eventType : 'Standard';
-      eventData.energy = Number((config && config.energy) ? config.energy : 13.0).toFixed(2);
-      eventData.momentum = Math.floor((config && config.momentum) ? config.momentum : 1000);
-      eventData.trackCount = (config && config.trackCount) ? config.trackCount : 50;
+
+      var eVal = Number(config && config.energy != null ? config.energy : 13.0);
+      eventData.energy = Number.isFinite(eVal) ? eVal.toFixed(2) : '13.00';
+
+      var mVal = Number(config && config.momentum != null ? config.momentum : NaN);
+      eventData.momentum = Number.isFinite(mVal) ? Math.floor(mVal) : 1000;
+
+      var tcVal = Number(config && config.trackCount != null ? config.trackCount : NaN);
+      eventData.trackCount = Number.isFinite(tcVal) ? Math.max(0, Math.floor(tcVal)) : 50;
 
       updateHUD();
+
 
       isAnimating = true;
       animationFrame = 0;
