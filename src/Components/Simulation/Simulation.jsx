@@ -2014,12 +2014,13 @@ export default function Simulation() {
               </div>
 
               <div className={s.simulation__parameters_options}>
-                <label htmlFor="energy" className={s.simulation__parameters_text}>
+                <label htmlFor="energyInput" className={s.simulation__parameters_text}>
                   Энергия пучков (GeV):
                 </label>
+
                 <input
+                  id="energyInput"
                   className={`${s.simulation__parameters_input} ${errors.energy ? s.simulation__fieldError : ""}`}
-                  id="energy"
                   type="text"
                   inputMode="decimal"
                   value={energy}
@@ -2030,6 +2031,7 @@ export default function Simulation() {
                   }}
                   placeholder="60"
                 />
+
                 {errors.energy ? <div className={s.simulation__errorText}>{errors.energy}</div> : null}
               </div>
 
@@ -2092,7 +2094,7 @@ export default function Simulation() {
               <div className={s.simulation__vizWrap}>
                 <div id="canvas" className={s.simulation__vizCanvas} />
 
-                <div id="detectorLabel" style={{display: "none"}}>ATLAS</div>
+                <div id="detectorLabel" style={{ display: "none" }}>ATLAS</div>
 
                 <div id="detectorSelection">
                   <button className="detector-btn active" data-detector="ATLAS">ATLAS</button>
