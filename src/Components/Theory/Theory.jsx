@@ -57,7 +57,8 @@ export default function Theory() {
     if (Number.isNaN(m) || m <= 0) return setResult(setLorentz, "Введите массу > 0", true);
     const gamma = v1 / m;
     const beta = Math.sqrt(1 - 1 / (gamma * gamma));
-    return setResult(setLorentz, `γ = ${gamma.toFixed(4)} | β = ${beta.toFixed(6)}`);
+    return setResult(setLorentz, `γ = ${gamma.toFixed(4)} | β = ${beta}`);
+    // return setResult(setLorentz, `γ = ${gamma.toFixed(4)} | β = ${beta.toFixed(6)}`);
   };
 
   const calcRapidity = () => {
