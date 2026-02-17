@@ -2528,19 +2528,24 @@ export default function Simulation() {
           >
             <div className={s.detectorModal} onMouseDown={(e) => e.stopPropagation()}>
               <div className={s.detectorModalHeader}>
-                <div className={s.detectorModalTitle}>Слой детектора</div>
                 <button
                   className={s.detectorModalClose}
                   onClick={() => setDetectorModalOpen(false)}
                   type="button"
+                  aria-label="Закрыть описание слоя"
                 >
-                  ✕
+                  ×
                 </button>
               </div>
 
+              <div className={s.detectorModalTitle}>{detectorLayer?.detector || "ATLAS"}</div>
+              <div className={s.detectorModalDivider} />
+              <div className={s.detectorModalSubtitle}>
+                {detectorLayer?.layerName || "Detector Layer"}
+              </div>
+
               <div className={s.detectorModalBody}>
-                <div><b>Детектор:</b> {detectorLayer?.detector}</div>
-                <div><b>Слой:</b> {detectorLayer?.layerName}</div>
+                {getDetectorLayerDescription(detectorLayer?.detector, detectorLayer?.layerName)}
               </div>
             </div>
           </div>
