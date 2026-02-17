@@ -42,7 +42,8 @@
   font-style: normal;
   font-weight: 400;
   line-height: normal;
-  border: 5px solid #19242B;
+  border-top: 5px solid #19242B;
+  border-bottom: 5px solid #19242B;
   background: linear-gradient(102deg, #050505 0.31%, #001214 100%);
 }
 
@@ -308,7 +309,8 @@
 
 .matterSection {
   margin-top: 92px;
-  border: 4px solid #19242B;
+  border-top: 4px solid #19242B;
+  border-bottom: 4px solid #19242B;
   background: linear-gradient(102deg, #050505 18.51%, #080C0E 96.24%);
 }
 
@@ -372,7 +374,8 @@
 
 .interactionsSection {
   margin-top: 92px;
-  border: 4px solid #19242B;
+  border-top: 4px solid #19242B;
+  border-bottom: 4px solid #19242B;
   background: linear-gradient(102deg, #050505 18.51%, #080C0E 96.24%);
 }
 
