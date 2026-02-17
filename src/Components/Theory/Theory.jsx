@@ -1,215 +1,334 @@
-import Container2 from "../Container2/Container2";
+﻿import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Container3 from "../Container3/Container3";
-import s from "./Theory.module.css";
-import Modal from "../Modal/Modal";
-import { useEffect, useMemo, useRef, useState } from "react";
+import s from "./TheoryHome.module.css";
 
-import particlesData from "../../data/all_particles.json";
-import ParticleCard from "../ParticleCard/ParticleCard";
-import { formatNumber } from "../../utils/formatNumber";
-const PAGE_SIZE = 24;
+const defaultCalcState = { result: "Результат", error: false };
 
 export default function Theory() {
-    const [open, setOpen] = useState(false);
-    const [selected, setSelected] = useState(null);
+  const [inv, setInv] = useState({ E1: "", p1: "", E2: "", p2: "", angle: "", ...defaultCalcState });
+  const [lumi, setLumi] = useState({ sigma: "", L: "", ...defaultCalcState });
+  const [lorentz, setLorentz] = useState({ mode: "beta", val1: "", val2: "", ...defaultCalcState });
+  const [rap, setRap] = useState({ theta: "", E: "", pz: "", ...defaultCalcState });
+  const [bind, setBind] = useState({ Z: "", A: "", ...defaultCalcState });
+  const [pt, setPt] = useState({ p: "", theta: "", ...defaultCalcState });
 
-    const [query, setQuery] = useState("");
-    const [typeFilter, setTypeFilter] = useState("all");
-    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const setResult = (setter, result, error = false) => {
+    setter((prev) => ({ ...prev, result, error }));
+  };
 
-    const sentinelRef = useRef(null);
+  const calcInv = () => {
+    const E1 = parseFloat(inv.E1);
+    const p1 = parseFloat(inv.p1);
+    const E2 = parseFloat(inv.E2);
+    const p2 = parseFloat(inv.p2);
+    const angle = parseFloat(inv.angle) * Math.PI / 180;
+    if ([E1, p1, E2, p2, angle].some((v) => Number.isNaN(v))) {
+      return setResult(setInv, "Заполните все поля", true);
+    }
+    const Etot = E1 + E2;
+    const p_sq = p1 * p1 + p2 * p2 + 2 * p1 * p2 * Math.cos(angle);
+    const M2 = Etot * Etot - p_sq;
+    if (M2 < 0) return setResult(setInv, "M^2 < 0 — проверьте ввод (E < |p|)", true);
+    const M = Math.sqrt(M2);
+    return setResult(setInv, `M = ${M.toFixed(4)} ГэВ/c^2`);
+  };
 
-    const filtered = useMemo(() => {
-        const q = query.trim().toLowerCase();
+  const calcLumi = () => {
+    const sigma = parseFloat(lumi.sigma);
+    const L = parseFloat(lumi.L);
+    if ([sigma, L].some((v) => Number.isNaN(v))) return setResult(setLumi, "Заполните оба поля", true);
+    const Lpb = L * 1000;
+    const N = sigma * Lpb;
+    const str = `N = ${N.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} событий`;
+    return setResult(setLumi, str);
+  };
 
-        return particlesData.filter((p) => {
-            const matchesType = typeFilter === "all" ? true : String(p.type).toLowerCase() === typeFilter;
+  const calcLorentz = () => {
+    const v1 = parseFloat(lorentz.val1);
+    if (Number.isNaN(v1)) return setResult(setLorentz, "Введите значение", true);
+    if (lorentz.mode === "beta") {
+      const beta = v1;
+      if (beta <= 0 || beta >= 1) return setResult(setLorentz, "β должно быть в (0, 1)", true);
+      const gamma = 1 / Math.sqrt(1 - beta * beta);
+      return setResult(setLorentz, `γ = ${gamma.toFixed(4)} | β = ${beta.toFixed(6)}`);
+    }
+    const m = parseFloat(lorentz.val2);
+    if (Number.isNaN(m) || m <= 0) return setResult(setLorentz, "Введите массу > 0", true);
+    const gamma = v1 / m;
+    const beta = Math.sqrt(1 - 1 / (gamma * gamma));
+    return setResult(setLorentz, `γ = ${gamma.toFixed(4)} | β = ${beta.toFixed(6)}`);
+  };
 
-            if (!matchesType) return false;
-            if (!q) return true;
+  const calcRapidity = () => {
+    const thetaDeg = parseFloat(rap.theta);
+    if (Number.isNaN(thetaDeg)) return setResult(setRap, "Введите угол θ", true);
+    const theta = thetaDeg * Math.PI / 180;
+    if (theta <= 0 || theta >= Math.PI) return setResult(setRap, "θ должен быть в (0°, 180°)", true);
+    const eta = -Math.log(Math.tan(theta / 2));
+    let str = `η = ${eta.toFixed(4)}`;
+    const E = parseFloat(rap.E);
+    const pz = parseFloat(rap.pz);
+    if (!Number.isNaN(E) && !Number.isNaN(pz)) {
+      if (E <= Math.abs(pz)) return setResult(setRap, "E должно быть > |p_z|", true);
+      const y = 0.5 * Math.log((E + pz) / (E - pz));
+      str += ` | y = ${y.toFixed(4)}`;
+    }
+    return setResult(setRap, str);
+  };
 
-            const haystack = [
-                p.name,
-                p.type,
-                p.mass,
-                p.charge,
-                p.spin,
-                p.descr
-            ]
-                .join(" ")
-                .toLowerCase();
+  const calcBinding = () => {
+    const Z = parseInt(bind.Z, 10);
+    const A = parseInt(bind.A, 10);
+    if (Number.isNaN(Z) || Number.isNaN(A) || Z < 1 || A < 1 || Z > A) {
+      return setResult(setBind, "Проверьте Z и A (Z ≤ A)", true);
+    }
+    const N = A - Z;
+    const av = 15.56, as = 17.23, ac = 0.697, aa = 23.285;
+    let delta = 0;
+    if (Z % 2 === 0 && N % 2 === 0) delta = 12 / Math.sqrt(A);
+    else if (Z % 2 === 1 && N % 2 === 1) delta = -12 / Math.sqrt(A);
+    const B = av * A - as * Math.pow(A, 2 / 3) - ac * Z * (Z - 1) / Math.pow(A, 1 / 3) - aa * Math.pow(A - 2 * Z, 2) / A + delta;
+    const per = B / A;
+    return setResult(setBind, `B = ${B.toFixed(2)} МэВ | B/A = ${per.toFixed(3)} МэВ/нуклон`);
+  };
 
-            return haystack.includes(q);
-        });
-    }, [query, typeFilter]);
+  const calcPt = () => {
+    const p = parseFloat(pt.p);
+    const thetaDeg = parseFloat(pt.theta);
+    if (Number.isNaN(p) || Number.isNaN(thetaDeg)) return setResult(setPt, "Заполните оба поля", true);
+    const theta = thetaDeg * Math.PI / 180;
+    const ptVal = p * Math.sin(theta);
+    const pz = p * Math.cos(theta);
+    return setResult(setPt, `p_T = ${ptVal.toFixed(4)} ГэВ/c | p_z = ${pz.toFixed(4)} ГэВ/c`);
+  };
 
-    useEffect(() => {
-        setVisibleCount(PAGE_SIZE);
-    }, [query, typeFilter]);
+  return (
+    <div className={s.theoryHome}>
+      <Container3>
+        <section className={s.hero}>
+          <h1 className={s.heroTitle}>База знаний</h1>
+          <p className={s.heroSubtitle}>Устройство и работа квантового мира</p>
+        </section>
 
-    useEffect(() => {
-        const el = sentinelRef.current;
-        if (!el) return;
+        <section className={s.cards}>
+          <Link className={s.cardLink} to="/theory/particles">
+            <div className={s.cardBox}>
+              <div className={s.cardImage} />
+              <p className={s.cardTitle}>Теория элементарных частиц</p>
+            </div>
+          </Link>
+          <Link className={s.cardLink} to="/theory/lhc">
+            <div className={s.cardBox}>
+              <div className={s.cardImage} />
+              <p className={s.cardTitle}>Большой адронный коллайдер</p>
+            </div>
+          </Link>
+          <Link className={s.cardLink} to="/theory/simulation">
+            <div className={s.cardBox}>
+              <div className={s.cardImage} />
+              <p className={s.cardTitle}>Как работает наша симуляция</p>
+            </div>
+          </Link>
+        </section>
+      </Container3>
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const first = entries[0];
-                if (first?.isIntersecting) {
-                    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filtered.length));
-                }
-            },
-            { root: null, rootMargin: "400px", threshold: 0 }
-        );
+      <section className={s.calcsWrap}>
+        <Container3>
+          <h2 className={s.calcsTitle}>Интерактивные расчеты</h2>
+          <p className={s.calcsSubtitle}>Калькуляторы для ключевых величин, которые рассчитываются при анализе столкновений на БАК.</p>
 
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, [filtered.length]);
+          <div className={s.calcsGrid}>
+            <div className={`${s.calcCard} ${s.calcCardLarge}`}>
+              <div className={s.calcHeader}>
+                <div className={s.calcHeaderTitle}>Инвариантная масса</div>
+                <div className={s.calcHeaderSubtitle}>Масса системы двух частиц</div>
+              </div>
+              <div className={s.calcBody}>
+                <div className={s.calcInfo}>
+                  Инвариантная масса — лоренц-инвариантная величина, определяющая массу системы частиц. Это ключевой параметр при поиске резонансов.
+                  <div className={s.calcInfoFormula}>
+                    M<sup>2</sup> = (E<sub>1</sub> + E<sub>2</sub>)<sup>2</sup> - |p<sub>1</sub> + p<sub>2</sub>|<sup>2</sup>
+                  </div>
+                  Здесь E — полная энергия, p — 3-импульс. В системе единиц c = 1.
+                </div>
 
-    const visibleItems = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+                <div className={s.calcInputs}>
+                  <label>
+                    <div className={s.calcLabel}>E<sub>1</sub> (GeV)</div>
+                    <input className={s.calcInput} value={inv.E1} onChange={(e) => setInv({ ...inv, E1: e.target.value })} />
+                  </label>
+                  <label>
+                    <div className={s.calcLabel}>|p<sub>1</sub>| (GeV/c)</div>
+                    <input className={s.calcInput} value={inv.p1} onChange={(e) => setInv({ ...inv, p1: e.target.value })} />
+                  </label>
+                  <label>
+                    <div className={s.calcLabel}>E<sub>2</sub> (GeV)</div>
+                    <input className={s.calcInput} value={inv.E2} onChange={(e) => setInv({ ...inv, E2: e.target.value })} />
+                  </label>
+                  <label>
+                    <div className={s.calcLabel}>|p<sub>2</sub>| (GeV/c)</div>
+                    <input className={s.calcInput} value={inv.p2} onChange={(e) => setInv({ ...inv, p2: e.target.value })} />
+                  </label>
+                  <label className={s.calcInputFull}>
+                    <div className={s.calcLabel}>Угол между p<sub>1</sub> и p<sub>2</sub></div>
+                    <input className={s.calcInput} value={inv.angle} onChange={(e) => setInv({ ...inv, angle: e.target.value })} />
+                  </label>
+                </div>
 
-    const handleCardClick = (particle) => {
-        const modalData = {
-            title: particle.name,
-            descr: particle.descr,
-            iconText: particle.symbol,
-            color: particle.color,
-            stats: [
-                { label: "Семья", value: particle.type },
-                { label: "Масса", value: `${formatNumber(particle.mass)} GeV` },
-                { label: "Заряд", value: formatNumber(particle.charge) },
-                { label: "Спин", value: `${particle.spin} ħ` },
-                { label: "Заряд", value: formatNumber(particle.charge) },
-                { label: "Заряд", value: formatNumber(particle.charge) },
-                { label: "Заряд", value: formatNumber(particle.charge) },
-                { label: "Заряд", value: formatNumber(particle.charge) },
-            ],
-        };
+                <button className={s.calcButton} type="button" onClick={calcInv}>Рассчитать</button>
+                <div className={`${s.calcResult} ${inv.error ? s.calcResultError : ""}`}>{inv.result}</div>
+              </div>
+            </div>
 
-        setSelected(modalData);
-        setOpen(true);
-    };
+            <div className={`${s.calcCard} ${s.calcCardMedium}`}>
+              <div className={s.calcHeader}>
+                <div className={s.calcHeaderTitle}>Светимость событий</div>
+                <div className={s.calcHeaderSubtitle}>Частота взаимодействий</div>
+              </div>
+              <div className={s.calcBody}>
+                <div className={s.calcInfo}>
+                  Светимость L коллайдера определяет число столкновений. Число событий N = σ · L dt.
+                  <div className={s.calcInfoFormula}>N = σ · L dt</div>
+                  1 фб<sup>-1</sup> = 10<sup>39</sup> см<sup>-2</sup>. 1 пб = 10<sup>-36</sup> см<sup>2</sup>.
+                </div>
+                <div className={s.calcInputs}>
+                  <label>
+                    <div className={s.calcLabel}>Сечение σ (пб)</div>
+                    <input className={s.calcInput} value={lumi.sigma} onChange={(e) => setLumi({ ...lumi, sigma: e.target.value })} />
+                  </label>
+                  <label>
+                    <div className={s.calcLabel}>Инт. светимость (фб<sup>-1</sup>)</div>
+                    <input className={s.calcInput} value={lumi.L} onChange={(e) => setLumi({ ...lumi, L: e.target.value })} />
+                  </label>
+                </div>
+                <button className={s.calcButton} type="button" onClick={calcLumi}>Рассчитать</button>
+                <div className={`${s.calcResult} ${lumi.error ? s.calcResultError : ""}`}>{lumi.result}</div>
+              </div>
+            </div>
 
-    return (
-        <>
-            <main>
-                <Container2>
-                    <h2 className={s.theory__title}>Теория элементарных частиц</h2>
-                    <p className={s.theory__text}><span>Стандартная модель</span> — это современная научная теория, описывающая фундаментальные «кирпичики» материи и силы, действующие между ними. Она объясняет, из чего состоит всё вещество во Вселенной и как частицы взаимодействуют друг с другом.</p>
-                    <p className={s.theory__text}>Согласно Стандартной модели, существует два основных типа элементарных частиц. Первые — это фермионы, составляющие материю. К ним относятся кварки (из которых состоят протоны и нейтроны) и лептоны (включая электроны и нейтрино). Вторые — это бозоны, переносящие фундаментальные взаимодействия</p>
-                    <h3 className={s.theory__sTitle}>Взаимодействия</h3>
-                    <p className={s.theory__sText}><span>Фундаментальные взаимодействия</span> — это взаимодействия в природе, которые, по-видимому, нельзя свести к более базовым взаимодействиям</p>
-                </Container2>
-                <Container3>
-                    <div className={s.theory__subCards}>
-                        <div className={s.theory__subCard}>
-                            <img className={s.theory__subicon} src="/img/earth.png" alt="" />
-                            <p className={s.theory__subtitle}>Гравитационное</p>
-                            <p className={s.theory__subsubtext}>Взаимодействие между всеми телами, обладающими массой.</p>
-                            <div className={s.theory__subdiv}>
-                                <p className={s.theory__subdivp}>Дальность действия:   ∞</p>
-                                <hr className={s.theory__subhr} />
-                                <p className={s.theory__subsubsubtext}>Переносчик: Гравитон (не доказан)</p>
-                            </div>
-                        </div>
-                        <div className={s.theory__subCard}>
-                            <img className={s.theory__subicon} src="/img/react.png" alt="" />
-                            <p className={s.theory__subtitle}>Электромагнитное</p>
-                            <p className={s.theory__subsubtext}>Взаимодействие заряженных частиц. Основа химии, электричества и света.</p>
-                            <div className={s.theory__subdiv}>
-                                <p className={s.theory__subdivp}>Дальность действия:   ∞</p>
-                                <hr className={s.theory__subhr} />
-                                <p className={s.theory__subsubsubtext}>Переносчик: Фотон</p>
-                            </div>
-                        </div>
-                        <div className={s.theory__subCard}>
-                            <img className={s.theory__subicon} src="/img/strong.png" alt="" />
-                            <p className={s.theory__subtitle}>Сильное</p>
-                            <p className={s.theory__subsubtext}>Удерживает кварки в протонах и нейтронах, связывает атомные ядра.</p>
-                            <div className={s.theory__subdiv}>
-                                <p className={s.theory__subdivp}>Дальность действия:   10⁻¹⁵ м</p>
-                                <hr className={s.theory__subhr} />
-                                <p className={s.theory__subsubsubtext}>Переносчик: Глюон</p>
-                            </div>
-                        </div>
-                        <div className={s.theory__subCard}>
-                            <img className={s.theory__subicon} src="/img/weak.png" alt="" />
-                            <p className={s.theory__subtitle}>Слабое</p>
-                            <p className={s.theory__subsubtext}>Ответственно за радиоактивный распад и термоядерные реакции в звёздах.</p>
-                            <div className={s.theory__subdiv}>
-                                <p className={s.theory__subdivp}>Дальность действия:   10⁻¹⁸ м</p>
-                                <hr className={s.theory__subhr} />
-                                <p className={s.theory__subsubsubtext}>Переносчик: W± и Z⁰ бозоны</p>
-                            </div>
-                        </div>
-                    </div>
-                </Container3>
-                <Container2>
-                    <div className={s.theory}>
-                        <p className={s.theory__mainText}>Список частиц</p>
+            <div className={`${s.calcCard} ${s.calcCardMedium}`}>
+              <div className={s.calcHeader}>
+                <div className={s.calcHeaderTitle}>Фактор Лоренца</div>
+                <div className={s.calcHeaderSubtitle}>Релятивистское замедление времени</div>
+              </div>
+              <div className={s.calcBody}>
+                <div className={s.calcInfo}>
+                  Фактор Лоренца γ показывает изменение времени и длины в релятивистской кинематике.
+                  <div className={s.calcInfoFormula}>γ = 1 / sqrt(1 - β<sup>2</sup>), где β = v/c</div>
+                  Также: γ = E / (m c<sup>2</sup>).
+                </div>
+                <div className={s.calcInputsSingle}>
+                  <label>
+                    <div className={s.calcLabel}>Ввод через</div>
+                    <select className={s.calcInput} value={lorentz.mode} onChange={(e) => setLorentz({ ...lorentz, mode: e.target.value })}>
+                      <option value="beta">Скорость β = v/c</option>
+                      <option value="energy">Энергия E / масса m</option>
+                    </select>
+                  </label>
+                  <label>
+                    <div className={s.calcLabel}>{lorentz.mode === "beta" ? "β = v/c (0 < β < 1)" : "Энергия E (ГэВ)"}</div>
+                    <input className={s.calcInput} value={lorentz.val1} onChange={(e) => setLorentz({ ...lorentz, val1: e.target.value })} />
+                  </label>
+                  {lorentz.mode === "energy" && (
+                    <label>
+                      <div className={s.calcLabel}>Масса m (ГэВ/c<sup>2</sup>)</div>
+                      <input className={s.calcInput} value={lorentz.val2} onChange={(e) => setLorentz({ ...lorentz, val2: e.target.value })} />
+                    </label>
+                  )}
+                </div>
+                <button className={s.calcButton} type="button" onClick={calcLorentz}>Рассчитать</button>
+                <div className={`${s.calcResult} ${lorentz.error ? s.calcResultError : ""}`}>{lorentz.result}</div>
+              </div>
+            </div>
 
-                        <input
-                            className={s.theory__input}
-                            placeholder="Поиск частиц по названию или свойствам..."
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                        />
+            <div className={`${s.calcCard} ${s.calcCardTall}`}>
+              <div className={s.calcHeader}>
+                <div className={s.calcHeaderTitle}>Быстрота</div>
+                <div className={s.calcHeaderSubtitle}>Кинематические переменные</div>
+              </div>
+              <div className={s.calcBody}>
+                <div className={s.calcInfo}>
+                  Быстрота — монотонная функция скорости. Псевдобыстрота η показывает направление частицы относительно оси пучка.
+                  <div className={s.calcInfoFormula}>η = -ln[tan(θ/2)]</div>
+                  <div className={s.calcInfoFormula}>y = 1/2 ln[(E + p_z)/(E - p_z)]</div>
+                  θ = 90° ⇒ η = 0. θ &lt; 90° ⇒ η &gt; 0. θ &gt; 90° ⇒ η &lt; 0.
+                </div>
+                <div className={s.calcInputs}>
+                  <label>
+                    <div className={s.calcLabel}>E (GeV) — для y</div>
+                    <input className={s.calcInput} value={rap.E} onChange={(e) => setRap({ ...rap, E: e.target.value })} />
+                  </label>
+                  <label>
+                    <div className={s.calcLabel}>p_z (GeV/c) — для y</div>
+                    <input className={s.calcInput} value={rap.pz} onChange={(e) => setRap({ ...rap, pz: e.target.value })} />
+                  </label>
+                  <label className={s.calcInputFull}>
+                    <div className={s.calcLabel}>Полярный угол θ</div>
+                    <input className={s.calcInput} value={rap.theta} onChange={(e) => setRap({ ...rap, theta: e.target.value })} />
+                  </label>
+                </div>
+                <button className={s.calcButton} type="button" onClick={calcRapidity}>Рассчитать</button>
+                <div className={`${s.calcResult} ${rap.error ? s.calcResultError : ""}`}>{rap.result}</div>
+              </div>
+            </div>
 
-                        <div className={s.theory__buttons}>
-                            <button
-                                className={`${s.theory__button} ${typeFilter === "hadron" ? s.active : ""}`}
-                                onClick={() => setTypeFilter("hadron")}
-                            >
-                                Адроны
-                            </button>
+            <div className={`${s.calcCard} ${s.calcCardMedium}`}>
+              <div className={s.calcHeader}>
+                <div className={s.calcHeaderTitle}>Энергия связи ядра</div>
+                <div className={s.calcHeaderSubtitle}>Формула Вайцзеккера</div>
+              </div>
+              <div className={s.calcBody}>
+                <div className={s.calcInfo}>
+                  Энергия связи — минимальная энергия для расщепления ядра.
+                  <div className={s.calcInfoFormula}>
+                    B = a<sub>v</sub>A - a<sub>s</sub>A<sup>2/3</sup> - a<sub>c</sub>Z(Z-1)/A<sup>1/3</sup> - a<sub>a</sub>(A-2Z)<sup>2</sup>/A ± δ
+                  </div>
+                  a<sub>v</sub>=15,56; a<sub>s</sub>=17,23; a<sub>c</sub>=0,697; a<sub>a</sub>=23,285 МэВ.
+                </div>
+                <div className={s.calcInputs}>
+                  <label>
+                    <div className={s.calcLabel}>Z (число протонов)</div>
+                    <input className={s.calcInput} value={bind.Z} onChange={(e) => setBind({ ...bind, Z: e.target.value })} />
+                  </label>
+                  <label>
+                    <div className={s.calcLabel}>A (массовое число)</div>
+                    <input className={s.calcInput} value={bind.A} onChange={(e) => setBind({ ...bind, A: e.target.value })} />
+                  </label>
+                </div>
+                <button className={s.calcButton} type="button" onClick={calcBinding}>Рассчитать</button>
+                <div className={`${s.calcResult} ${bind.error ? s.calcResultError : ""}`}>{bind.result}</div>
+              </div>
+            </div>
 
-
-                            <button
-                                className={`${s.theory__button} ${typeFilter === "quark" ? s.active : ""}`}
-                                onClick={() => setTypeFilter("quark")}
-                            >
-                                Кварки
-                            </button>
-
-                            <button
-                                className={`${s.theory__button} ${typeFilter === "lepton" ? s.active : ""}`}
-                                onClick={() => setTypeFilter("lepton")}
-                            >
-                                Лептоны
-                            </button>
-
-                            <button
-                                className={`${s.theory__button} ${typeFilter === "boson" ? s.active : ""}`}
-                                onClick={() => setTypeFilter("boson")}
-                            >
-                                Бозоны
-                            </button>
-
-                            <button
-                                className={`${s.theory__button} ${typeFilter === "all" ? s.active : ""}`}
-                                onClick={() => setTypeFilter("all")}
-                            >
-                                Все
-                            </button>
-                        </div>
-
-
-                        <div className={s.theory__cards}>
-                            {visibleItems.map((p, idx) => (
-                                <ParticleCard
-                                    key={`${p.name}-${idx}`}
-                                    particle={p}
-                                    onClick={() => handleCardClick(p)}
-                                />
-                            ))}
-
-                            <div ref={sentinelRef} style={{ height: 1 }} />
-
-                            <Modal isOpen={open} onClose={() => setOpen(false)} data={selected} />
-                        </div>
-
-                    </div>
-                </Container2>
-            </main>
-        </>
-    );
+            <div className={`${s.calcCard} ${s.calcCardMedium}`}>
+              <div className={s.calcHeader}>
+                <div className={s.calcHeaderTitle}>Поперечный импульс</div>
+                <div className={s.calcHeaderSubtitle}>Ключевая переменная детектора</div>
+              </div>
+              <div className={s.calcBody}>
+                <div className={s.calcInfo}>
+                  Поперечный импульс — проекция импульса на плоскость, перпендикулярную оси пучка.
+                  <div className={s.calcInfoFormula}>p<sub>T</sub> = |p| sin(θ) = sqrt(p<sub>x</sub><sup>2</sup> + p<sub>y</sub><sup>2</sup>)</div>
+                  Анализ спектров p_T помогает проверять теоретические модели.
+                </div>
+                <div className={s.calcInputs}>
+                  <label>
+                    <div className={s.calcLabel}>|p| (GeV/c)</div>
+                    <input className={s.calcInput} value={pt.p} onChange={(e) => setPt({ ...pt, p: e.target.value })} />
+                  </label>
+                  <label>
+                    <div className={s.calcLabel}>Полярный угол</div>
+                    <input className={s.calcInput} value={pt.theta} onChange={(e) => setPt({ ...pt, theta: e.target.value })} />
+                  </label>
+                </div>
+                <button className={s.calcButton} type="button" onClick={calcPt}>Рассчитать</button>
+                <div className={`${s.calcResult} ${pt.error ? s.calcResultError : ""}`}>{pt.result}</div>
+              </div>
+            </div>
+          </div>
+        </Container3>
+      </section>
+    </div>
+  );
 }

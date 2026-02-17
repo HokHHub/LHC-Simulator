@@ -1,0 +1,20 @@
+.simulation {
+  width: 100%;
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  text-align: center;
+}
+
+.title {
+  font-family: Rubik;
+  font-size: 40px;
+  font-weight: 500;
+}
+
+.subtitle {
+  font-family: Rubik;
+  font-size: 18px;
+  opacity: 0.6;
+}

@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Теория элементарных частиц</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Exo+2:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #0a0e17;
+  --bg-secondary: #0f1520;
+  --bg-card: #111827;
+  --bg-card-hover: #1a2332;
+  --border-color: #1e2a3a;
+  --border-glow: #00f0ff;
+  --text-primary: #e0e6ed;
+  --text-secondary: #8892a4;
+  --text-muted: #5a6577;
+  --accent-cyan: #00f0ff;
+  --accent-green: #00ff88;
+  --accent-red: #ff3366;
+  --accent-orange: #ff8800;
+  --accent-purple: #aa44ff;
+  --accent-yellow: #ffcc00;
+  --accent-blue: #4488ff;
+  --quark-color: #ff3366;
+  --lepton-color: #00ff88;
+  --boson-color: #ffcc00;
+  --gluon-color: #ff8800;
+  --higgs-color: #4488ff;
+  --graviton-color: #aa44ff;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Exo 2', sans-serif;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--accent-cyan); border-radius: 3px; }
+
+/* ==================== HERO ==================== */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(0,240,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 30% 70%, rgba(255,51,102,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 70% 30%, rgba(0,255,136,0.03) 0%, transparent 50%);
+}
+
+.hero-particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.hero-particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: float-particle linear infinite;
+  opacity: 0;
+}
+
+@keyframes float-particle {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-100px) scale(1); opacity: 0; }
+}
+
+.hero-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,240,255,0.1);
+  animation: ring-pulse 4s ease-in-out infinite;
+}
+
+.hero-ring:nth-child(2) {
+  width: 400px; height: 400px;
+  border-color: rgba(255,51,102,0.08);
+  animation-delay: 1s;
+  animation-duration: 5s;
+}
+
+.hero-ring:nth-child(3) {
+  width: 600px; height: 600px;
+  border-color: rgba(0,255,136,0.06);
+  animation-delay: 2s;
+  animation-duration: 6s;
+}
+
+@keyframes ring-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+  50% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
+  padding: 2rem;
+}
+
+.hero-content h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--accent-cyan), #fff, var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 60px rgba(0,240,255,0.3);
+}
+
+.hero-line {
+  width: 120px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+  margin: 1.5rem auto;
+}
+
+.hero-atom {
+  width: 200px;
+  height: 200px;
+  margin: 2rem auto;
+  position: relative;
+}
+
+.atom-nucleus {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle, var(--accent-cyan), var(--accent-blue));
+  border-radius: 50%;
+  box-shadow: 0 0 20px var(--accent-cyan), 0 0 40px rgba(0,240,255,0.3);
+}
+
+.atom-orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgba(0,240,255,0.2);
+  border-radius: 50%;
+  animation: orbit-spin linear infinite;
+}
+
+.atom-orbit:nth-child(1) {
+  width: 120px; height: 50px;
+  margin: -25px 0 0 -60px;
+  animation-duration: 3s;
+  transform: rotate(0deg);
+}
+
+.atom-orbit:nth-child(2) {
+  width: 120px; height: 50px;
+  margin: -25px 0 0 -60px;
+  animation-duration: 4s;
+  transform: rotate(60deg);
+}
+
+.atom-orbit:nth-child(3) {
+  width: 120px; height: 50px;
+  margin: -25px 0 0 -60px;
+  animation-duration: 5s;
+  transform: rotate(120deg);
+}
+
+.atom-orbit .electron {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--accent-cyan);
+  border-radius: 50%;
+  top: -3px;
+  left: 50%;
+  margin-left: -3px;
+  box-shadow: 0 0 8px var(--accent-cyan);
+  animation: orbit-electron linear infinite;
+}
+
+.atom-orbit:nth-child(1) .electron { animation-duration: 3s; }
+.atom-orbit:nth-child(2) .electron { animation-duration: 4s; }
+.atom-orbit:nth-child(3) .electron { animation-duration: 5s; }
+
+@keyframes orbit-spin {
+  from { transform: rotate(var(--start, 0deg)); }
+  to { transform: rotate(calc(var(--start, 0deg) + 360deg)); }
+}
+
+@keyframes orbit-electron {
+  from { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+}
+
+/* ==================== SECTIONS ==================== */
+.section {
+  padding: 5rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 3rem;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 2px;
+  background: var(--accent-cyan);
+  margin: 0.8rem auto 0;
+  box-shadow: 0 0 10px rgba(0,240,255,0.4);
+}
+
+/* ==================== THEORY TEXT ==================== */
+.theory-text {
+  max-width: 900px;
+  margin: 0 auto;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.85;
+}
+
+.theory-text p {
+  margin-bottom: 1.2rem;
+  text-align: justify;
+}
+
+.theory-text strong, .theory-text b {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.highlight-term {
+  color: var(--accent-cyan);
+  font-weight: 500;
+}
+
+/* ==================== PARTICLE STRUCTURE ==================== */
+.particle-structure-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.structure-categories {
+  display: flex;
+  justify-content: center;
+  gap: 4rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.structure-cat {
+  text-align: center;
+}
+
+.structure-cat-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin-bottom: 0.3rem;
+}
+
+.structure-cat-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ==================== FERMION SECTION ==================== */
+.fermion-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
+.sub-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.95rem;
+  text-align: center;
+  margin: 2rem 0 1.5rem;
+  color: var(--text-secondary);
+}
+
+/* ==================== PARTICLE GRID ==================== */
+.particles-container {
+  display: flex;
+  gap: 2rem;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+}
+
+.particle-column {
+  flex: 1;
+  min-width: 280px;
+}
+
+.column-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.column-label.quarks { color: var(--quark-color); }
+.column-label.leptons { color: var(--lepton-color); }
+.column-label.bosons { color: var(--boson-color); }
+
+/* Main particle grid */
+.particle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.particle-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.particle-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--card-accent, var(--accent-cyan));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.particle-card:hover {
+  border-color: var(--card-accent, var(--accent-cyan));
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3), 0 0 15px color-mix(in srgb, var(--card-accent, var(--accent-cyan)) 20%, transparent);
+}
+
+.particle-card:hover::before { opacity: 1; }
+
+.particle-card.quark { --card-accent: var(--quark-color); }
+.particle-card.lepton { --card-accent: var(--lepton-color); }
+.particle-card.gauge-boson { --card-accent: var(--boson-color); }
+.particle-card.scalar-boson { --card-accent: var(--higgs-color); }
+.particle-card.hypo-boson { --card-accent: var(--graviton-color); }
+
+.particle-symbol-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin: 0 auto 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: radial-gradient(circle, color-mix(in srgb, var(--card-accent, var(--accent-cyan)) 15%, transparent), transparent);
+  border: 2px solid color-mix(in srgb, var(--card-accent, var(--accent-cyan)) 40%, transparent);
+}
+
+.particle-symbol {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--card-accent, var(--accent-cyan));
+}
+
+.particle-mass {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.particle-name {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.particle-props {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ==================== PARTICLE LIST TABLE ==================== */
+.particle-list-section {
+  margin-top: 3rem;
+}
+
+.particle-list-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-style: italic;
+}
+
+.particle-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.particle-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.particle-table th {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(0,240,255,0.02);
+}
+
+.particle-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(30,42,58,0.5);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.particle-table tr:last-child td { border-bottom: none; }
+
+.particle-table tr:hover td { background: rgba(0,240,255,0.02); }
+
+.table-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
+}
+
+.table-symbol.q { background: rgba(255,51,102,0.15); color: var(--quark-color); border: 1px solid rgba(255,51,102,0.3); }
+.table-symbol.l { background: rgba(0,255,136,0.12); color: var(--lepton-color); border: 1px solid rgba(0,255,136,0.25); }
+.table-symbol.b { background: rgba(255,204,0,0.12); color: var(--boson-color); border: 1px solid rgba(255,204,0,0.25); }
+
+.table-name-cell { display: flex; align-items: center; }
+
+/* ==================== MATTER STRUCTURE ==================== */
+.matter-structure {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+  margin: 2rem 0;
+}
+
+.matter-item {
+  text-align: center;
+  position: relative;
+}
+
+.matter-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  position: relative;
+  background: radial-gradient(circle, rgba(0,240,255,0.03), transparent);
+  overflow: hidden;
+}
+
+.matter-circle canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.matter-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.matter-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  padding-top: 3rem;
+}
+
+/* ==================== INTERACTIONS ==================== */
+.interactions-text {
+  max-width: 900px;
+  margin: 0 auto 2rem;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.85;
+  text-align: justify;
+}
+
+.interactions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.2rem;
+  margin: 2rem 0;
+}
+
+.interaction-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.interaction-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--int-color);
+  opacity: 0.6;
+}
+
+.interaction-card:hover {
+  border-color: var(--int-color);
+  transform: translateY(-2px);
+}
+
+.interaction-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1rem;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  background: color-mix(in srgb, var(--int-color) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--int-color) 30%, transparent);
+}
+
+.interaction-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin-bottom: 0.3rem;
+}
+
+.interaction-strength {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ==================== FEYNMAN DIAGRAMS ==================== */
+.feynman-info {
+  max-width: 900px;
+  margin: 0 auto 2rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.7;
+}
+
+.feynman-examples {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.feynman-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.feynman-canvas {
+  width: 100%;
+  height: 200px;
+  margin-bottom: 1rem;
+}
+
+.feynman-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* ==================== INTERACTIVE CALCULATORS ==================== */
+.calc-section {
+  margin-top: 2rem;
+}
+
+.calc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.calc-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+
+.calc-card:hover {
+  border-color: rgba(0,240,255,0.3);
+}
+
+.calc-header {
+  padding: 1.2rem 1.5rem;
+  background: linear-gradient(135deg, rgba(0,240,255,0.05), rgba(170,68,255,0.03));
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.calc-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  background: rgba(0,240,255,0.1);
+  border: 1px solid rgba(0,240,255,0.2);
+  flex-shrink: 0;
+}
+
+.calc-header-text h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin-bottom: 0.1rem;
+}
+
+.calc-header-text p {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.calc-body {
+  padding: 1.5rem;
+}
+
+.calc-info {
+  background: rgba(0,240,255,0.03);
+  border: 1px solid rgba(0,240,255,0.08);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.calc-info .formula {
+  display: block;
+  text-align: center;
+  margin: 0.8rem 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  color: var(--accent-cyan);
+  padding: 0.5rem;
+  background: rgba(0,0,0,0.2);
+  border-radius: 6px;
+}
+
+.calc-row {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
+  align-items: end;
+}
+
+.calc-field {
+  flex: 1;
+}
+
+.calc-field label {
+  display: block;
+  font-size: 0.72rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+  letter-spacing: 0.03em;
+}
+
+.calc-field input, .calc-field select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.calc-field input:focus, .calc-field select:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(0,240,255,0.15);
+}
+
+.calc-field input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.calc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.5rem;
+  background: linear-gradient(135deg, rgba(0,240,255,0.15), rgba(0,240,255,0.05));
+  border: 1px solid rgba(0,240,255,0.3);
+  border-radius: 8px;
+  color: var(--accent-cyan);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.calc-btn:hover {
+  background: linear-gradient(135deg, rgba(0,240,255,0.25), rgba(0,240,255,0.1));
+  box-shadow: 0 0 15px rgba(0,240,255,0.2);
+}
+
+.calc-btn:active {
+  transform: scale(0.98);
+}
+
+.calc-result {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(0,255,136,0.03);
+  border: 1px solid rgba(0,255,136,0.1);
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--accent-green);
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.calc-result.error {
+  color: var(--accent-red);
+  border-color: rgba(255,51,102,0.2);
+  background: rgba(255,51,102,0.03);
+}
+
+.calc-result.empty {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  opacity: 0.5;
+}
+
+/* Full-width calc card */
+.calc-card.full-width {
+  grid-column: 1 / -1;
+}
+
+/* ==================== FOOTER ==================== */
+.footer {
+  text-align: center;
+  padding: 3rem 2rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.footer a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  .particle-grid { grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
+  .calc-grid { grid-template-columns: 1fr; }
+  .calc-row { flex-direction: column; }
+  .interactions-grid { grid-template-columns: repeat(2, 1fr); }
+  .matter-structure { gap: 1.5rem; }
+  .structure-categories { gap: 2rem; }
+}
+
+@media (max-width: 500px) {
+  .particle-grid { grid-template-columns: repeat(2, 1fr); }
+  .interactions-grid { grid-template-columns: 1fr; }
+}
+
+/* ==================== ANIMATIONS ==================== */
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Glow line separators */
+.glow-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+  margin: 0 auto;
+  max-width: 300px;
+  opacity: 0.3;
+}
+
+/* Tabs for particle filtering */
+.filter-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.filter-tab {
+  padding: 0.5rem 1.2rem;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-tab:hover, .filter-tab.active {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(0,240,255,0.05);
+}
+
+/* quantum number badges */
+.qn-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  background: rgba(0,240,255,0.08);
+  color: var(--accent-cyan);
+  margin: 0.1rem;
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-particles" id="heroParticles"></div>
+  <div class="hero-ring" style="--start: 0deg"></div>
+  <div class="hero-ring" style="--start: 60deg"></div>
+  <div class="hero-ring" style="--start: 120deg"></div>
+  <div class="hero-content">
+    <div class="hero-atom">
+      <div class="atom-orbit" style="--start: 0deg"><div class="electron"></div></div>
+      <div class="atom-orbit" style="--start: 60deg"><div class="electron"></div></div>
+      <div class="atom-orbit" style="--start: 120deg"><div class="electron"></div></div>
+      <div class="atom-nucleus"></div>
+    </div>
+    <h1>Теория элементарных частиц</h1>
+    <div class="hero-line"></div>
+  </div>
+</section>
+
+<!-- ==================== STANDARD MODEL THEORY ==================== -->
+<div class="section-divider"></div>
+<section class="section fade-in">
+  <div class="theory-text">
+    <p><b>Стандартная модель (СМ)</b> — это математический каркас, объединяющий квантовую механику и специальную теорию относительности для описания элементарных частиц, их взаимодействий. Она была экспериментально сформулирована к середине 1970-х годов и с тех пор подтверждена тысячами экспериментов с поразительной точностью.</p>
+    <p>Все частицы СМ делятся на два больших класса: <span class="highlight-term">фермионы</span> (спин ½) — «кирпичики» материи, и <span class="highlight-term">бозоны</span> (целый спин) — «переносчики взаимодействий». Фермионы подчиняются принципу Паули: две одинаковые фермиона не могут находиться в одном квантовом состоянии. Бозоны, в свою очередь, могут накапливаться в одном состоянии, что приводит к таким явлениям как лазерное излучение и сверхтекучесть.</p>
+    <p>Модель объединяет три фундаментальные взаимодействия: электромагнитное (описываемое квантовой электродинамикой, <span class="highlight-term">КЭД</span>), слабое (квантовая флаводинамика) и сильное (<span class="highlight-term">КХД</span>). Гравитация в стандартную модель не входит. Электромагнитное и слабое взаимодействия объединены в единую электрослабую теорию Глэшоу — Вайнберга — Салама. Гравитация пока не включена в СМ — это одна из главных нерешённых задач.</p>
+    <p>Также в модели — предсказание и открытие бозона Хиггса (масса ≈125,1 ГэВ) 4 июля 2012 года на БАК. Бозон Хиггса несёт ответственность как калибровочный механизм массы: именно благодаря полю Хиггса фундаментальные частицы приобретают массу покоя — без этого механизма W- и Z-бозоны оставались бы безмассовыми, и мир выглядел бы совершенно иначе.</p>
+  </div>
+</section>
+
+<!-- ==================== СТРОЕНИЕ ЧАСТИЦ ==================== -->
+<div class="section-divider"></div>
+<section class="section fade-in">
+  <div class="section-title">Строение частиц</div>
+
+  <div class="particle-structure-header">
+    <div class="section-title" style="font-size:1rem; margin-bottom:1.5rem;">Элементарные частицы</div>
+    <div class="structure-categories">
+      <div class="structure-cat">
+        <div class="structure-cat-title">Фермионы</div>
+        <div class="structure-cat-sub">Спин ½ · Материя</div>
+      </div>
+      <div class="structure-cat">
+        <div class="structure-cat-title">Бозоны</div>
+        <div class="structure-cat-sub">Спин 0, 1, 2 · Переносчики</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="filter-tabs">
+    <button class="filter-tab active" data-filter="all">Все</button>
+    <button class="filter-tab" data-filter="quark">Кварки</button>
+    <button class="filter-tab" data-filter="lepton">Лептоны</button>
+    <button class="filter-tab" data-filter="gauge-boson">Калибровочные бозоны</button>
+    <button class="filter-tab" data-filter="scalar-boson">Скалярный бозон</button>
+  </div>
+
+  <!-- FERMIONS -->
+  <div class="fermion-label">Фермионы</div>
+
+  <div class="sub-label">Кварки</div>
+  <div class="particle-grid" id="quarkGrid">
+    <!-- Row 1 -->
+    <div class="particle-card quark" data-type="quark">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">u</span></div>
+      <div class="particle-mass">2,16 МэВ</div>
+      <div class="particle-name">Up-кварк</div>
+      <div class="particle-props">Q = +⅔ · S = ½</div>
+    </div>
+    <div class="particle-card quark" data-type="quark">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">c</span></div>
+      <div class="particle-mass">1,27 ГэВ</div>
+      <div class="particle-name">Charm-кварк</div>
+      <div class="particle-props">Q = +⅔ · S = ½</div>
+    </div>
+    <div class="particle-card quark" data-type="quark">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">t</span></div>
+      <div class="particle-mass">172,69 ГэВ</div>
+      <div class="particle-name">Top-кварк</div>
+      <div class="particle-props">Q = +⅔ · S = ½</div>
+    </div>
+    <div class="particle-card gauge-boson" data-type="gauge-boson" style="--card-accent: var(--gluon-color)">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">g</span></div>
+      <div class="particle-mass">0</div>
+      <div class="particle-name">Глюон</div>
+      <div class="particle-props">Q = 0 · S = 1</div>
+    </div>
+    <!-- Row 2 -->
+    <div class="particle-card quark" data-type="quark">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">d</span></div>
+      <div class="particle-mass">4,67 МэВ</div>
+      <div class="particle-name">Down-кварк</div>
+      <div class="particle-props">Q = −⅓ · S = ½</div>
+    </div>
+    <div class="particle-card quark" data-type="quark">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">s</span></div>
+      <div class="particle-mass">93,4 МэВ</div>
+      <div class="particle-name">Strange-кварк</div>
+      <div class="particle-props">Q = −⅓ · S = ½</div>
+    </div>
+    <div class="particle-card quark" data-type="quark">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">b</span></div>
+      <div class="particle-mass">4,18 ГэВ</div>
+      <div class="particle-name">Bottom-кварк</div>
+      <div class="particle-props">Q = −⅓ · S = ½</div>
+    </div>
+    <div class="particle-card gauge-boson" data-type="gauge-boson">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">γ</span></div>
+      <div class="particle-mass">0</div>
+      <div class="particle-name">Фотон</div>
+      <div class="particle-props">Q = 0 · S = 1</div>
+    </div>
+  </div>
+
+  <div class="sub-label">Лептоны</div>
+  <div class="particle-grid" id="leptonGrid">
+    <div class="particle-card lepton" data-type="lepton">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">e</span></div>
+      <div class="particle-mass">0,511 МэВ</div>
+      <div class="particle-name">Электрон</div>
+      <div class="particle-props">Q = −1 · S = ½</div>
+    </div>
+    <div class="particle-card lepton" data-type="lepton">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">μ</span></div>
+      <div class="particle-mass">105,66 МэВ</div>
+      <div class="particle-name">Мюон</div>
+      <div class="particle-props">Q = −1 · S = ½</div>
+    </div>
+    <div class="particle-card lepton" data-type="lepton">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">τ</span></div>
+      <div class="particle-mass">1,777 ГэВ</div>
+      <div class="particle-name">Тау</div>
+      <div class="particle-props">Q = −1 · S = ½</div>
+    </div>
+    <div class="particle-card gauge-boson" data-type="gauge-boson">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">Z</span></div>
+      <div class="particle-mass">91,19 ГэВ</div>
+      <div class="particle-name">Z-бозон</div>
+      <div class="particle-props">Q = 0 · S = 1</div>
+    </div>
+    <div class="particle-card lepton" data-type="lepton">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">ν<sub>e</sub></span></div>
+      <div class="particle-mass">< 1,0 эВ</div>
+      <div class="particle-name">Электронное нейтрино</div>
+      <div class="particle-props">Q = 0 · S = ½</div>
+    </div>
+    <div class="particle-card lepton" data-type="lepton">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">ν<sub>μ</sub></span></div>
+      <div class="particle-mass">< 0,17 МэВ</div>
+      <div class="particle-name">Мюонное нейтрино</div>
+      <div class="particle-props">Q = 0 · S = ½</div>
+    </div>
+    <div class="particle-card lepton" data-type="lepton">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">ν<sub>τ</sub></span></div>
+      <div class="particle-mass">< 18,2 МэВ</div>
+      <div class="particle-name">Тау-нейтрино</div>
+      <div class="particle-props">Q = 0 · S = ½</div>
+    </div>
+    <div class="particle-card gauge-boson" data-type="gauge-boson">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">W</span></div>
+      <div class="particle-mass">80,36 ГэВ</div>
+      <div class="particle-name">W-бозон</div>
+      <div class="particle-props">Q = ±1 · S = 1</div>
+    </div>
+  </div>
+
+  <!-- BOSONS -->
+  <div class="sub-label" style="margin-top:2.5rem;">Скалярный бозон &nbsp;&nbsp;&nbsp; Гипотетический бозон</div>
+  <div class="particle-grid" style="max-width: 300px; margin: 1rem auto;">
+    <div class="particle-card scalar-boson" data-type="scalar-boson">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">H</span></div>
+      <div class="particle-mass">125,1 ГэВ</div>
+      <div class="particle-name">Бозон Хиггса</div>
+      <div class="particle-props">Q = 0 · S = 0</div>
+    </div>
+    <div class="particle-card hypo-boson" data-type="hypo-boson">
+      <div class="particle-symbol-wrap"><span class="particle-symbol">G</span></div>
+      <div class="particle-mass">0 (теор.)</div>
+      <div class="particle-name">Гравитон</div>
+      <div class="particle-props">Q = 0 · S = 2</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== СТРОЕНИЕ ВЕЩЕСТВА ==================== -->
+<div class="section-divider"></div>
+<section class="section fade-in">
+  <div class="section-title">Строение вещества</div>
+  <div class="matter-structure">
+    <div class="matter-item">
+      <div class="matter-circle" id="atomCanvas">
+        <canvas width="140" height="140"></canvas>
+      </div>
+      <div class="matter-label">Атом</div>
+    </div>
+    <div class="matter-arrow">→</div>
+    <div class="matter-item">
+      <div class="matter-circle" id="nucleusCanvas">
+        <canvas width="140" height="140"></canvas>
+      </div>
+      <div class="matter-label">Ядро</div>
+    </div>
+    <div class="matter-arrow">→</div>
+    <div class="matter-item">
+      <div class="matter-circle" id="protonCanvas">
+        <canvas width="140" height="140"></canvas>
+      </div>
+      <div class="matter-label">Протон</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ФУНДАМЕНТАЛЬНЫЕ ВЗАИМОДЕЙСТВИЯ ==================== -->
+<div class="section-divider"></div>
+<section class="section fade-in">
+  <div class="section-title">Фундаментальные взаимодействия</div>
+  <div class="interactions-text">
+    <p><b>Фундаментальные взаимодействия</b> — «единственная долгоиграющая» роль взаимодействий элементарных частиц и составляющих из них тел. Достоверно известно существование четырёх видов фундаментальных взаимодействий: гравитационного, электромагнитного, сильного и слабого.</p>
+  </div>
+  <div class="interactions-grid">
+    <div class="interaction-card" style="--int-color: var(--accent-purple)">
+      <div class="interaction-icon">🌀</div>
+      <div class="interaction-name">Гравитационное</div>
+      <div class="interaction-strength">~10⁻³⁹ · ∞ радиус</div>
+    </div>
+    <div class="interaction-card" style="--int-color: var(--accent-cyan)">
+      <div class="interaction-icon">⚡</div>
+      <div class="interaction-name">Электромагнитное</div>
+      <div class="interaction-strength">~1/137 · ∞ радиус</div>
+    </div>
+    <div class="interaction-card" style="--int-color: var(--accent-red)">
+      <div class="interaction-icon">💠</div>
+      <div class="interaction-name">Сильное</div>
+      <div class="interaction-strength">~1 · ~10⁻¹⁵ м</div>
+    </div>
+    <div class="interaction-card" style="--int-color: var(--accent-green)">
+      <div class="interaction-icon">🔬</div>
+      <div class="interaction-name">Слабое</div>
+      <div class="interaction-strength">~10⁻⁶ · ~10⁻¹⁸ м</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ДИАГРАММЫ ФЕЙНМАНА ==================== -->
+<div class="section-divider"></div>
+<section class="section fade-in">
+  <div class="section-title">Отображение на диаграммах Фейнмана</div>
+  <div class="feynman-info">
+    Диаграммы Фейнмана — графический способ представления взаимодействий частиц. Сплошные линии — фермионы, волнистые — фотоны, спиральные — глюоны, штриховые — бозоны Хиггса.
+  </div>
+  <div class="feynman-examples">
+    <div class="feynman-card">
+      <canvas class="feynman-canvas" id="feynman1"></canvas>
+      <div class="feynman-desc">Аннигиляция электрон-позитрон: e⁺e⁻ → γ → μ⁺μ⁻</div>
+    </div>
+    <div class="feynman-card">
+      <canvas class="feynman-canvas" id="feynman2"></canvas>
+      <div class="feynman-desc">Рассеяние кварков через глюон: q + q → q + q</div>
+    </div>
+    <div class="feynman-card">
+      <canvas class="feynman-canvas" id="feynman3"></canvas>
+      <div class="feynman-desc">Распад W-бозона: W⁻ → e⁻ + ν̄ₑ</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== СПИСОК ЧАСТИЦ (ТАБЛИЦА) ==================== -->
+<div class="section-divider"></div>
+<section class="section fade-in">
+  <div class="section-title">Список частиц</div>
+  <div class="particle-list-note">Полный список частиц стандартной модели с основными свойствами.</div>
+  <div class="particle-table-wrap">
+    <table class="particle-table">
+      <thead>
+        <tr>
+          <th>Частица</th>
+          <th>Символ</th>
+          <th>Масса</th>
+          <th>Заряд (Q)</th>
+          <th>Спин (S)</th>
+          <th>Тип</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="table-name-cell"><span class="table-symbol q">u</span> Up-кварк</td><td>u</td><td>2,16 МэВ</td><td>+⅔</td><td>½</td><td><span class="qn-badge" style="color:var(--quark-color);background:rgba(255,51,102,0.1)">Кварк</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol q">d</span> Down-кварк</td><td>d</td><td>4,67 МэВ</td><td>−⅓</td><td>½</td><td><span class="qn-badge" style="color:var(--quark-color);background:rgba(255,51,102,0.1)">Кварк</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol q">c</span> Charm-кварк</td><td>c</td><td>1,27 ГэВ</td><td>+⅔</td><td>½</td><td><span class="qn-badge" style="color:var(--quark-color);background:rgba(255,51,102,0.1)">Кварк</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol q">s</span> Strange-кварк</td><td>s</td><td>93,4 МэВ</td><td>−⅓</td><td>½</td><td><span class="qn-badge" style="color:var(--quark-color);background:rgba(255,51,102,0.1)">Кварк</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol q">t</span> Top-кварк</td><td>t</td><td>172,69 ГэВ</td><td>+⅔</td><td>½</td><td><span class="qn-badge" style="color:var(--quark-color);background:rgba(255,51,102,0.1)">Кварк</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol q">b</span> Bottom-кварк</td><td>b</td><td>4,18 ГэВ</td><td>−⅓</td><td>½</td><td><span class="qn-badge" style="color:var(--quark-color);background:rgba(255,51,102,0.1)">Кварк</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol l">e</span> Электрон</td><td>e⁻</td><td>0,511 МэВ</td><td>−1</td><td>½</td><td><span class="qn-badge" style="color:var(--lepton-color);background:rgba(0,255,136,0.08)">Лептон</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol l">μ</span> Мюон</td><td>μ⁻</td><td>105,66 МэВ</td><td>−1</td><td>½</td><td><span class="qn-badge" style="color:var(--lepton-color);background:rgba(0,255,136,0.08)">Лептон</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol l">τ</span> Тау</td><td>τ⁻</td><td>1,777 ГэВ</td><td>−1</td><td>½</td><td><span class="qn-badge" style="color:var(--lepton-color);background:rgba(0,255,136,0.08)">Лептон</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol l">ν<sub>e</sub></span> Электронное нейтрино</td><td>νₑ</td><td>< 1,0 эВ</td><td>0</td><td>½</td><td><span class="qn-badge" style="color:var(--lepton-color);background:rgba(0,255,136,0.08)">Лептон</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol l">ν<sub>μ</sub></span> Мюонное нейтрино</td><td>ν<sub>μ</sub></td><td>< 0,17 МэВ</td><td>0</td><td>½</td><td><span class="qn-badge" style="color:var(--lepton-color);background:rgba(0,255,136,0.08)">Лептон</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol l">ν<sub>τ</sub></span> Тау-нейтрино</td><td>ν<sub>τ</sub></td><td>< 18,2 МэВ</td><td>0</td><td>½</td><td><span class="qn-badge" style="color:var(--lepton-color);background:rgba(0,255,136,0.08)">Лептон</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol b">γ</span> Фотон</td><td>γ</td><td>0</td><td>0</td><td>1</td><td><span class="qn-badge" style="color:var(--boson-color);background:rgba(255,204,0,0.08)">Бозон</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol b">g</span> Глюон</td><td>g</td><td>0</td><td>0</td><td>1</td><td><span class="qn-badge" style="color:var(--boson-color);background:rgba(255,204,0,0.08)">Бозон</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol b">W</span> W-бозон</td><td>W±</td><td>80,36 ГэВ</td><td>±1</td><td>1</td><td><span class="qn-badge" style="color:var(--boson-color);background:rgba(255,204,0,0.08)">Бозон</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol b">Z</span> Z-бозон</td><td>Z⁰</td><td>91,19 ГэВ</td><td>0</td><td>1</td><td><span class="qn-badge" style="color:var(--boson-color);background:rgba(255,204,0,0.08)">Бозон</span></td></tr>
+        <tr><td class="table-name-cell"><span class="table-symbol b">H</span> Бозон Хиггса</td><td>H⁰</td><td>125,1 ГэВ</td><td>0</td><td>0</td><td><span class="qn-badge" style="color:var(--higgs-color);background:rgba(68,136,255,0.08)">Скалярный бозон</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ==================== INTERACTIVE CALCULATORS ==================== -->
+<div class="section-divider"></div>
+<section class="section calc-section fade-in">
+  <div class="section-title">Интерактивные расчёты</div>
+  <p style="text-align:center;color:var(--text-muted);margin-bottom:2.5rem;font-size:0.9rem;">
+    Калькуляторы для ключевых величин, которые рассчитываются при анализе столкновений на БАК.
+  </p>
+
+  <div class="calc-grid">
+
+    <!-- 1. Invariant Mass -->
+    <div class="calc-card">
+      <div class="calc-header">
+        <div class="calc-icon">⚛️</div>
+        <div class="calc-header-text">
+          <h3>Инвариантная масса</h3>
+          <p>Масса системы двух частиц</p>
+        </div>
+      </div>
+      <div class="calc-body">
+        <div class="calc-info">
+          <b>Инвариантная масса</b> — лоренц-инвариантная величина, определяющая массу системы частиц. Это ключевой параметр при поиске резонансов (новых частиц) на коллайдере: пик в распределении инвариантной массы указывает на рождение промежуточной частицы.
+          <span class="formula">M² = (E₁ + E₂)² − |p⃗₁ + p⃗₂|²</span>
+          Здесь E — полная энергия частицы, p⃗ — её 3-импульс. В системе единиц c = 1. Если частицы летят навстречу друг другу (как на БАК), инвариантная масса максимальна.
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>E₁ (ГэВ)</label>
+            <input type="number" id="invM_E1" placeholder="напр. 50" step="any">
+          </div>
+          <div class="calc-field">
+            <label>|p⃗₁| (ГэВ/c)</label>
+            <input type="number" id="invM_p1" placeholder="напр. 49.99" step="any">
+          </div>
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>E₂ (ГэВ)</label>
+            <input type="number" id="invM_E2" placeholder="напр. 50" step="any">
+          </div>
+          <div class="calc-field">
+            <label>|p⃗₂| (ГэВ/c)</label>
+            <input type="number" id="invM_p2" placeholder="напр. 49.99" step="any">
+          </div>
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>Угол между p⃗₁ и p⃗₂ (°)</label>
+            <input type="number" id="invM_angle" placeholder="180 (навстречу)" step="any" value="180">
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calcInvMass()">▶ Рассчитать</button>
+        <div class="calc-result empty" id="invM_result">Результат появится здесь</div>
+      </div>
+    </div>
+
+    <!-- 2. Relativistic Energy-Momentum -->
+    <div class="calc-card">
+      <div class="calc-header">
+        <div class="calc-icon">💫</div>
+        <div class="calc-header-text">
+          <h3>Релятивистская энергия</h3>
+          <p>Соотношение энергия–импульс</p>
+        </div>
+      </div>
+      <div class="calc-body">
+        <div class="calc-info">
+          <b>Релятивистское соотношение энергии и импульса</b> — фундаментальная связь между полной энергией E, импульсом p и массой покоя m частицы. На БАК частицы ультрарелятивистские (E >> mc²), и эта формула позволяет восстановить массу частицы по её энергии и импульсу.
+          <span class="formula">E² = (pc)² + (mc²)²</span>
+          В системе c = 1: E² = p² + m². Зная любые два параметра, можно найти третий.
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>Найти:</label>
+            <select id="relE_mode">
+              <option value="E">Энергию E</option>
+              <option value="p">Импульс p</option>
+              <option value="m">Массу m</option>
+            </select>
+          </div>
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label id="relE_label1">Импульс p (ГэВ/c)</label>
+            <input type="number" id="relE_val1" placeholder="..." step="any">
+          </div>
+          <div class="calc-field">
+            <label id="relE_label2">Масса m (ГэВ/c²)</label>
+            <input type="number" id="relE_val2" placeholder="..." step="any">
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calcRelEnergy()">▶ Рассчитать</button>
+        <div class="calc-result empty" id="relE_result">Результат появится здесь</div>
+      </div>
+    </div>
+
+    <!-- 3. Lorentz Factor -->
+    <div class="calc-card">
+      <div class="calc-header">
+        <div class="calc-icon">⏱️</div>
+        <div class="calc-header-text">
+          <h3>Фактор Лоренца (γ)</h3>
+          <p>Релятивистское замедление времени</p>
+        </div>
+      </div>
+      <div class="calc-body">
+        <div class="calc-info">
+          <b>Фактор Лоренца γ</b> — определяет степень релятивистских эффектов. На БАК протоны достигают γ ≈ 7000, что означает, что их «внутренние часы» идут в 7000 раз медленнее лабораторных. Это влияет на время жизни нестабильных частиц: мюон с γ = 10 живёт в 10 раз дольше, чем в покое.
+          <span class="formula">γ = 1 / √(1 − β²), где β = v/c</span>
+          Также: γ = E / (mc²). Замедление времени: Δt = γ · Δτ. Сокращение длины: L = L₀ / γ.
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>Ввод через:</label>
+            <select id="lorentz_mode" onchange="updateLorentzLabels()">
+              <option value="beta">Скорость β = v/c</option>
+              <option value="Em">Энергию E и массу m</option>
+            </select>
+          </div>
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label id="lorentz_label1">β = v/c (0 < β < 1)</label>
+            <input type="number" id="lorentz_val1" placeholder="напр. 0.9999" step="any">
+          </div>
+          <div class="calc-field" id="lorentz_field2" style="display:none;">
+            <label id="lorentz_label2">Масса m (ГэВ/c²)</label>
+            <input type="number" id="lorentz_val2" placeholder="напр. 0.938" step="any">
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calcLorentz()">▶ Рассчитать</button>
+        <div class="calc-result empty" id="lorentz_result">Результат появится здесь</div>
+      </div>
+    </div>
+
+    <!-- 4. De Broglie Wavelength -->
+    <div class="calc-card">
+      <div class="calc-header">
+        <div class="calc-icon">🌊</div>
+        <div class="calc-header-text">
+          <h3>Длина волны де Бройля</h3>
+          <p>Пространственное разрешение коллайдера</p>
+        </div>
+      </div>
+      <div class="calc-body">
+        <div class="calc-info">
+          <b>Длина волны де Бройля</b> — определяет «разрешение» эксперимента: чем больше импульс, тем короче длина волны и тем более мелкие структуры можно зондировать. На БАК при энергии ~7 ТэВ λ ≈ 10⁻¹⁹ м — это в 1000 раз меньше протона!
+          <span class="formula">λ = h / p = ℏc / (pc)</span>
+          Здесь h = 6,626 × 10⁻³⁴ Дж·с, ℏ = h/(2π). В удобных единицах: ℏc ≈ 0,197 ГэВ·фм (1 фм = 10⁻¹⁵ м).
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>Импульс p (ГэВ/c)</label>
+            <input type="number" id="debroglie_p" placeholder="напр. 7000" step="any">
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calcDeBroglie()">▶ Рассчитать</button>
+        <div class="calc-result empty" id="debroglie_result">Результат появится здесь</div>
+      </div>
+    </div>
+
+    <!-- 5. Center-of-mass energy -->
+    <div class="calc-card">
+      <div class="calc-header">
+        <div class="calc-icon">💥</div>
+        <div class="calc-header-text">
+          <h3>Энергия в системе ЦМ (√s)</h3>
+          <p>Доступная энергия столкновения</p>
+        </div>
+      </div>
+      <div class="calc-body">
+        <div class="calc-info">
+          <b>Энергия в системе центра масс √s</b> — определяет, какие частицы могут быть рождены при столкновении. Для рождения частицы массы M необходимо √s ≥ Mc². На БАК: два пучка по 6,8 ТэВ → √s = 13,6 ТэВ. Для коллайдера с встречными пучками (одинаковые частицы):
+          <span class="formula">√s = 2E (встречные пучки)</span>
+          Для неподвижной мишени: √s = √(2mE + 2m²), где m — масса покоя, E — энергия налетающей частицы. Это гораздо менее эффективно!
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>Режим:</label>
+            <select id="sqrts_mode" onchange="updateSqrtsLabels()">
+              <option value="collider">Встречные пучки</option>
+              <option value="fixedtarget">Неподвижная мишень</option>
+            </select>
+          </div>
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label id="sqrts_label1">E₁ пучка (ГэВ)</label>
+            <input type="number" id="sqrts_val1" placeholder="напр. 6800" step="any">
+          </div>
+          <div class="calc-field" id="sqrts_field2">
+            <label id="sqrts_label2">E₂ пучка (ГэВ)</label>
+            <input type="number" id="sqrts_val2" placeholder="напр. 6800" step="any">
+          </div>
+        </div>
+        <div class="calc-row" id="sqrts_mass_row" style="display:none;">
+          <div class="calc-field">
+            <label>Масса мишени m (ГэВ/c²)</label>
+            <input type="number" id="sqrts_mass" placeholder="0.938 для протона" step="any" value="0.938">
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calcSqrtS()">▶ Рассчитать</button>
+        <div class="calc-result empty" id="sqrts_result">Результат появится здесь</div>
+      </div>
+    </div>
+
+    <!-- 6. Binding Energy (Weizsäcker) -->
+    <div class="calc-card">
+      <div class="calc-header">
+        <div class="calc-icon">🔗</div>
+        <div class="calc-header-text">
+          <h3>Энергия связи ядра</h3>
+          <p>Формула Вайцзеккера</p>
+        </div>
+      </div>
+      <div class="calc-body">
+        <div class="calc-info">
+          <b>Полуэмпирическая формула масс Вайцзеккера</b> — приблизительное описание энергии связи атомного ядра. Используется для оценок при столкновениях тяжёлых ионов на БАК (Pb-Pb столкновения). Пять членов: объёмный, поверхностный, кулоновский, асимметрии и спаривания.
+          <span class="formula">B = aᵥA − aₛA²ᐟ³ − a꜀Z(Z−1)/A¹ᐟ³ − aₐ(A−2Z)²/A ± δ</span>
+          aᵥ=15,56; aₛ=17,23; a꜀=0,697; aₐ=23,285 МэВ. δ — член спаривания.
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>Z (число протонов)</label>
+            <input type="number" id="bind_Z" placeholder="напр. 82 (свинец)" step="1">
+          </div>
+          <div class="calc-field">
+            <label>A (массовое число)</label>
+            <input type="number" id="bind_A" placeholder="напр. 208" step="1">
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calcBinding()">▶ Рассчитать</button>
+        <div class="calc-result empty" id="bind_result">Результат появится здесь</div>
+      </div>
+    </div>
+
+    <!-- 7. Rapidity & Pseudorapidity -->
+    <div class="calc-card">
+      <div class="calc-header">
+        <div class="calc-icon">📐</div>
+        <div class="calc-header-text">
+          <h3>Быстрота и псевдобыстрота</h3>
+          <p>Кинематические переменные на коллайдере</p>
+        </div>
+      </div>
+      <div class="calc-body">
+        <div class="calc-info">
+          <b>Быстрота y</b> и <b>псевдобыстрота η</b> — стандартные переменные для описания кинематики на коллайдере. Вместо полярного угла θ используют η, т.к. разности η лоренц-инвариантны вдоль оси пучка. Быстрота y учитывает массу, η — нет (для безмассовых частиц y = η).
+          <span class="formula">η = −ln[tan(θ/2)]</span>
+          <span class="formula">y = ½ ln[(E + p_z)/(E − p_z)]</span>
+          θ = 90° → η = 0 (перпендикулярно пучку). θ → 0° → η → ∞ (вдоль пучка).
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>Полярный угол θ (°)</label>
+            <input type="number" id="eta_theta" placeholder="напр. 45" step="any">
+          </div>
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>E (ГэВ) — для y</label>
+            <input type="number" id="eta_E" placeholder="опционально" step="any">
+          </div>
+          <div class="calc-field">
+            <label>p_z (ГэВ/c) — для y</label>
+            <input type="number" id="eta_pz" placeholder="опционально" step="any">
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calcRapidity()">▶ Рассчитать</button>
+        <div class="calc-result empty" id="eta_result">Результат появится здесь</div>
+      </div>
+    </div>
+
+    <!-- 8. Transverse Momentum -->
+    <div class="calc-card">
+      <div class="calc-header">
+        <div class="calc-icon">↗️</div>
+        <div class="calc-header-text">
+          <h3>Поперечный импульс p_T</h3>
+          <p>Ключевая переменная детектора</p>
+        </div>
+      </div>
+      <div class="calc-body">
+        <div class="calc-info">
+          <b>Поперечный импульс p_T</b> — проекция импульса частицы на плоскость, перпендикулярную оси пучка. На коллайдере суммарный p_T до столкновения ≈ 0, поэтому по закону сохранения суммарный p_T продуктов тоже ≈ 0. Нарушение баланса p_T (missing E_T) сигнализирует о нейтрино или новой физике!
+          <span class="formula">p_T = |p⃗| · sin(θ) = √(p_x² + p_y²)</span>
+          Также: p_T = p / cosh(η), где η — псевдобыстрота.
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>|p⃗| (ГэВ/c)</label>
+            <input type="number" id="pt_p" placeholder="полный импульс" step="any">
+          </div>
+          <div class="calc-field">
+            <label>θ (°) полярный угол</label>
+            <input type="number" id="pt_theta" placeholder="напр. 60" step="any">
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calcPt()">▶ Рассчитать</button>
+        <div class="calc-result empty" id="pt_result">Результат появится здесь</div>
+      </div>
+    </div>
+
+    <!-- 9. Luminosity & Cross-section -->
+    <div class="calc-card full-width">
+      <div class="calc-header">
+        <div class="calc-icon">📊</div>
+        <div class="calc-header-text">
+          <h3>Светимость и число событий</h3>
+          <p>N = σ × L — от сечения к открытию</p>
+        </div>
+      </div>
+      <div class="calc-body">
+        <div class="calc-info">
+          <b>Светимость L</b> коллайдера определяет, сколько столкновений в секунду происходит. <b>Сечение σ</b> (в барнах, 1 б = 10⁻²⁴ см²) — эффективная «площадь мишени» для данного процесса. Число ожидаемых событий N = σ × L. Чтобы открыть бозон Хиггса (σ ≈ 50 пб на 13 ТэВ), нужна интегральная светимость ~100 фб⁻¹. На БАК пиковая мгновенная светимость: L ≈ 2 × 10³⁴ см⁻²с⁻¹.
+          <span class="formula">N = σ × ∫L dt</span>
+          1 фб⁻¹ = 10¹⁵ б⁻¹ = 10³⁹ см⁻². 1 пб = 10⁻¹² б = 10⁻³⁶ см².
+        </div>
+        <div class="calc-row">
+          <div class="calc-field">
+            <label>Сечение σ (пб)</label>
+            <input type="number" id="lumi_sigma" placeholder="напр. 50 (для Хиггса)" step="any">
+          </div>
+          <div class="calc-field">
+            <label>Инт. светимость (фб⁻¹)</label>
+            <input type="number" id="lumi_L" placeholder="напр. 140" step="any">
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calcLumi()">▶ Рассчитать число событий</button>
+        <div class="calc-result empty" id="lumi_result">Результат появится здесь</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="section-divider"></div>
+<footer class="footer">
+  Симулятор БАК · Теория элементарных частиц · 2026
+</footer>
+
+<script>
+// ============ HERO PARTICLES ============
+(function() {
+  const container = document.getElementById('heroParticles');
+  const colors = ['#00f0ff','#ff3366','#00ff88','#ffcc00','#aa44ff'];
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('div');
+    p.className = 'hero-particle';
+    const size = Math.random() * 4 + 1;
+    p.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${Math.random()*100}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${Math.random()*8+6}s;
+      animation-delay:${Math.random()*8}s;
+      box-shadow:0 0 ${size*2}px ${colors[Math.floor(Math.random()*colors.length)]};
+    `;
+    container.appendChild(p);
+  }
+})();
+
+// ============ SCROLL ANIMATIONS ============
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+// ============ FILTER TABS ============
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const filter = tab.dataset.filter;
+    document.querySelectorAll('.particle-card').forEach(card => {
+      if (filter === 'all' || card.dataset.type === filter) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  });
+});
+
+// ============ MATTER STRUCTURE CANVASES ============
+function drawAtom(canvasParent) {
+  const canvas = canvasParent.querySelector('canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 70, cy = 70;
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0,0,140,140);
+    // Nucleus
+    ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2);
+    const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,8);
+    grad.addColorStop(0,'#ff3366'); grad.addColorStop(1,'rgba(255,51,102,0.3)');
+    ctx.fillStyle = grad; ctx.fill();
+    // Orbits + electrons
+    for (let i = 0; i < 3; i++) {
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(i * Math.PI/3);
+      ctx.beginPath(); ctx.ellipse(0,0,55,22,0,0,Math.PI*2);
+      ctx.strokeStyle = 'rgba(0,240,255,0.15)'; ctx.stroke();
+      const angle = t * (1 + i*0.3);
+      const ex = 55 * Math.cos(angle), ey = 22 * Math.sin(angle);
+      ctx.beginPath(); ctx.arc(ex,ey,3,0,Math.PI*2);
+      ctx.fillStyle = '#00f0ff'; ctx.fill();
+      ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 6; ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+    t += 0.03;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function drawNucleus(canvasParent) {
+  const canvas = canvasParent.querySelector('canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 70, cy = 70;
+  const nucleons = [];
+  for (let i = 0; i < 12; i++) {
+    const a = Math.random()*Math.PI*2, r = Math.random()*25;
+    nucleons.push({ x: cx + Math.cos(a)*r, y: cy + Math.sin(a)*r, isProton: i < 6, vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3 });
+  }
+  function draw() {
+    ctx.clearRect(0,0,140,140);
+    nucleons.forEach(n => {
+      n.x += n.vx; n.y += n.vy;
+      const dx = n.x-cx, dy = n.y-cy, dist = Math.sqrt(dx*dx+dy*dy);
+      if (dist > 30) { n.vx -= dx*0.005; n.vy -= dy*0.005; }
+      ctx.beginPath(); ctx.arc(n.x,n.y,6,0,Math.PI*2);
+      ctx.fillStyle = n.isProton ? 'rgba(255,51,102,0.8)' : 'rgba(0,240,255,0.7)';
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function drawProton(canvasParent) {
+  const canvas = canvasParent.querySelector('canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 70, cy = 70;
+  let t = 0;
+  const quarks = [
+    { label: 'u', color: '#ff3366', angle: 0, r: 20 },
+    { label: 'u', color: '#ff3366', angle: 2.09, r: 20 },
+    { label: 'd', color: '#00f0ff', angle: 4.19, r: 20 }
+  ];
+  function draw() {
+    ctx.clearRect(0,0,140,140);
+    // Gluon field
+    ctx.beginPath(); ctx.arc(cx,cy,35,0,Math.PI*2);
+    const grad = ctx.createRadialGradient(cx,cy,5,cx,cy,35);
+    grad.addColorStop(0,'rgba(255,136,0,0.1)'); grad.addColorStop(1,'transparent');
+    ctx.fillStyle = grad; ctx.fill();
+    // Gluon lines
+    quarks.forEach((q,i) => {
+      const next = quarks[(i+1)%3];
+      const x1 = cx + Math.cos(q.angle+t*0.5)*q.r;
+      const y1 = cy + Math.sin(q.angle+t*0.5)*q.r;
+      const x2 = cx + Math.cos(next.angle+t*0.5)*next.r;
+      const y2 = cy + Math.sin(next.angle+t*0.5)*next.r;
+      ctx.beginPath();
+      ctx.moveTo(x1,y1);
+      const mx = (x1+x2)/2 + Math.sin(t*2+i)*5;
+      const my = (y1+y2)/2 + Math.cos(t*2+i)*5;
+      ctx.quadraticCurveTo(mx,my,x2,y2);
+      ctx.strokeStyle = 'rgba(255,136,0,0.3)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    // Quarks
+    quarks.forEach(q => {
+      const x = cx + Math.cos(q.angle+t*0.5)*q.r;
+      const y = cy + Math.sin(q.angle+t*0.5)*q.r;
+      ctx.beginPath(); ctx.arc(x,y,8,0,Math.PI*2);
+      ctx.fillStyle = q.color; ctx.globalAlpha = 0.9; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 9px Exo 2';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(q.label, x, y);
+    });
+    t += 0.02;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+drawAtom(document.getElementById('atomCanvas'));
+drawNucleus(document.getElementById('nucleusCanvas'));
+drawProton(document.getElementById('protonCanvas'));
+
+// ============ FEYNMAN DIAGRAMS ============
+function drawFeynman1(id) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = canvas.offsetHeight * 2;
+  ctx.scale(2,2);
+  const w = canvas.offsetWidth, h = canvas.offsetHeight;
+  ctx.clearRect(0,0,w,h);
+  const mx = w/2, my = h/2;
+  // Incoming e- e+
+  ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.5;
+  drawArrowLine(ctx, 30, 30, mx-10, my); // e-
+  drawArrowLine(ctx, 30, h-30, mx-10, my); // e+
+  // Photon propagator (wavy)
+  drawWavy(ctx, mx-10, my, mx+10, my, '#ffcc00');
+  // Outgoing mu- mu+
+  ctx.strokeStyle = '#00ff88';
+  drawArrowLine(ctx, mx+10, my, w-30, 30); // mu-
+  drawArrowLine(ctx, mx+10, my, w-30, h-30); // mu+
+  // Vertex dots
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(mx-10,my,3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx+10,my,3,0,Math.PI*2); ctx.fill();
+  // Labels
+  ctx.fillStyle = '#8892a4'; ctx.font = '11px JetBrains Mono';
+  ctx.fillText('e⁻', 10, 28);
+  ctx.fillText('e⁺', 10, h-20);
+  ctx.fillText('μ⁻', w-30, 28);
+  ctx.fillText('μ⁺', w-30, h-20);
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillText('γ', mx-5, my-10);
+}
+
+function drawFeynman2(id) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = canvas.offsetHeight * 2;
+  ctx.scale(2,2);
+  const w = canvas.offsetWidth, h = canvas.offsetHeight;
+  const mx = w/2, my = h/2;
+  ctx.strokeStyle = '#ff3366'; ctx.lineWidth = 1.5;
+  drawArrowLine(ctx, 30, 30, mx, my-20);
+  drawArrowLine(ctx, 30, h-30, mx, my+20);
+  // Gluon (coil)
+  drawCoil(ctx, mx, my-20, mx, my+20, '#ff8800');
+  ctx.strokeStyle = '#ff3366';
+  drawArrowLine(ctx, mx, my-20, w-30, 30);
+  drawArrowLine(ctx, mx, my+20, w-30, h-30);
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(mx,my-20,3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx,my+20,3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#8892a4'; ctx.font = '11px JetBrains Mono';
+  ctx.fillText('q', 12, 28);
+  ctx.fillText('q', 12, h-20);
+  ctx.fillText('q', w-24, 28);
+  ctx.fillText('q', w-24, h-20);
+  ctx.fillStyle = '#ff8800';
+  ctx.fillText('g', mx+6, my+4);
+}
+
+function drawFeynman3(id) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = canvas.offsetHeight * 2;
+  ctx.scale(2,2);
+  const w = canvas.offsetWidth, h = canvas.offsetHeight;
+  const mx = w/2, my = h/2;
+  // W boson incoming (dashed)
+  drawDashed(ctx, 30, my, mx, my, '#4488ff');
+  // Outgoing particles
+  ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.5;
+  drawArrowLine(ctx, mx, my, w-30, 30); // e-
+  drawArrowLine(ctx, mx, my, w-30, h-30); // nu_e bar
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(mx,my,3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#4488ff'; ctx.font = '11px JetBrains Mono';
+  ctx.fillText('W⁻', 30, my-10);
+  ctx.fillStyle = '#8892a4';
+  ctx.fillText('e⁻', w-30, 28);
+  ctx.fillText('ν̄ₑ', w-35, h-20);
+}
+
+function drawArrowLine(ctx, x1,y1,x2,y2) {
+  ctx.beginPath();
+  ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+  ctx.stroke();
+  // Arrow
+  const angle = Math.atan2(y2-y1,x2-x1);
+  const mx = (x1+x2)/2, my = (y1+y2)/2;
+  ctx.beginPath();
+  ctx.moveTo(mx+6*Math.cos(angle), my+6*Math.sin(angle));
+  ctx.lineTo(mx-4*Math.cos(angle-0.5), my-4*Math.sin(angle-0.5));
+  ctx.lineTo(mx-4*Math.cos(angle+0.5), my-4*Math.sin(angle+0.5));
+  ctx.closePath(); ctx.fillStyle = ctx.strokeStyle; ctx.fill();
+}
+
+function drawWavy(ctx, x1,y1,x2,y2, color) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  const dist = Math.sqrt((x2-x1)**2+(y2-y1)**2);
+  const angle = Math.atan2(y2-y1,x2-x1);
+  ctx.translate(x1,y1); ctx.rotate(angle);
+  ctx.beginPath();
+  const waves = 6, amp = 5;
+  for (let i = 0; i <= 100; i++) {
+    const t = i/100;
+    const x = t * dist;
+    const y = Math.sin(t * waves * Math.PI*2) * amp;
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawCoil(ctx, x1,y1,x2,y2, color) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  const dist = Math.sqrt((x2-x1)**2+(y2-y1)**2);
+  const angle = Math.atan2(y2-y1,x2-x1);
+  ctx.translate(x1,y1); ctx.rotate(angle);
+  ctx.beginPath();
+  const loops = 5, r = 5;
+  for (let i = 0; i <= 200; i++) {
+    const t = i/200;
+    const x = t * dist;
+    const y = Math.sin(t * loops * Math.PI*2) * r * (1 - Math.abs(0.5-t)*0.5);
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawDashed(ctx, x1,y1,x2,y2, color) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// Draw all Feynman
+setTimeout(() => {
+  drawFeynman1('feynman1');
+  drawFeynman2('feynman2');
+  drawFeynman3('feynman3');
+}, 100);
+window.addEventListener('resize', () => {
+  drawFeynman1('feynman1');
+  drawFeynman2('feynman2');
+  drawFeynman3('feynman3');
+});
+
+// ============ CALCULATOR FUNCTIONS ============
+
+// 1. Invariant Mass
+function calcInvMass() {
+  const E1 = parseFloat(document.getElementById('invM_E1').value);
+  const p1 = parseFloat(document.getElementById('invM_p1').value);
+  const E2 = parseFloat(document.getElementById('invM_E2').value);
+  const p2 = parseFloat(document.getElementById('invM_p2').value);
+  const angle = parseFloat(document.getElementById('invM_angle').value) * Math.PI / 180;
+  const el = document.getElementById('invM_result');
+  if ([E1,p1,E2,p2].some(isNaN) || isNaN(angle)) { el.textContent = 'Заполните все поля'; el.className='calc-result error'; return; }
+  const Etot = E1 + E2;
+  const p_sq = p1*p1 + p2*p2 + 2*p1*p2*Math.cos(angle);
+  const M2 = Etot*Etot - p_sq;
+  if (M2 < 0) { el.textContent = 'M² < 0 — проверьте ввод (E < |p|)'; el.className='calc-result error'; return; }
+  const M = Math.sqrt(M2);
+  el.textContent = `M = ${M.toFixed(4)} ГэВ/c²`;
+  el.className = 'calc-result';
+}
+
+// 2. Relativistic E-p-m
+function calcRelEnergy() {
+  const mode = document.getElementById('relE_mode').value;
+  const v1 = parseFloat(document.getElementById('relE_val1').value);
+  const v2 = parseFloat(document.getElementById('relE_val2').value);
+  const el = document.getElementById('relE_result');
+  if (isNaN(v1) || isNaN(v2)) { el.textContent='Заполните оба поля'; el.className='calc-result error'; return; }
+  let result;
+  if (mode === 'E') {
+    const E = Math.sqrt(v1*v1 + v2*v2);
+    result = `E = ${E.toFixed(6)} ГэВ`;
+  } else if (mode === 'p') {
+    const p2 = v1*v1 - v2*v2;
+    if (p2 < 0) { el.textContent='E < m — невозможно'; el.className='calc-result error'; return; }
+    result = `p = ${Math.sqrt(p2).toFixed(6)} ГэВ/c`;
+  } else {
+    const m2 = v1*v1 - v2*v2;
+    if (m2 < 0) { el.textContent='E < p — тахион?'; el.className='calc-result error'; return; }
+    result = `m = ${Math.sqrt(m2).toFixed(6)} ГэВ/c²`;
+  }
+  el.textContent = result;
+  el.className = 'calc-result';
+}
+
+document.getElementById('relE_mode').addEventListener('change', function() {
+  const m = this.value;
+  const l1 = document.getElementById('relE_label1');
+  const l2 = document.getElementById('relE_label2');
+  if (m === 'E') { l1.textContent='Импульс p (ГэВ/c)'; l2.textContent='Масса m (ГэВ/c²)'; }
+  else if (m === 'p') { l1.textContent='Энергия E (ГэВ)'; l2.textContent='Масса m (ГэВ/c²)'; }
+  else { l1.textContent='Энергия E (ГэВ)'; l2.textContent='Импульс p (ГэВ/c)'; }
+});
+
+// 3. Lorentz Factor
+function updateLorentzLabels() {
+  const mode = document.getElementById('lorentz_mode').value;
+  if (mode === 'beta') {
+    document.getElementById('lorentz_label1').textContent = 'β = v/c (0 < β < 1)';
+    document.getElementById('lorentz_field2').style.display = 'none';
+  } else {
+    document.getElementById('lorentz_label1').textContent = 'Энергия E (ГэВ)';
+    document.getElementById('lorentz_field2').style.display = '';
+  }
+}
+
+function calcLorentz() {
+  const mode = document.getElementById('lorentz_mode').value;
+  const v1 = parseFloat(document.getElementById('lorentz_val1').value);
+  const el = document.getElementById('lorentz_result');
+  if (isNaN(v1)) { el.textContent='Введите значение'; el.className='calc-result error'; return; }
+  let gamma, beta;
+  if (mode === 'beta') {
+    beta = v1;
+    if (beta <= 0 || beta >= 1) { el.textContent='β должно быть в (0, 1)'; el.className='calc-result error'; return; }
+    gamma = 1 / Math.sqrt(1 - beta*beta);
+  } else {
+    const m = parseFloat(document.getElementById('lorentz_val2').value);
+    if (isNaN(m) || m <= 0) { el.textContent='Введите массу > 0'; el.className='calc-result error'; return; }
+    gamma = v1 / m;
+    beta = Math.sqrt(1 - 1/(gamma*gamma));
+  }
+  el.innerHTML = `γ = ${gamma.toFixed(4)} &nbsp;|&nbsp; β = ${beta.toFixed(8)} &nbsp;|&nbsp; Замедление: ×${gamma.toFixed(2)}`;
+  el.className = 'calc-result';
+}
+
+// 4. De Broglie
+function calcDeBroglie() {
+  const p = parseFloat(document.getElementById('debroglie_p').value);
+  const el = document.getElementById('debroglie_result');
+  if (isNaN(p) || p <= 0) { el.textContent='Введите p > 0'; el.className='calc-result error'; return; }
+  const hbar_c = 0.197326980; // GeV·fm
+  const lambda_fm = hbar_c / p;
+  const lambda_m = lambda_fm * 1e-15;
+  let str = `λ = ${lambda_fm.toExponential(3)} фм = ${lambda_m.toExponential(3)} м`;
+  if (p > 1000) str += `  (субпротонное разрешение!)`;
+  el.textContent = str;
+  el.className = 'calc-result';
+}
+
+// 5. Center-of-mass energy
+function updateSqrtsLabels() {
+  const mode = document.getElementById('sqrts_mode').value;
+  if (mode === 'collider') {
+    document.getElementById('sqrts_label1').textContent = 'E₁ пучка (ГэВ)';
+    document.getElementById('sqrts_label2').textContent = 'E₂ пучка (ГэВ)';
+    document.getElementById('sqrts_field2').style.display = '';
+    document.getElementById('sqrts_mass_row').style.display = 'none';
+  } else {
+    document.getElementById('sqrts_label1').textContent = 'E пучка (ГэВ)';
+    document.getElementById('sqrts_field2').style.display = 'none';
+    document.getElementById('sqrts_mass_row').style.display = '';
+  }
+}
+
+function calcSqrtS() {
+  const mode = document.getElementById('sqrts_mode').value;
+  const el = document.getElementById('sqrts_result');
+  if (mode === 'collider') {
+    const E1 = parseFloat(document.getElementById('sqrts_val1').value);
+    const E2 = parseFloat(document.getElementById('sqrts_val2').value);
+    if (isNaN(E1) || isNaN(E2)) { el.textContent='Заполните оба поля'; el.className='calc-result error'; return; }
+    const sqrts = Math.sqrt(4 * E1 * E2); // for equal-mass ultra-relativistic
+    el.textContent = `√s ≈ ${sqrts.toFixed(2)} ГэВ = ${(sqrts/1000).toFixed(3)} ТэВ`;
+  } else {
+    const E = parseFloat(document.getElementById('sqrts_val1').value);
+    const m = parseFloat(document.getElementById('sqrts_mass').value);
+    if (isNaN(E) || isNaN(m)) { el.textContent='Заполните поля'; el.className='calc-result error'; return; }
+    const sqrts = Math.sqrt(2*m*E + 2*m*m);
+    el.textContent = `√s ≈ ${sqrts.toFixed(3)} ГэВ = ${(sqrts/1000).toFixed(4)} ТэВ (в ${(2*E/sqrts).toFixed(0)}× менее эффективно!)`;
+  }
+  el.className = 'calc-result';
+}
+
+// 6. Binding Energy
+function calcBinding() {
+  const Z = parseInt(document.getElementById('bind_Z').value);
+  const A = parseInt(document.getElementById('bind_A').value);
+  const el = document.getElementById('bind_result');
+  if (isNaN(Z) || isNaN(A) || Z<1 || A<1 || Z>A) { el.textContent='Проверьте Z и A (Z ≤ A)'; el.className='calc-result error'; return; }
+  const N = A - Z;
+  const av = 15.56, as = 17.23, ac = 0.697, aa = 23.285;
+  let delta = 0;
+  if (Z%2===0 && N%2===0) delta = 12 / Math.sqrt(A);
+  else if (Z%2===1 && N%2===1) delta = -12 / Math.sqrt(A);
+  const B = av*A - as*Math.pow(A,2/3) - ac*Z*(Z-1)/Math.pow(A,1/3) - aa*(A-2*Z)*(A-2*Z)/A + delta;
+  const perNucleon = B / A;
+  el.innerHTML = `B = ${B.toFixed(2)} МэВ &nbsp;|&nbsp; B/A = ${perNucleon.toFixed(3)} МэВ/нуклон`;
+  el.className = 'calc-result';
+}
+
+// 7. Rapidity & Pseudorapidity
+function calcRapidity() {
+  const theta_deg = parseFloat(document.getElementById('eta_theta').value);
+  const E = parseFloat(document.getElementById('eta_E').value);
+  const pz = parseFloat(document.getElementById('eta_pz').value);
+  const el = document.getElementById('eta_result');
+  if (isNaN(theta_deg)) { el.textContent='Введите угол θ'; el.className='calc-result error'; return; }
+  const theta = theta_deg * Math.PI / 180;
+  if (theta <= 0 || theta >= Math.PI) { el.textContent='θ должен быть в (0°, 180°)'; el.className='calc-result error'; return; }
+  const eta = -Math.log(Math.tan(theta/2));
+  let str = `η = ${eta.toFixed(4)}`;
+  if (!isNaN(E) && !isNaN(pz)) {
+    if (E <= Math.abs(pz)) { el.textContent='E должно быть > |p_z|'; el.className='calc-result error'; return; }
+    const y = 0.5 * Math.log((E+pz)/(E-pz));
+    str += ` &nbsp;|&nbsp; y = ${y.toFixed(4)}`;
+  }
+  el.innerHTML = str;
+  el.className = 'calc-result';
+}
+
+// 8. Transverse Momentum
+function calcPt() {
+  const p = parseFloat(document.getElementById('pt_p').value);
+  const theta_deg = parseFloat(document.getElementById('pt_theta').value);
+  const el = document.getElementById('pt_result');
+  if (isNaN(p) || isNaN(theta_deg)) { el.textContent='Заполните оба поля'; el.className='calc-result error'; return; }
+  const theta = theta_deg * Math.PI / 180;
+  const pt = p * Math.sin(theta);
+  const pz = p * Math.cos(theta);
+  el.innerHTML = `p_T = ${pt.toFixed(4)} ГэВ/c &nbsp;|&nbsp; p_z = ${pz.toFixed(4)} ГэВ/c`;
+  el.className = 'calc-result';
+}
+
+// 9. Luminosity
+function calcLumi() {
+  const sigma_pb = parseFloat(document.getElementById('lumi_sigma').value);
+  const L_fb = parseFloat(document.getElementById('lumi_L').value);
+  const el = document.getElementById('lumi_result');
+  if (isNaN(sigma_pb) || isNaN(L_fb)) { el.textContent='Заполните оба поля'; el.className='calc-result error'; return; }
+  // 1 fb^-1 = 1000 pb^-1
+  const L_pb = L_fb * 1000; // convert fb^-1 to pb^-1
+  const N = sigma_pb * L_pb;
+  let str = `N = ${N.toLocaleString('ru-RU', {maximumFractionDigits:0})} событий`;
+  if (N < 10) str += ' ⚠️ Очень мало — нужна больше светимости!';
+  else if (N > 1e6) str += ' 🔥 Огромная статистика!';
+  el.textContent = str;
+  el.className = 'calc-result';
+}
+</script>
+</body>
+</html>

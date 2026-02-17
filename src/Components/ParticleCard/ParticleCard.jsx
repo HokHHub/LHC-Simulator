@@ -22,10 +22,10 @@ export default function ParticleCard({ particle, onClick }) {
                     </p>
 
                     <p className={s.theory__card_text}>
-                        Q = {formatNumber(charge)}
+                        Q = {formatCharge(charge)}
                     </p>
 
-                    <p className={s.theory__card_text}>J = {spin} ħ</p>
+                    <p className={s.theory__card_text}>J = {spin} h</p>
                 </div>
 
                 <div className={s.theory__card_imgGroup}>

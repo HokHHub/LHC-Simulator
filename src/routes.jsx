@@ -3,6 +3,9 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import Layout from "./Layout";
 import About from "./Components/About/About";
 import Theory from "./Components/Theory/Theory";
+import TheoryParticles from "./Components/TheoryParticles/TheoryParticles";
+import TheoryLHC from "./Components/TheoryLHC/TheoryLHC";
+import TheorySimulation from "./Components/TheorySimulation/TheorySimulation";
 import Simulation from "./Components/Simulation/Simulation";
 import ProfilePage from "./pages/Profile/ProfilePage";
 import ProtectedRoute from "./Components/ProtectedRoute";
@@ -21,6 +24,9 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <About /> },
       { path: "theory", element: <Theory /> },
+      { path: "theory/particles", element: <TheoryParticles /> },
+      { path: "theory/lhc", element: <TheoryLHC /> },
+      { path: "theory/simulation", element: <TheorySimulation /> },
 
       // защищённый маршрут
       {
