@@ -2008,7 +2008,7 @@ export default function Simulation() {
                     setErrors((e) => ({ ...e, second: "" }));
                     setApiError("");
                   }}
-                  placeholder="не Протон не p+"
+                  placeholder="Протон p+"
                   error={errors.second}
                 />
               </div>
