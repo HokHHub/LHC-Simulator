@@ -117,7 +117,7 @@ function findParticleByName(name) {
 
 // Функция для определения типа частицы
 function getParticleType(tone) {
-  switch(tone) {
+  switch (tone) {
     case "quark": return "Кварк";
     case "lepton": return "Лептон";
     case "boson": return "Бозон";
@@ -186,16 +186,16 @@ function toParticleCardData(particle, tone) {
 // Функция для подготовки данных модалки
 function prepareModalData(particleCardData) {
   if (!particleCardData || !particleCardData.fullData) return null;
-  
+
   const particle = particleCardData.fullData;
   const tone = particleCardData.tone;
-  
+
   // Определяем семейство
   let family = getParticleType(tone);
   if (tone === "boson") {
     family = particle.spin === "0" ? "Скалярный бозон" : "Векторный бозон";
   }
-  
+
   // Определяем взаимодействия
   let interaction = "";
   if (tone === "quark") interaction = "Сильное, электрослабое";
@@ -206,7 +206,7 @@ function prepareModalData(particleCardData) {
     else if (particle.name.toLowerCase().includes("w") || particle.name.toLowerCase().includes("z")) interaction = "Слабое";
     else if (particle.name.toLowerCase().includes("higgs")) interaction = "Хиггсовское";
   }
-  
+
   // Квантовые числа
   const quantumNumbers = [];
   if (particle.name.toLowerCase().includes("up")) quantumNumbers.push("I₃ = +1/2");
@@ -215,7 +215,7 @@ function prepareModalData(particleCardData) {
   if (particle.name.toLowerCase().includes("charm")) quantumNumbers.push("C = +1");
   if (particle.name.toLowerCase().includes("bottom")) quantumNumbers.push("B = -1");
   if (particle.name.toLowerCase().includes("top")) quantumNumbers.push("T = +1");
-  
+
   return {
     title: particle.name,
     descr: particle.descr || `Описание для ${particle.name} отсутствует.`,
@@ -263,7 +263,7 @@ export default function TheoryParticles() {
 
   const handleParticleClick = (item) => {
     if (!item || !item.particle) return;
-    
+
     const cardData = toParticleCardData(item.particle, item.tone);
     const modalData = prepareModalData(cardData);
     setModalData(modalData);
@@ -274,8 +274,8 @@ export default function TheoryParticles() {
     if (!item || !item.particle) return <div key={Math.random()} className={s.cardWrap}></div>;
 
     return (
-      <div 
-        key={`${item.row}-${item.col}`} 
+      <div
+        key={`${item.row}-${item.col}`}
         className={s.cardWrap}
         onClick={() => handleParticleClick(item)}
         style={{ cursor: "pointer" }}
@@ -296,7 +296,7 @@ export default function TheoryParticles() {
 
   const handleExtraBosonClick = (item) => {
     if (!item.particle) return;
-    
+
     const cardData = toParticleCardData(item.particle, item.tone);
     const modalData = prepareModalData(cardData);
     setModalData(modalData);
@@ -305,9 +305,9 @@ export default function TheoryParticles() {
 
   return (
     <div className={s.theoryParticles}>
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         data={modalData}
       />
 
@@ -318,12 +318,17 @@ export default function TheoryParticles() {
 
       <section className={s.textSection}>
         <Container3>
-          <p><span style={{color: "#008DD8"}}>Стандартная модель (СМ)</span> — это математический каркас, объединяющий квантовую механику и специальную теорию относительности для описания элементарных частиц и их взаимодействий. Она была окончательно сформулирована к середине 1970-х годов и с тех пор подтверждена тысячами экспериментов с поразительной точностью.
-
-            {<br style={{margin: "0 0 20px 0"}}/>}Все частицы СМ делятся на два больших класса: фермионы (спин ½) — «кирпичики» материи, и бозоны (целый спин) — переносчики взаимодействий. Фермионы подчиняются принципу запрета Паули: два одинаковых фермиона не могут находиться в одном квантовом состоянии. Бозоны этому принципу не подчиняются.
-
-            {<br style={{margin: "0 0 20px 0"}}/>}Модель объединяет три фундаментальных взаимодействия: электромагнитное (квантовая электродинамика, QED), сильное (квантовая хромодинамика, QCD) и слабое. Электромагнитное и слабое объединены в электрослабое взаимодействие теорией Глэшоу — Вайнберга — Салама. Гравитация пока не включена в СМ — это одна из главных нерешённых задач физики.
-            {<br style={{margin: "0 0 20px 0"}}/>} <span style={{color: "#008DD8", opacity: "0.7"}}>Триумф модели — предсказание и открытие бозона Хиггса (масса ≈125 ГэВ) 4 июля 2012 года на LHC. Хиггсовский механизм объясняет, как частицы приобретают массу: поле Хиггса пронизывает всё пространство, и частицы, взаимодействуя с ним, получают инерцию.</span>
+          <p>
+            <span style={{ color: "#008DD8" }}>Стандартная модель (СМ)</span> — это математический каркас, объединяющий квантовую механику и специальную теорию относительности для описания элементарных частиц и их взаимодействий. Она была окончательно сформулирована к середине 1970-х годов и с тех пор подтверждена тысячами экспериментов с поразительной точностью.
+          </p>
+          <p> {/* Теперь это отдельный параграф, а не часть первого */}
+            Все частицы СМ делятся на два больших класса: фермионы (спин ½) — «кирпичики» материи, и бозоны (целый спин) — переносчики взаимодействий. Фермионы подчиняются принципу запрета Паули: два одинаковых фермиона не могут находиться в одном квантовом состоянии. Бозоны этому принципу не подчиняются.
+          </p>
+          <p>
+            Модель объединяет три фундаментальных взаимодействия: электромагнитное (квантовая электродинамика, QED), сильное (квантовая хромодинамика, QCD) и слабое. Электромагнитное и слабое объединены в электрослабое взаимодействие теорией Глэшоу — Вайнберга — Салама. Гравитация пока не включена в СМ — это одна из главных нерешённых задач физики.
+          </p>
+          <p style={{ color: "#008DD8", opacity: "0.7" }}> {/* Применили стиль ко всему абзацу */}
+            Триумф модели — предсказание и открытие бозона Хиггса (масса ≈125 ГэВ) 4 июля 2012 года на LHC. Хиггсовский механизм объясняет, как частицы приобретают массу: поле Хиггса пронизывает всё пространство, и частицы, взаимодействуя с ним, получают инерцию.
           </p>
         </Container3>
       </section>
@@ -375,8 +380,6 @@ export default function TheoryParticles() {
 
         </Container3>
       </section>
-
-      <h2 className={s.sectionTitle}>Сетка частиц</h2>
       <section className={s.gridSection}>
         <Container3>
           <div className={s.smPanel}>
@@ -404,7 +407,7 @@ export default function TheoryParticles() {
                 {extraBosons.map((item) => (
                   <div key={item.id} className={s.extraBlock}>
                     <div className={s.extraTitle}>{item.title}</div>
-                    <div 
+                    <div
                       className={s.cardWrap}
                       onClick={() => handleExtraBosonClick(item)}
                       style={{ cursor: "pointer" }}
