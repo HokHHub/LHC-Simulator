@@ -135,9 +135,9 @@ const normalizeSimulation = (sim) => {
 };
 
 const getRankTitle = (rank) => {
-  if (rank === 1) return 'Ученик';
-  if (rank === 2) return 'Исследователь';
-  if (rank >= 3) return 'Профессор';
+  if (rank <= 100) return 'Ученик';
+  if (rank > 100 && rank <= 350) return 'Исследователь';
+  if (rank > 350) return 'Профессор';
   return 'Error';
 };
 
@@ -241,7 +241,7 @@ const ProfilePage = () => {
   }, [profile, isEditing]);
 
   const normalizedSims = useMemo(
-    () => simulations.map(normalizeSimulation).slice(0, 4),
+    () => simulations.map(normalizeSimulation),
     [simulations]
   );
 
@@ -266,7 +266,7 @@ const ProfilePage = () => {
     stats?.user?.rating_score ??
     0;
 
-  const rankTitle = getRankTitle(stats?.rank ?? stats?.level);
+  const rankTitle = getRankTitle(stats?.rating_score ?? stats?.level);
 
   const handleLogout = async () => {
     await logout();
