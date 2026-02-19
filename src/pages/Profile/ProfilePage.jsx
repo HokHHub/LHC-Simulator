@@ -136,7 +136,7 @@ const normalizeSimulation = (sim) => {
 
 const getRankTitle = (rank) => {
   if (rank <= 100) return 'Ученик';
-  if (rank > 100 && rank <= 350) return 'Исследователь';
+  if (rank > 100 & rank <= 350) return 'Исследователь';
   if (rank > 350) return 'Профессор';
   return 'Error';
 };
