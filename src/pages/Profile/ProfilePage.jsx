@@ -266,7 +266,7 @@ const ProfilePage = () => {
     stats?.user?.rating_score ??
     0;
 
-  const rankTitle = getRankTitle(stats?.rating_score ?? stats?.level);
+  const rankTitle = getRankTitle(profile?.rating_score ?? stats?.level);
 
   const handleLogout = async () => {
     await logout();
