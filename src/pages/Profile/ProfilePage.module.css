@@ -264,7 +264,7 @@
 }
 
 .simListInner {
-  padding: 19px 42px 0 37px;
+  padding: 19px 42px 19px 37px;
   display: flex;
   flex-direction: column;
   gap: 23px;
