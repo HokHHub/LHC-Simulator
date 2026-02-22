@@ -56,7 +56,20 @@ export default function Theory() {
     const m = parseFloat(lorentz.val2);
     if (Number.isNaN(m) || m <= 0) return setResult(setLorentz, "Введите массу > 0", true);
     const gamma = v1 / m;
-    const beta = Math.sqrt(1 - 1 / (gamma * gamma));
+
+    // физическая проверка
+    if (!Number.isFinite(gamma) || gamma < 1) {
+      return setResult(
+        setLorentz,
+        "Ошибка: энергия должна быть ≥ массе (иначе γ < 1 невозможно)",
+        true
+      );
+    }
+
+    // защита от floating-ошибок
+    const betaSquared = 1 - 1 / (gamma * gamma);
+    const beta = Math.sqrt(Math.max(0, betaSquared));
+
     return setResult(setLorentz, `γ = ${gamma.toFixed(4)} | β = ${beta.toFixed(6)}`);
   };
 
