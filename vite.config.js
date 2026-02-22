@@ -1,8 +1,19 @@
-console.log("VITE CONFIG LOADED ✅");
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import generateRobotsTxt from "vite-plugin-robots-txt";
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  plugins: [react(), generateRobotsTxt()]
-});
+  plugins: [react()],
+  server: {
+    host: true,
+    proxy: {
+      "/api": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
+      "/ws": {
+        target: "ws://backend:8000",
+        ws: true
+      }
+    }
+  }
+})
