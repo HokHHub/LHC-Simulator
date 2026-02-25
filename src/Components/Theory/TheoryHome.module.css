@@ -236,6 +236,7 @@
 @media (max-width: 1200px) {
   .cards {
     grid-template-columns: repeat(2, 275px);
+    margin-bottom: 120px;
   }
 
   .calcsGrid {
