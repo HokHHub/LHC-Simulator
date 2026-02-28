@@ -4,6 +4,70 @@ import { useAuth } from '../context/AuthContext';
 import './Auth.css';
 import authPreview from '../../tmp_figma_assets/35fadc0f07ee1848bd818da637216a528c6ef85d.png';
 
+// Subset of Django's common password list (django/contrib/auth/common-passwords.txt.gz)
+const COMMON_PASSWORDS = new Set([
+  '12345678', '123456789', '1234567890', '1234567', 'password', 'password1',
+  'password2', 'iloveyou', 'sunshine', 'qwerty123', 'princess', 'football',
+  'welcome1', 'shadow', 'superman', 'dragon', 'master', 'monkey',
+  'letmein', 'trustno1', 'hello123', 'whatever', 'baseball', 'soccer',
+  'hockey', 'batman', 'starwars', 'passw0rd', 'abc12345', '11111111',
+  '00000000', 'qwertyui', 'azerty123', 'zxcvbnm', 'admin123', 'login123',
+  'mustang', 'access', 'shadow1', 'michael', 'jessica', 'charlie', 'donald',
+  'thomas', 'hunter', 'ranger', 'harley', 'george', 'andrew', 'jordan',
+]);
+
+const isSimilarToPersonalData = (pwd, formData) => {
+  const attrs = [
+    formData.username,
+    formData.first_name,
+    formData.last_name,
+    formData.email ? formData.email.split('@')[0] : '',
+  ].filter((a) => a && a.length >= 4);
+  const p = pwd.toLowerCase();
+  return attrs.some((attr) => {
+    const a = attr.toLowerCase();
+    return p.includes(a) || a.includes(p);
+  });
+};
+
+const checkCriteria = (password, password2, formData) => {
+  if (!password) return null;
+  return {
+    minLength: password.length >= 8,
+    notNumeric: !/^\d+$/.test(password),
+    notCommon: !COMMON_PASSWORDS.has(password.toLowerCase()),
+    notSimilar: !isSimilarToPersonalData(password, formData),
+    passwordsMatch: password2.length > 0 ? password === password2 : null,
+  };
+};
+
+const CRITERIA_META = [
+  ['minLength', 'Не менее 8 символов'],
+  ['notNumeric', 'Пароль не состоит только из цифр'],
+  ['notCommon', 'Пароль не слишком распространённый'],
+  ['notSimilar', 'Пароль не похож на личные данные'],
+  ['passwordsMatch', 'Пароли совпадают'],
+];
+
+const PasswordCriteria = ({ criteria }) => {
+  if (!criteria) return null;
+  return (
+    <ul className="auth-pwd-criteria">
+      {CRITERIA_META.map(([key, label]) => {
+        const val = criteria[key];
+        const state = val === true ? 'ok' : val === false ? 'fail' : 'idle';
+        const icon = val === true ? '✓' : val === false ? '✗' : '–';
+        return (
+          <li key={key} className={`auth-pwd-criterion auth-pwd-criterion--${state}`}>
+            <span className="auth-pwd-criterion-icon" aria-hidden="true">{icon}</span>
+            {label}
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
+
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -18,10 +82,11 @@ const Register = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
+  const criteria = checkCriteria(formData.password, formData.password2, formData);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -29,6 +94,15 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const c = checkCriteria(formData.password, formData.password2, formData);
+    if (!c || !c.minLength || !c.notNumeric || !c.notSimilar) {
+      setErrors({ password: 'Пароль не соответствует требованиям безопасности' });
+      return;
+    }
+    if (!c.passwordsMatch) {
+      setErrors({ password2: 'Пароли не совпадают' });
+      return;
+    }
     setIsLoading(true);
     setErrors({});
 
@@ -132,10 +206,10 @@ const Register = () => {
                 className={`auth-input ${errors.password ? 'auth-input-error' : ''}`}
                 placeholder="Введите пароль"
                 autoComplete="new-password"
-                minLength={6}
                 required
               />
               {errors.password && <span className="auth-field-error">{errors.password}</span>}
+              <PasswordCriteria criteria={criteria} />
             </div>
 
             <div className="auth-field">
@@ -148,7 +222,6 @@ const Register = () => {
                 className={`auth-input ${errors.password2 ? 'auth-input-error' : ''}`}
                 placeholder="Повторите пароль"
                 autoComplete="new-password"
-                minLength={6}
                 required
               />
               {errors.password2 && <span className="auth-field-error">{errors.password2}</span>}

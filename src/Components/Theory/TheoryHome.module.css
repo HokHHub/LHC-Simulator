@@ -30,7 +30,7 @@
   grid-template-columns: repeat(3, 275px);
   justify-content: center;
   gap: 58px;
-  margin: 30px auto 368px;
+  margin: 30px auto 180px;
 }
 
 .cardLink {

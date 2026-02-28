@@ -25,8 +25,20 @@ const Login = () => {
     }
   };
 
+  const validate = () => {
+    const errs = {};
+    if (!formData.username.trim()) errs.username = 'Введите имя пользователя';
+    if (!formData.password) errs.password = 'Введите пароль';
+    return errs;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      return;
+    }
     setIsLoading(true);
     setErrors({});
 

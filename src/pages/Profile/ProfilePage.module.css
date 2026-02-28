@@ -71,6 +71,10 @@
   margin-top: 16px;
   font-size: 40px;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
 }
 
 .userEmail {

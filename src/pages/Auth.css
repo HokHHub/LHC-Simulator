@@ -241,6 +241,45 @@
   line-height: 1.2;
 }
 
+.auth-pwd-criteria {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.auth-pwd-criterion {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 300;
+  line-height: 1.3;
+  transition: color 0.15s ease;
+}
+
+.auth-pwd-criterion-icon {
+  flex-shrink: 0;
+  width: 11px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.auth-pwd-criterion--ok {
+  color: #4caf84;
+}
+
+.auth-pwd-criterion--fail {
+  color: #d68f99;
+}
+
+.auth-pwd-criterion--idle {
+  color: rgba(255, 255, 255, 0.28);
+}
+
 .auth-spinner {
   width: 18px;
   height: 18px;
