@@ -16,27 +16,12 @@ const COMMON_PASSWORDS = new Set([
   'thomas', 'hunter', 'ranger', 'harley', 'george', 'andrew', 'jordan',
 ]);
 
-const isSimilarToPersonalData = (pwd, formData) => {
-  const attrs = [
-    formData.username,
-    formData.first_name,
-    formData.last_name,
-    formData.email ? formData.email.split('@')[0] : '',
-  ].filter((a) => a && a.length >= 4);
-  const p = pwd.toLowerCase();
-  return attrs.some((attr) => {
-    const a = attr.toLowerCase();
-    return p.includes(a) || a.includes(p);
-  });
-};
-
-const checkCriteria = (password, password2, formData) => {
+const checkCriteria = (password, password2) => {
   if (!password) return null;
   return {
     minLength: password.length >= 8,
     notNumeric: !/^\d+$/.test(password),
     notCommon: !COMMON_PASSWORDS.has(password.toLowerCase()),
-    notSimilar: !isSimilarToPersonalData(password, formData),
     passwordsMatch: password2.length > 0 ? password === password2 : null,
   };
 };
@@ -45,7 +30,6 @@ const CRITERIA_META = [
   ['minLength', 'Не менее 8 символов'],
   ['notNumeric', 'Пароль не состоит только из цифр'],
   ['notCommon', 'Пароль не слишком распространённый'],
-  ['notSimilar', 'Пароль не похож на личные данные'],
   ['passwordsMatch', 'Пароли совпадают'],
 ];
 
@@ -82,7 +66,7 @@ const Register = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const criteria = checkCriteria(formData.password, formData.password2, formData);
+  const criteria = checkCriteria(formData.password, formData.password2);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -94,8 +78,8 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const c = checkCriteria(formData.password, formData.password2, formData);
-    if (!c || !c.minLength || !c.notNumeric || !c.notSimilar) {
+    const c = checkCriteria(formData.password, formData.password2);
+    if (!c || !c.minLength || !c.notNumeric) {
       setErrors({ password: 'Пароль не соответствует требованиям безопасности' });
       return;
     }
