@@ -542,6 +542,16 @@
   }
 }
 
+@media (max-width: 800px) {
+  .statsCard {
+    position: static;
+    margin: 0 auto 16px;
+    left: auto;
+    width: 100%;
+    max-width: 270px;
+  }
+}
+
 @media (max-width: 768px) {
 
   .profileCard,
@@ -571,6 +581,7 @@
     font-style: normal;
     font-weight: 300;
     line-height: normal;
+    position: absolute;
   }
 
   .userBlock {
