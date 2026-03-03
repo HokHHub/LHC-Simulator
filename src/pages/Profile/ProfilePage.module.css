@@ -513,6 +513,10 @@
 
 /* responsive */
 @media (max-width: 1280px) {
+  .statsCard {
+    left: 268px
+  }
+
   .content {
     width: 100%;
     grid-template-columns: 1fr;
@@ -593,7 +597,7 @@
   }
 
   .buttonsInner {
-    margin-top: 0;
+    margin-top: 40px;
   }
 
   .helpText {
@@ -671,7 +675,6 @@
   }
 
   .actionButton {
-    width: 100%;
     max-width: 250px;
   }
 }
