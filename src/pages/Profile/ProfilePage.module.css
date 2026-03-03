@@ -542,17 +542,7 @@
   }
 }
 
-@media (max-width: 800px) {
-  .statsCard {
-    position: static;
-    margin: 0 auto 16px;
-    left: auto;
-    width: 100%;
-    max-width: 270px;
-  }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 900px) {
 
   .profileCard,
   .historyCard {
