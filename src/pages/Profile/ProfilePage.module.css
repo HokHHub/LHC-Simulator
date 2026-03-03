@@ -209,11 +209,9 @@
   height: 40px;
   border: none;
   border-radius: 5px;
-  background: linear-gradient(
-    356deg,
-    rgba(25, 36, 43, 0.5) 3.27%,
-    rgba(62, 92, 118, 0.5) 96.73%
-  );
+  background: linear-gradient(356deg,
+      rgba(25, 36, 43, 0.5) 3.27%,
+      rgba(62, 92, 118, 0.5) 96.73%);
   box-shadow: 6px 6px 4px 0 rgba(169, 146, 146, 0.03) inset, 3px 4px 7.4px 0 #000;
   color: #ffffff;
   font-size: 15px;
@@ -681,6 +679,10 @@
 }
 
 @media (max-width: 480px) {
+  .leaderboardLabel {
+    top: 380px;
+  }
+
   .content {
     padding: 40px 16px 32px;
   }
