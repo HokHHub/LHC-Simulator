@@ -2170,6 +2170,7 @@ export default function Simulation() {
           flex-wrap: wrap;
           place-content: center;
           place-items: center;
+          z-index: 100000;
         }
         .am-container .scene {
           width: 100%;
