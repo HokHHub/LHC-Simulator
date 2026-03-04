@@ -4,8 +4,8 @@ export default function TheorySimulation() {
   return (
     <div className={s.simulation}>
       <div>
-        <div className={s.title}>Как работает наша симуляция</div>
-        <div className={s.subtitle}>Скоро будет доступно</div>
+        <div className={s.title}>РЎС‚СЂР°РЅРёС†Р° РЅР°С…РѕРґРёС‚СЃСЏ РІ СЂР°Р·СЂР°Р±РѕС‚РєРµ</div>
+        {/* <div className={s.subtitle}></div> */}
       </div>
     </div>
   );
