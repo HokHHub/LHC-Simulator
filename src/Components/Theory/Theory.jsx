@@ -2,6 +2,9 @@
 import { Link } from "react-router-dom";
 import Container3 from "../Container3/Container3";
 import s from "./TheoryHome.module.css";
+import theoryIMG from '../../assets/theory.jpg'
+import bak from '../../assets/bak.jpg'
+import how from '../../assets/how.jpg'
 
 const defaultCalcState = { result: "Результат", error: false };
 
@@ -127,19 +130,19 @@ export default function Theory() {
         <section className={s.cards}>
           <Link className={s.cardLink} to="/theory/particles">
             <div className={s.cardBox}>
-              <div className={s.cardImage} />
+              <img src={theoryIMG} className={s.cardImage} />
               <p className={s.cardTitle}>Теория элементарных частиц</p>
             </div>
           </Link>
           <Link className={s.cardLink} to="/theory/lhc">
             <div className={s.cardBox}>
-              <div className={s.cardImage} />
+              <img src={bak} className={s.cardImage} />
               <p className={s.cardTitle}>Большой адронный коллайдер</p>
             </div>
           </Link>
           <Link className={s.cardLink} to="/theory/simulation">
             <div className={s.cardBox}>
-              <div className={s.cardImage} />
+              <img src={how} className={s.cardImage} />
               <p className={s.cardTitle}>Как работает наша симуляция</p>
             </div>
           </Link>
